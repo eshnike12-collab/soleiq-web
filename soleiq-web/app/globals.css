@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --phone-w: 390px;
+  --phone-h: 844px;
+}
+
+html,
+body {
+  height: 100%;
+  background: linear-gradient(180deg, #f6f4ec 0%, #f1efe8 100%);
+  color: #2c2c2a;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer components {
+  .screen-h1 {
+    @apply text-[22px] font-semibold leading-tight text-warmGray-800;
+  }
+  .screen-sub {
+    @apply mt-1 text-sm leading-snug text-warmGray-600;
+  }
+  .field-label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-warmGray-600;
+  }
+}

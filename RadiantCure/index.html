@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RediantCure — Advanced Red Light Therapy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── ANIMATED BACKGROUND CANVAS ── -->
+  <canvas id="bgCanvas"></canvas>
+
+  <!-- ── NAVBAR ── -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <img src="logo.svg" alt="RediantCure" class="logo-img" />
+      </a>
+      <ul class="nav-links">
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#shop">Shop</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#rlt-science">Red Light Science</a></li>
+        <li><a href="#testimonials">Stories</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+      <div class="nav-cta">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button>
+        <button class="cart-btn" id="cartBtn" aria-label="Open cart">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          <span class="cart-count" id="cartCount" style="display:none">0</span>
+        </button>
+        <a href="#shop" class="btn btn-outline">Shop</a>
+        <a href="#get-started" class="btn btn-primary">Get Started</a>
+      </div>
+      <button class="hamburger" id="hamburger">&#9776;</button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#how-it-works">How It Works</a>
+      <a href="#features">Features</a>
+      <a href="#rlt-science">Red Light Science</a>
+      <a href="#testimonials">Stories</a>
+      <a href="#faq">FAQ</a>
+      <a href="#about">About</a>
+      <a href="#contact" class="btn btn-outline">Contact Us</a>
+      <a href="#get-started" class="btn btn-primary">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- ── HERO ── -->
+  <section class="hero" id="home">
+    <!-- Light beam rays -->
+    <div class="light-rays">
+      <div class="ray ray1"></div>
+      <div class="ray ray2"></div>
+      <div class="ray ray3"></div>
+      <div class="ray ray4"></div>
+      <div class="ray ray5"></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Clinically Validated Red Light Therapy
+      </div>
+      <h1 class="hero-title">
+        Light That<br/>
+        <span class="gradient-text">Heals.</span>
+      </h1>
+      <p class="hero-subtitle">
+        RediantCure harnesses the proven power of photobiomodulation —
+        delivering red &amp; near-infrared light therapy that restores cellular energy,
+        accelerates healing, and reduces pain from within.
+      </p>
+      <div class="hero-actions">
+        <a href="#get-started" class="btn btn-primary btn-lg">Start Healing Today</a>
+        <a href="#rlt-science" class="btn btn-ghost btn-lg">Explore the Science →</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num" data-target="3" data-suffix="×">0×</span>
+          <span class="stat-label">Faster Healing</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num" data-target="98" data-suffix="%">0%</span>
+          <span class="stat-label">Patient Satisfaction</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num" data-target="50" data-suffix="K+">0K+</span>
+          <span class="stat-label">Lives Improved</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <!-- Pulsing glow orb (light device simulation) -->
+      <div class="device-orb">
+        <div class="orb-core"></div>
+        <div class="orb-ring orb-r1"></div>
+        <div class="orb-ring orb-r2"></div>
+        <div class="orb-ring orb-r3"></div>
+        <div class="orb-rays">
+          <div class="o-ray"></div>
+          <div class="o-ray"></div>
+          <div class="o-ray"></div>
+          <div class="o-ray"></div>
+          <div class="o-ray"></div>
+          <div class="o-ray"></div>
+          <div class="o-ray"></div>
+          <div class="o-ray"></div>
+        </div>
+      </div>
+      <div class="hero-card card-float">
+        <div class="hcard-icon">🩺</div>
+        <div>
+          <div class="hcard-title">Healing Progress</div>
+          <div class="hcard-sub">Week 2 of treatment</div>
+        </div>
+        <div class="hcard-badge">+42%</div>
+      </div>
+      <div class="hero-card card-float card-float2">
+        <div class="hcard-icon">💡</div>
+        <div>
+          <div class="hcard-title">630–850 nm</div>
+          <div class="hcard-sub">Dual wavelength active</div>
+        </div>
+        <div class="hcard-badge green">Live</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MARQUEE STRIP ── -->
+  <div class="marquee-strip">
+    <div class="marquee-track">
+      <span>CLINICALLY PROVEN</span><span class="marquee-dot">✦</span>
+      <span>DRUG FREE</span><span class="marquee-dot">✦</span>
+      <span>50,000+ PATIENTS HELPED</span><span class="marquee-dot">✦</span>
+      <span>FDA RECOGNISED</span><span class="marquee-dot">✦</span>
+      <span>NON-THERMAL · NON-INVASIVE</span><span class="marquee-dot">✦</span>
+      <span>630 nm + 850 nm DUAL WAVELENGTH</span><span class="marquee-dot">✦</span>
+      <span>ZERO DNA DAMAGE — 2025 JAAD CONSENSUS</span><span class="marquee-dot">✦</span>
+      <span>CLINICALLY PROVEN</span><span class="marquee-dot">✦</span>
+      <span>DRUG FREE</span><span class="marquee-dot">✦</span>
+      <span>50,000+ PATIENTS HELPED</span><span class="marquee-dot">✦</span>
+      <span>FDA RECOGNISED</span><span class="marquee-dot">✦</span>
+      <span>NON-THERMAL · NON-INVASIVE</span><span class="marquee-dot">✦</span>
+      <span>630 nm + 850 nm DUAL WAVELENGTH</span><span class="marquee-dot">✦</span>
+      <span>ZERO DNA DAMAGE — 2025 JAAD CONSENSUS</span><span class="marquee-dot">✦</span>
+    </div>
+  </div>
+
+  <!-- ── SHOP ── -->
+  <section class="section shop-section" id="shop">
+    <div class="section-inner">
+      <div class="section-tag">Our Products</div>
+      <h2 class="section-title">Shop RediantCure</h2>
+      <p class="section-sub">Clinically validated red light therapy devices — for home, clinic, and on the go.</p>
+
+      <!-- Filters -->
+      <div class="shop-filters">
+        <button class="shop-filter active" data-filter="all">All Products</button>
+        <button class="shop-filter" data-filter="device">Devices</button>
+        <button class="shop-filter" data-filter="bundle">Bundles</button>
+        <button class="shop-filter" data-filter="accessory">Accessories</button>
+      </div>
+
+      <!-- Product Grid -->
+      <div class="product-grid">
+
+        <!-- Product 1 -->
+        <div class="product-card" data-category="device" data-id="1" data-name="RediantCure Insole Pro" data-price="299">
+          <div class="pc-image-wrap">
+            <div class="pc-badge pc-badge-best">Best Seller</div>
+            <div class="pc-device insole-device">
+              <div class="insole-glow"></div>
+              <div class="insole-body">
+                <div class="insole-led led1"></div>
+                <div class="insole-led led2"></div>
+                <div class="insole-led led3"></div>
+                <div class="insole-led led4"></div>
+                <div class="insole-led led5"></div>
+                <div class="insole-led led6"></div>
+              </div>
+            </div>
+          </div>
+          <div class="pc-info">
+            <div class="pc-stars">★★★★★ <span class="pc-review-count">(147)</span></div>
+            <h3 class="pc-name">RediantCure Insole Pro</h3>
+            <p class="pc-desc">Wearable PBM insole with dual-wavelength LEDs (630 + 850 nm), plantar pressure mapping, and real-time temperature monitoring. Passive daily therapy.</p>
+            <div class="pc-tags">
+              <span class="pc-tag">630 nm + 850 nm</span>
+              <span class="pc-tag">App Connected</span>
+              <span class="pc-tag">FSA/HSA Eligible</span>
+            </div>
+            <div class="pc-pricing">
+              <div class="pc-price-toggle">
+                <button class="price-opt active" data-type="one-time" data-price="299">One-Time $299</button>
+                <button class="price-opt" data-type="subscribe" data-price="254">Subscribe &amp; Save 15% — $254/mo</button>
+              </div>
+              <div class="pc-price-display">
+                <span class="pc-price">$299</span>
+                <span class="pc-price-orig" style="display:none">$352</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full add-to-cart" data-id="1" data-name="RediantCure Insole Pro" data-price="299" data-emoji="👟">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+
+        <!-- Product 2 -->
+        <div class="product-card" data-category="device" data-id="2" data-name="RediantCure Panel" data-price="199">
+          <div class="pc-image-wrap">
+            <div class="pc-badge pc-badge-new">New</div>
+            <div class="pc-device panel-device">
+              <div class="panel-glow"></div>
+              <div class="panel-grid">
+                <div class="panel-led"></div><div class="panel-led"></div><div class="panel-led"></div>
+                <div class="panel-led"></div><div class="panel-led"></div><div class="panel-led"></div>
+                <div class="panel-led"></div><div class="panel-led"></div><div class="panel-led"></div>
+                <div class="panel-led"></div><div class="panel-led"></div><div class="panel-led"></div>
+              </div>
+            </div>
+          </div>
+          <div class="pc-info">
+            <div class="pc-stars">★★★★★ <span class="pc-review-count">(83)</span></div>
+            <h3 class="pc-name">RediantCure Panel</h3>
+            <p class="pc-desc">Full-body home treatment panel. 12 dual-wavelength LEDs deliver clinical-grade fluence of 1–4 J/cm² across large treatment areas in under 10 minutes.</p>
+            <div class="pc-tags">
+              <span class="pc-tag">630 nm + 850 nm</span>
+              <span class="pc-tag">Timer Built-In</span>
+              <span class="pc-tag">FDA Registered</span>
+            </div>
+            <div class="pc-pricing">
+              <div class="pc-price-toggle">
+                <button class="price-opt active" data-type="one-time" data-price="199">One-Time $199</button>
+                <button class="price-opt" data-type="subscribe" data-price="169">Subscribe &amp; Save 15% — $169/mo</button>
+              </div>
+              <div class="pc-price-display">
+                <span class="pc-price">$199</span>
+                <span class="pc-price-orig" style="display:none">$234</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full add-to-cart" data-id="2" data-name="RediantCure Panel" data-price="199" data-emoji="💡">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+
+        <!-- Product 3 -->
+        <div class="product-card" data-category="device" data-id="3" data-name="RediantCure Wand" data-price="149">
+          <div class="pc-image-wrap">
+            <div class="pc-device wand-device">
+              <div class="wand-body">
+                <div class="wand-tip">
+                  <div class="wand-glow"></div>
+                </div>
+                <div class="wand-handle"></div>
+              </div>
+            </div>
+          </div>
+          <div class="pc-info">
+            <div class="pc-stars">★★★★☆ <span class="pc-review-count">(62)</span></div>
+            <h3 class="pc-name">RediantCure Wand</h3>
+            <p class="pc-desc">Precision spot-treatment wand for targeted wound care. Concentrated 660 nm red light delivers high-fluence therapy directly to wound sites in minutes.</p>
+            <div class="pc-tags">
+              <span class="pc-tag">660 nm</span>
+              <span class="pc-tag">Portable</span>
+              <span class="pc-tag">Rechargeable</span>
+            </div>
+            <div class="pc-pricing">
+              <div class="pc-price-toggle">
+                <button class="price-opt active" data-type="one-time" data-price="149">One-Time $149</button>
+                <button class="price-opt" data-type="subscribe" data-price="127">Subscribe &amp; Save 15% — $127/mo</button>
+              </div>
+              <div class="pc-price-display">
+                <span class="pc-price">$149</span>
+                <span class="pc-price-orig" style="display:none">$175</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full add-to-cart" data-id="3" data-name="RediantCure Wand" data-price="149" data-emoji="🔦">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+
+        <!-- Product 4 -->
+        <div class="product-card product-card-featured" data-category="bundle" data-id="4" data-name="RediantCure Complete Bundle" data-price="399">
+          <div class="pc-image-wrap">
+            <div class="pc-badge pc-badge-sale">Save $248</div>
+            <div class="pc-device bundle-device">
+              <div class="bundle-glow"></div>
+              <div class="bundle-items">
+                <div class="b-item b-insole">👟</div>
+                <div class="b-item b-panel">💡</div>
+                <div class="b-item b-wand">🔦</div>
+              </div>
+            </div>
+          </div>
+          <div class="pc-info">
+            <div class="pc-stars">★★★★★ <span class="pc-review-count">(34)</span></div>
+            <h3 class="pc-name">Complete Care Bundle</h3>
+            <p class="pc-desc">Everything you need for a full RediantCure protocol — Insole Pro + Panel + Wand + 3-month clinical support plan. Our highest-value offer.</p>
+            <div class="pc-tags">
+              <span class="pc-tag">3 Devices</span>
+              <span class="pc-tag">Clinical Support Included</span>
+              <span class="pc-tag">Best Value</span>
+            </div>
+            <div class="pc-pricing">
+              <div class="pc-price-display">
+                <span class="pc-price">$399</span>
+                <span class="pc-price-orig">$647</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full add-to-cart" data-id="4" data-name="Complete Care Bundle" data-price="399" data-emoji="📦">
+              Add Bundle to Cart
+            </button>
+          </div>
+        </div>
+
+        <!-- Product 5 -->
+        <div class="product-card" data-category="accessory" data-id="5" data-name="Replacement Dressing Kit" data-price="49">
+          <div class="pc-image-wrap">
+            <div class="pc-device kit-device">
+              <div class="kit-icon">🩹</div>
+            </div>
+          </div>
+          <div class="pc-info">
+            <div class="pc-stars">★★★★★ <span class="pc-review-count">(211)</span></div>
+            <h3 class="pc-name">Advanced Wound Dressing Kit</h3>
+            <p class="pc-desc">30-day supply of PBM-compatible wound dressings, transparent film covers, and antimicrobial pads optimised for use with RediantCure devices.</p>
+            <div class="pc-tags">
+              <span class="pc-tag">30-Day Supply</span>
+              <span class="pc-tag">Auto-Replenish</span>
+            </div>
+            <div class="pc-pricing">
+              <div class="pc-price-toggle">
+                <button class="price-opt active" data-type="one-time" data-price="49">One-Time $49</button>
+                <button class="price-opt" data-type="subscribe" data-price="42">Subscribe &amp; Save 15% — $42/mo</button>
+              </div>
+              <div class="pc-price-display">
+                <span class="pc-price">$49</span>
+                <span class="pc-price-orig" style="display:none">$58</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full add-to-cart" data-id="5" data-name="Dressing Kit" data-price="49" data-emoji="🩹">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+
+        <!-- Product 6 -->
+        <div class="product-card" data-category="accessory" data-id="6" data-name="Protective Eyewear" data-price="29">
+          <div class="pc-image-wrap">
+            <div class="pc-device kit-device">
+              <div class="kit-icon">🥽</div>
+            </div>
+          </div>
+          <div class="pc-info">
+            <div class="pc-stars">★★★★★ <span class="pc-review-count">(98)</span></div>
+            <h3 class="pc-name">Protective Eyewear</h3>
+            <p class="pc-desc">CE-certified optical safety goggles with full-spectrum blocking for 400–1100 nm. Required for all RediantCure panel treatments. Includes carry case.</p>
+            <div class="pc-tags">
+              <span class="pc-tag">CE Certified</span>
+              <span class="pc-tag">400–1100 nm Block</span>
+            </div>
+            <div class="pc-pricing">
+              <div class="pc-price-display">
+                <span class="pc-price">$29</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-full add-to-cart" data-id="6" data-name="Protective Eyewear" data-price="29" data-emoji="🥽">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /product-grid -->
+
+      <!-- Trust badges row -->
+      <div class="shop-trust">
+        <div class="st-item">🚚 <span>Free shipping over $99</span></div>
+        <div class="st-item">↩️ <span>30-day returns</span></div>
+        <div class="st-item">🔒 <span>Secure checkout</span></div>
+        <div class="st-item">🏥 <span>FSA / HSA eligible</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── TRUST BAR ── -->
+  <section class="trust-bar">
+    <p class="trust-label">Trusted by leading healthcare providers</p>
+    <div class="trust-logos">
+      <span class="trust-logo">MediCore Health</span>
+      <span class="trust-logo">CareFirst Network</span>
+      <span class="trust-logo">HealWell Clinics</span>
+      <span class="trust-logo">PrecisionMed</span>
+      <span class="trust-logo">VitalPath</span>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ── -->
+  <section class="section" id="how-it-works">
+    <div class="section-inner">
+      <div class="section-tag">Simple Process</div>
+      <h2 class="section-title">How RediantCure Works</h2>
+      <p class="section-sub">From first contact to full recovery — our streamlined system guides every step.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-icon">🔍</div>
+          <h3>Assess</h3>
+          <p>Our smart intake system captures wound type, severity, and patient history for a precise baseline.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-icon">🧬</div>
+          <h3>Personalise</h3>
+          <p>AI-driven protocols create a tailored care plan matching your wound's unique biology and progression.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-icon">💡</div>
+          <h3>Illuminate</h3>
+          <p>Red and near-infrared light penetrates tissue, restoring cellular energy and triggering your body's natural healing cascade.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-icon">🏆</div>
+          <h3>Thrive</h3>
+          <p>Post-care insights and preventive guidance ensure your long-term health and confidence.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ── -->
+  <section class="section section-alt" id="features">
+    <div class="section-inner">
+      <div class="section-tag">What We Offer</div>
+      <h2 class="section-title">Everything You Need to Heal</h2>
+      <p class="section-sub">Powerful tools for patients, caregivers, and clinicians — all in one place.</p>
+      <div class="features-grid">
+
+        <div class="feature-card feature-large">
+          <div class="fc-icon">🧠</div>
+          <h3>AI-Powered Diagnostics</h3>
+          <p>Upload a photo and receive an instant wound assessment with severity scoring and recommended care pathway — no waiting room needed.</p>
+          <a href="#" class="fc-link">Learn more →</a>
+        </div>
+
+        <div class="feature-card">
+          <div class="fc-icon">📊</div>
+          <h3>Progress Tracking</h3>
+          <p>Visualise your healing journey with weekly comparisons, trend graphs, and milestone alerts.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="fc-icon">💬</div>
+          <h3>Clinician Connect</h3>
+          <p>Message your care team directly. Secure, HIPAA-compliant, and available 24/7.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="fc-icon">📦</div>
+          <h3>Smart Supply Delivery</h3>
+          <p>Never run out of dressings. Auto-replenishment ships the right supplies to your door on time.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="fc-icon">🔔</div>
+          <h3>Smart Reminders</h3>
+          <p>Timely nudges for dressing changes, medication, and follow-up appointments.</p>
+        </div>
+
+        <div class="feature-card feature-highlight">
+          <div class="fc-icon">🛡️</div>
+          <h3>Clinically Proven</h3>
+          <p>Backed by peer-reviewed studies and used in top-tier wound care centres globally.</p>
+          <a href="#" class="fc-link">View research →</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RED LIGHT THERAPY SCIENCE ── -->
+  <section class="section rlt-section" id="rlt-science">
+    <div class="rlt-bg-glow"></div>
+    <div class="section-inner">
+      <div class="section-tag rlt-tag">The Science</div>
+      <h2 class="section-title">How Red Light Therapy<br/><span class="gradient-text">Heals Your Body</span></h2>
+      <p class="section-sub">
+        Photobiomodulation (PBM) uses red (620–700 nm) and near-infrared (700–1,100 nm) light to trigger deep cellular repair — without heat, drugs, or side effects. Here's what happens inside your body.
+      </p>
+
+      <div class="rlt-mechanism">
+        <div class="rlt-mech-step">
+          <div class="rlt-mech-icon">💡</div>
+          <div class="rlt-mech-text">
+            <strong>Photons Enter Tissue</strong>
+            <span>Red &amp; NIR light penetrates 1–10 mm deep</span>
+          </div>
+        </div>
+        <div class="rlt-mech-arrow">→</div>
+        <div class="rlt-mech-step">
+          <div class="rlt-mech-icon">⚡</div>
+          <div class="rlt-mech-text">
+            <strong>CCO Absorbs Light</strong>
+            <span>Cytochrome c oxidase in mitochondria activates</span>
+          </div>
+        </div>
+        <div class="rlt-mech-arrow">→</div>
+        <div class="rlt-mech-step">
+          <div class="rlt-mech-icon">🔋</div>
+          <div class="rlt-mech-text">
+            <strong>ATP Surges</strong>
+            <span>Cellular energy production dramatically increases</span>
+          </div>
+        </div>
+        <div class="rlt-mech-arrow">→</div>
+        <div class="rlt-mech-step">
+          <div class="rlt-mech-icon">🌱</div>
+          <div class="rlt-mech-text">
+            <strong>Healing Cascades</strong>
+            <span>VEGF, TGF-β, NF-κB pathways activate</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rlt-grid">
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#3b82f6;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#3b82f6,#06b6d4);">🔋</div>
+          <h3>Cellular Energy Boost</h3>
+          <p>Red light dissociates inhibitory nitric oxide from cytochrome c oxidase, restoring the mitochondrial electron transport chain and massively increasing ATP production — the fundamental fuel for every healing process in the body.</p>
+          <div class="rlt-stat-pill">Up to 150% more ATP synthesis</div>
+        </div>
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#10b981;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#10b981,#06d6a0);">🩹</div>
+          <h3>Accelerated Tissue Repair</h3>
+          <p>PBM stimulates fibroblast proliferation and accelerates keratinocyte migration, dramatically speeding up re-epithelialization of wounds. Collagen synthesis increases, strengthening repaired tissue.</p>
+          <div class="rlt-stat-pill">3× faster wound closure in clinical trials</div>
+        </div>
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#f59e0b;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#f59e0b,#f97316);">🔥</div>
+          <h3>Inflammation Reduction</h3>
+          <p>Red light suppresses pro-inflammatory cytokines (TNF-α, IL-1β) and shifts macrophage polarization from destructive M1 to reparative M2 — resolving chronic inflammation that keeps wounds stalled.</p>
+          <div class="rlt-stat-pill">Significant TNF-α and IL-1β reduction</div>
+        </div>
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#ec4899;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#ec4899,#a855f7);">🩸</div>
+          <h3>Angiogenesis & Circulation</h3>
+          <p>PBM upregulates VEGF and stimulates endothelial cells to form new blood vessels — restoring oxygen and nutrient delivery to ischemic tissue and promoting vasodilation.</p>
+          <div class="rlt-stat-pill">Increased VEGF expression &amp; microvascular density</div>
+        </div>
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#8b5cf6;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">🧠</div>
+          <h3>Nerve Regeneration</h3>
+          <p>Near-infrared light penetrates deeply to reach peripheral nerves, stimulating axonal regrowth, restoring sensation, and reducing neuropathic pain — especially valuable in diabetic neuropathy.</p>
+          <div class="rlt-stat-pill">Improved sensory nerve function</div>
+        </div>
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#06b6d4;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#06b6d4,#0ea5e9);">💪</div>
+          <h3>Collagen & Skin Health</h3>
+          <p>By activating TGF-β1 signalling, PBM drives fibroblasts to produce high-quality collagen Type I and III — improving wound tensile strength, reducing scar formation, and rejuvenating skin.</p>
+          <div class="rlt-stat-pill">Enhanced collagen Type I &amp; III synthesis</div>
+        </div>
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#ef4444;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#ef4444,#f97316);">😌</div>
+          <h3>Pain Relief</h3>
+          <p>PBM reduces pain through multiple mechanisms: lowering inflammatory mediators, modulating neural pain signalling, and reducing local oedema that compresses nerve endings.</p>
+          <div class="rlt-stat-pill">Significant wound-associated pain reduction</div>
+        </div>
+        <div class="rlt-card">
+          <div class="rlt-card-glow" style="--glow-color:#2563eb;"></div>
+          <div class="rlt-icon-wrap" style="background:linear-gradient(135deg,#2563eb,#7c3aed);">🛡️</div>
+          <h3>Proven Safe — No DNA Damage</h3>
+          <p>The 2025 JAAD international consensus statement — a 21-member expert panel — confirmed PBM does not induce DNA damage and carries an excellent safety profile across decades of clinical use.</p>
+          <div class="rlt-stat-pill">2025 JAAD Consensus: Safe &amp; Effective</div>
+        </div>
+      </div>
+
+      <div class="rlt-wavelength">
+        <h3>Optimal Therapeutic Wavelengths</h3>
+        <p>Clinical trials confirm the most effective range for tissue healing. RediantCure devices deliver dual-wavelength therapy for maximum depth and coverage.</p>
+        <div class="wl-bar-wrap">
+          <div class="wl-bar">
+            <div class="wl-segment wl-red" style="left:0%;width:35%;">
+              <span class="wl-label">Red Light<br/>630–680 nm</span>
+              <span class="wl-depth">1–5 mm depth</span>
+            </div>
+            <div class="wl-segment wl-nir" style="left:38%;width:42%;">
+              <span class="wl-label">Near-Infrared<br/>780–850 nm</span>
+              <span class="wl-depth">5–10 mm depth</span>
+            </div>
+          </div>
+          <div class="wl-labels-row">
+            <span>620 nm</span><span>700 nm</span><span>800 nm</span><span>1000 nm</span>
+          </div>
+        </div>
+        <div class="wl-targets">
+          <div class="wl-target"><span class="wl-dot red"></span>Keratinocytes &amp; surface wound cells</div>
+          <div class="wl-target"><span class="wl-dot red"></span>Anti-inflammatory cytokine modulation</div>
+          <div class="wl-target"><span class="wl-dot nir"></span>Fibroblasts &amp; collagen production</div>
+          <div class="wl-target"><span class="wl-dot nir"></span>Endothelial cells &amp; angiogenesis</div>
+          <div class="wl-target"><span class="wl-dot nir"></span>Peripheral nerves &amp; deep tissue</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ── -->
+  <section class="section" id="testimonials">
+    <div class="section-inner">
+      <div class="section-tag">Patient Stories</div>
+      <h2 class="section-title">Real People. Real Results.</h2>
+      <p class="section-sub">Thousands of patients have transformed their recovery with RediantCure.</p>
+      <div class="testimonials-grid">
+        <div class="tcard">
+          <div class="tcard-stars">★★★★★</div>
+          <p class="tcard-quote">"After months of slow healing, RediantCure cut my recovery time in half. The progress tracking kept me motivated every single week."</p>
+          <div class="tcard-author">
+            <div class="tcard-avatar">JM</div>
+            <div>
+              <div class="tcard-name">James M.</div>
+              <div class="tcard-role">Diabetic foot ulcer patient</div>
+            </div>
+          </div>
+        </div>
+        <div class="tcard tcard-featured">
+          <div class="tcard-stars">★★★★★</div>
+          <p class="tcard-quote">"As a wound care nurse, I've seen a lot of products. RediantCure is the first one that genuinely changes outcomes — my patients heal faster and feel supported."</p>
+          <div class="tcard-author">
+            <div class="tcard-avatar">SR</div>
+            <div>
+              <div class="tcard-name">Sarah R., RN</div>
+              <div class="tcard-role">Wound Care Specialist</div>
+            </div>
+          </div>
+        </div>
+        <div class="tcard">
+          <div class="tcard-stars">★★★★★</div>
+          <p class="tcard-quote">"The supply delivery alone is worth it — I never have to worry about running out of the right dressings. It just works."</p>
+          <div class="tcard-author">
+            <div class="tcard-avatar">TP</div>
+            <div>
+              <div class="tcard-name">Thomas P.</div>
+              <div class="tcard-role">Post-surgical care patient</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ABOUT ── -->
+  <section class="section section-alt" id="about">
+    <div class="section-inner about-inner">
+      <div class="about-text">
+        <div class="section-tag">Our Mission</div>
+        <h2 class="section-title">Built for Healing.<br/>Designed with Care.</h2>
+        <p>RediantCure was founded by a team of clinicians, engineers, and patient advocates who believed wound care deserved better. Too many patients were suffering through slow, outdated protocols. We built the solution we wished existed.</p>
+        <p>Today, RediantCure's technology integrates seamlessly with existing clinical workflows while empowering patients to take control of their own recovery — at home, in clinic, or anywhere in between.</p>
+        <a href="#get-started" class="btn btn-primary">Join the Movement</a>
+      </div>
+      <div class="about-cards">
+        <div class="about-card">
+          <div class="ac-num" data-target="2019" data-suffix="">0</div>
+          <div class="ac-label">Founded</div>
+        </div>
+        <div class="about-card">
+          <div class="ac-num" data-target="50" data-suffix="K+">0K+</div>
+          <div class="ac-label">Patients Helped</div>
+        </div>
+        <div class="about-card">
+          <div class="ac-num" data-target="120" data-suffix="+">0+</div>
+          <div class="ac-label">Clinical Partners</div>
+        </div>
+        <div class="about-card">
+          <div class="ac-num" data-target="15" data-suffix="">0</div>
+          <div class="ac-label">Countries</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ── -->
+  <section class="section" id="faq">
+    <div class="section-inner">
+      <div class="section-tag">Got Questions?</div>
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <p class="section-sub">Everything you need to know about RediantCure and red light therapy.</p>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>What is photobiomodulation (PBM) / red light therapy?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>Photobiomodulation (PBM), also known as red light therapy or low-level laser therapy (LLLT), is the therapeutic use of low-power red (620–700 nm) and near-infrared (700–1,100 nm) light to stimulate cellular healing. Unlike UV light, PBM is non-ionizing and non-thermal — it does not damage DNA or burn tissue. Instead, it is absorbed by mitochondria, triggering a cascade of natural healing responses including increased energy production (ATP), reduced inflammation, and accelerated tissue repair.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>Is red light therapy safe?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>Yes. The 2025 Journal of the American Academy of Dermatology (JAAD) international consensus statement — developed by a 21-member expert panel — confirmed that PBM is a safe treatment modality for adult patients and explicitly confirmed it does not induce DNA damage. Decades of clinical trials have documented minimal adverse effects. Standard precautions include avoiding direct eye exposure and not applying PBM over active malignancies.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>How quickly does red light therapy work?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>Clinical results vary by condition and severity, but most wound healing trials report significant improvements within 4–8 weeks of regular use. For diabetic foot ulcers, Borges et al. (2024) reported measurable improvements in wound healing index by day 30, with continued improvement through 12 weeks of daily treatment. Anti-inflammatory and pain-relieving effects are often noticed more quickly — sometimes within the first few sessions.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>What conditions can RediantCure help treat?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>RediantCure is designed primarily for chronic wound care — including diabetic foot ulcers, venous leg ulcers, and post-surgical wounds. The underlying PBM technology has also been clinically studied for: muscle and joint pain, inflammatory skin conditions, nerve regeneration in peripheral neuropathy, post-operative healing acceleration, and general skin rejuvenation.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>How often do I need to use it?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>Most clinical protocols use PBM 3–5 times per week for wound healing, with each session lasting 2–10 minutes per treatment site. Daily use — as enabled by wearable platforms like our SoleIQ insole concept — has shown excellent results in home-based trials. Regular, consistently dosed sessions produce cumulative healing benefits that infrequent sessions cannot replicate.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>Can I use RediantCure at home?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>Absolutely. Home-based PBM delivery is a core part of our mission. Randomised controlled trials — including Haze et al. (2022) and Borges et al. (2024) — have demonstrated that patient-self-administered home PBM achieves outcomes comparable to clinic-based treatment. Our wearable insole platform enables passive daily light therapy during normal footwear use with no positioning required.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>What wavelengths does RediantCure use and why?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>Our devices deliver dual-wavelength therapy: red light at 630–660 nm and near-infrared at 810–850 nm. Red light targets superficial wound bed cells, keratinocytes, and inflammatory pathways at 1–5 mm depth. NIR light penetrates 5–10 mm, reaching fibroblasts, endothelial cells, and peripheral nerves. Clinical trials consistently show combined red + NIR protocols outperform single-wavelength approaches.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">
+            <span>Is RediantCure covered by insurance?</span>
+            <span class="faq-chevron">▾</span>
+          </button>
+          <div class="faq-a">
+            <p>Coverage varies by country, insurer, and clinical indication. PBM is increasingly recognised by wound care guidelines and some payers cover it as part of chronic wound management. Our clinical team can provide documentation supporting insurance pre-authorisation. We also offer flexible payment options and work with healthcare providers to integrate RediantCure into existing reimbursable care pathways.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA BANNER ── -->
+  <section class="cta-banner" id="get-started">
+    <div class="cta-blob"></div>
+    <div class="cta-inner">
+      <h2>Ready to start healing?</h2>
+      <p>Join thousands of patients and clinicians who trust RediantCure every day.</p>
+      <div class="cta-actions">
+        <a href="#contact" class="btn btn-white btn-lg">Talk to Our Team</a>
+        <a href="#" class="btn btn-outline-white btn-lg">Explore the Platform</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CONTACT ── -->
+  <section class="section" id="contact">
+    <div class="section-inner contact-inner">
+      <div class="contact-text">
+        <div class="section-tag">Get In Touch</div>
+        <h2 class="section-title">Let's Talk</h2>
+        <p>Whether you're a patient, caregiver, or clinical partner — we'd love to hear from you.</p>
+        <div class="contact-details">
+          <div class="cd-item">📧 <span>hello@rediantcure.com</span></div>
+          <div class="cd-item">📞 <span>+1 (800) 555-CURE</span></div>
+          <div class="cd-item">📍 <span>San Francisco, CA</span></div>
+        </div>
+      </div>
+      <form class="contact-form" onsubmit="handleSubmit(event)">
+        <div class="form-row">
+          <input type="text" placeholder="Your Name" required />
+          <input type="email" placeholder="Email Address" required />
+        </div>
+        <select>
+          <option value="" disabled selected>I am a...</option>
+          <option>Patient</option>
+          <option>Caregiver</option>
+          <option>Clinician</option>
+          <option>Healthcare Organisation</option>
+          <option>Other</option>
+        </select>
+        <textarea placeholder="How can we help you?" rows="4"></textarea>
+        <button type="submit" class="btn btn-primary btn-lg btn-full">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <img src="logo.svg" alt="RediantCure" class="logo-img logo-img-footer" />
+        </a>
+        <p>Advanced red light therapy for a brighter tomorrow.</p>
+      </div>
+      <div class="footer-links">
+        <div class="fl-col">
+          <h4>Product</h4>
+          <a href="#">Features</a>
+          <a href="#">How It Works</a>
+          <a href="#">Pricing</a>
+          <a href="#">Research</a>
+        </div>
+        <div class="fl-col">
+          <h4>Company</h4>
+          <a href="#">About Us</a>
+          <a href="#">Careers</a>
+          <a href="#">Press</a>
+          <a href="#">Contact</a>
+        </div>
+        <div class="fl-col">
+          <h4>Support</h4>
+          <a href="#">Help Centre</a>
+          <a href="#">Clinician Portal</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 RediantCure. All rights reserved.</p>
+      <div class="footer-socials">
+        <a href="#">Twitter</a>
+        <a href="#">LinkedIn</a>
+        <a href="#">Instagram</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── CART DRAWER ── -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping cart">
+    <div class="cart-header">
+      <h2 class="cart-title">Your Cart <span class="cart-header-count" id="cartHeaderCount"></span></h2>
+      <button class="cart-close" id="cartClose" aria-label="Close cart">✕</button>
+    </div>
+
+    <div class="cart-free-ship" id="cartFreeShip">
+      <div class="cfs-bar-wrap">
+        <div class="cfs-bar" id="cfsFill"></div>
+      </div>
+      <p id="cfsText">Add <strong id="cfsAmt">$99</strong> more for free shipping</p>
+    </div>
+
+    <div class="cart-items" id="cartItems">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="cart-empty" id="cartEmpty">
+      <div class="ce-icon">🛒</div>
+      <p>Your cart is empty</p>
+      <a href="#shop" class="btn btn-primary" id="cartShopLink">Browse Products</a>
+    </div>
+
+    <div class="cart-footer" id="cartFooter" style="display:none">
+      <div class="cart-subtotal">
+        <span>Subtotal</span>
+        <span id="cartSubtotal">$0</span>
+      </div>
+      <p class="cart-footnote">Taxes &amp; shipping calculated at checkout</p>
+      <button class="btn btn-primary btn-full cart-checkout-btn" id="checkoutBtn">
+        Proceed to Checkout →
+      </button>
+      <a href="#shop" class="cart-continue">← Continue Shopping</a>
+    </div>
+  </aside>
+
+  <!-- ── TOAST NOTIFICATION ── -->
+  <div class="cart-toast" id="cartToast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

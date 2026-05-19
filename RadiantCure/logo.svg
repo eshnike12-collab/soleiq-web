@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 490 175" width="490" height="175">
+  <defs>
+    <style>
+      .ray        { stroke:#f5b94a; stroke-width:2.8; stroke-linecap:round; }
+      .name-gold  { font-family:Georgia,'Times New Roman',serif; font-size:58px; font-weight:700; fill:#f5b94a; letter-spacing:-1px; }
+      .name-gray  { font-family:Georgia,'Times New Roman',serif; font-size:58px; font-weight:700; fill:#9ca3af; letter-spacing:-1px; }
+      .tagline    { font-family:Arial,sans-serif; font-size:11.5px; font-weight:400; fill:#9ca3af; letter-spacing:3px; }
+    </style>
+    <radialGradient id="sg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#fff9ee"/>
+      <stop offset="100%" stop-color="#fdefc5"/>
+    </radialGradient>
+  </defs>
+
+  <!-- SUN RAYS -->
+  <line class="ray" x1="74"  y1="14"  x2="74"  y2="30"/>
+  <line class="ray" x1="103" y1="22"  x2="96"  y2="36"/>
+  <line class="ray" x1="122" y1="47"  x2="108" y2="54"/>
+  <line class="ray" x1="126" y1="78"  x2="111" y2="78"/>
+  <line class="ray" x1="118" y1="106" x2="105" y2="98"/>
+  <line class="ray" x1="97"  y1="124" x2="90"  y2="110"/>
+  <line class="ray" x1="74"  y1="130" x2="74"  y2="114"/>
+  <line class="ray" x1="50"  y1="122" x2="57"  y2="108"/>
+  <line class="ray" x1="28"  y1="104" x2="42"  y2="96"/>
+  <line class="ray" x1="22"  y1="76"  x2="37"  y2="76"/>
+  <line class="ray" x1="30"  y1="47"  x2="43"  y2="55"/>
+  <line class="ray" x1="50"  y1="24"  x2="57"  y2="37"/>
+
+  <!-- OUTER CIRCLE -->
+  <circle cx="74" cy="72" r="34" fill="url(#sg)" stroke="#f5d38a" stroke-width="1.5"/>
+
+  <!-- INNER CIRCLE -->
+  <circle cx="74" cy="72" r="24" fill="#fef9ec" stroke="#f5d08a" stroke-width="1"/>
+
+  <!-- MEDICAL CROSS -->
+  <rect x="67" y="58" width="13" height="28" rx="3" fill="#f5b94a"/>
+  <rect x="61" y="65" width="26" height="13" rx="3" fill="#f5b94a"/>
+  <circle cx="74" cy="72" r="3.5" fill="#fff8e8"/>
+
+  <!-- BRAND NAME: line 1 -->
+  <text x="156" y="72" class="name-gold">Rediant</text>
+
+  <!-- BRAND NAME: line 2 -->
+  <text x="156" y="134" class="name-gray">Cure</text>
+
+  <!-- DIVIDER -->
+  <line x1="157" y1="148" x2="484" y2="148" stroke="#e5e7eb" stroke-width="0.8"/>
+
+  <!-- TAGLINE -->
+  <text x="158" y="163" class="tagline">HEALING · RESTORATION · VITALITY</text>
+</svg>
