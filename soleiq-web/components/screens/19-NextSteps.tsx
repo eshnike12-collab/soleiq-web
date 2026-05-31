@@ -1,13 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Mail, FileDown, Share2, LineChart, ShoppingBag } from "lucide-react";
+import {
+  Mail,
+  FileDown,
+  Share2,
+  LineChart,
+  ShoppingBag,
+  Stethoscope,
+} from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { useToastStore } from "@/components/ui/toast";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
+import {
+  buildPatientSummary,
+  encodeSummaryToUrl,
+  summaryToEmailBody,
+} from "@/lib/exportSummary";
+import { downloadPatientSummaryPdf } from "@/lib/pdfExport";
 
 export function NextSteps() {
   const completeVisit = useSoleiqStore((s) => s.completeVisit);
@@ -15,6 +28,57 @@ export function NextSteps() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const showToast = useToastStore((s) => s.show);
   const [open, setOpen] = useState(false);
+
+  const buildSummary = () => {
+    const { currentVisit, profile } = useSoleiqStore.getState();
+    return buildPatientSummary(currentVisit, profile);
+  };
+
+  const sendEmail = () => {
+    const s = buildSummary();
+    if (!s) {
+      showToast("No analysis available to share yet.");
+      return;
+    }
+    const subject = `SoleIQ — Foot Risk Screening${s.patient.fullName ? ` — ${s.patient.fullName}` : ""}`;
+    const clinicalUrl = `${window.location.origin}/clinical?data=${encodeSummaryToUrl(s)}`;
+    const body =
+      summaryToEmailBody(s) +
+      `\n\nFull clinical view:\n${clinicalUrl}\n`;
+    // Open the OS mail composer with subject + body pre-filled. User reviews
+    // and sends. (mailto cannot auto-send without an SMTP backend.)
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    showToast("Email draft prepared.");
+    setOpen(false);
+  };
+
+  const downloadPdf = async () => {
+    const s = buildSummary();
+    if (!s) {
+      showToast("No analysis available to share yet.");
+      return;
+    }
+    try {
+      await downloadPatientSummaryPdf(s);
+      showToast("PDF downloaded.");
+    } catch (e) {
+      showToast("PDF generation failed.");
+      console.error(e);
+    }
+    setOpen(false);
+  };
+
+  const openClinicalView = () => {
+    const s = buildSummary();
+    if (!s) {
+      showToast("No analysis available to share yet.");
+      return;
+    }
+    const url = `${window.location.origin}/clinical?data=${encodeSummaryToUrl(s)}`;
+    window.open(url, "_blank", "noopener");
+    showToast("Clinical view opened.");
+    setOpen(false);
+  };
 
   const Row = ({
     icon: Icon,
@@ -67,7 +131,7 @@ export function NextSteps() {
         <Row
           icon={Share2}
           title="Share or refer"
-          body="Send a PDF summary to the patient's referring provider, or schedule a vascular/podiatry consult."
+          body="Email a summary, download a PDF, or open the doctor's clinical view."
           action={
             <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
               Share
@@ -88,16 +152,20 @@ export function NextSteps() {
 
       <Dialog open={open} onClose={() => setOpen(false)} title="Share results">
         <div className="space-y-2">
-          <Button fullWidth variant="outline" onClick={() => { showToast("Email draft prepared."); setOpen(false); }}>
-            <Mail className="mr-2 h-4 w-4" /> Email
+          <Button fullWidth variant="outline" onClick={sendEmail}>
+            <Mail className="mr-2 h-4 w-4" /> Email — opens your mail client
           </Button>
-          <Button fullWidth variant="outline" onClick={() => { showToast("PDF download started."); setOpen(false); }}>
+          <Button fullWidth variant="outline" onClick={downloadPdf}>
             <FileDown className="mr-2 h-4 w-4" /> Download PDF
           </Button>
-          <Button fullWidth variant="outline" onClick={() => { showToast("Connecting to Zocdoc…"); setOpen(false); }}>
-            <Calendar className="mr-2 h-4 w-4" /> Zocdoc
+          <Button fullWidth onClick={openClinicalView}>
+            <Stethoscope className="mr-2 h-4 w-4" /> Send to your doctor
           </Button>
         </div>
+        <p className="mt-3 text-[10px] italic text-warmGray-600">
+          The doctor's view opens in a new tab with a shareable link. Copy the
+          URL from the address bar to send it to your provider.
+        </p>
       </Dialog>
     </div>
   );

@@ -5,6 +5,7 @@ import { useSoleiqStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
+import { ConditionHelpButton } from "@/components/conditions/ConditionInfoDialog";
 
 const CONDITIONS = [
   "diabetes",
@@ -44,16 +45,20 @@ export function MedicalHistory() {
       <ScreenHeader
         eyebrow="Health history"
         title="Medical conditions"
-        subtitle="Select all that apply."
+        subtitle="Select all that apply. Tap the (?) for clinical details on any condition."
       />
       <div className="-mx-1 flex-1 space-y-2 overflow-y-auto px-1 pb-2">
         {CONDITIONS.map((c) => (
-          <Checkbox
-            key={c}
-            checked={picked.includes(c)}
-            onChange={() => toggle(c)}
-            label={c.charAt(0).toUpperCase() + c.slice(1)}
-          />
+          <div key={c} className="flex items-center gap-1">
+            <div className="flex-1">
+              <Checkbox
+                checked={picked.includes(c)}
+                onChange={() => toggle(c)}
+                label={c.charAt(0).toUpperCase() + c.slice(1)}
+              />
+            </div>
+            <ConditionHelpButton conditionId={c} />
+          </div>
         ))}
         <Checkbox
           checked={picked.includes(NONE)}

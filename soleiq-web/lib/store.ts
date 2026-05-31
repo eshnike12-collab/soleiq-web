@@ -18,7 +18,11 @@ interface SoleiqStore {
   goNext: () => void;
   goBack: () => void;
   goTo: (step: number) => void;
+  /** Internal: change step without touching the navigation history stack. */
+  setStep: (step: number) => void;
   direction: "forward" | "back";
+  /** Stack of previously-visited steps. Back-button pops; navigations push. */
+  history: number[];
 
   profile: Partial<PatientProfile>;
   updateProfile: (patch: Partial<PatientProfile>) => void;
@@ -53,14 +57,37 @@ export const useSoleiqStore = create<SoleiqStore>()(
     (set) => ({
       currentStep: 0,
       direction: "forward",
+      history: [],
       goNext: () =>
-        set((s) => ({ direction: "forward", currentStep: s.currentStep + 1 })),
-      goBack: () =>
         set((s) => ({
-          direction: "back",
-          currentStep: Math.max(0, s.currentStep - 1),
+          direction: "forward",
+          currentStep: s.currentStep + 1,
+          history: [...s.history, s.currentStep],
         })),
-      goTo: (step) => set({ currentStep: step, direction: "forward" }),
+      goBack: () =>
+        set((s) => {
+          // Pop from history if available — gives correct back behavior even
+          // for jumps like Next Steps → Timeline (which would otherwise
+          // decrement to a non-adjacent step that doesn't make sense).
+          if (s.history.length > 0) {
+            return {
+              direction: "back",
+              currentStep: s.history[s.history.length - 1],
+              history: s.history.slice(0, -1),
+            };
+          }
+          return {
+            direction: "back",
+            currentStep: Math.max(0, s.currentStep - 1),
+          };
+        }),
+      goTo: (step) =>
+        set((s) => ({
+          currentStep: step,
+          direction: "forward",
+          history: [...s.history, s.currentStep],
+        })),
+      setStep: (step) => set({ currentStep: step }),
 
       profile: { conditions: [], priorEvents: [], painPoints: [] },
       updateProfile: (patch) =>
@@ -137,6 +164,7 @@ export const useSoleiqStore = create<SoleiqStore>()(
         set({
           currentStep: 0,
           direction: "forward",
+          history: [],
           profile: { conditions: [], priorEvents: [], painPoints: [] },
           currentVisit: null,
           priorVisits: MOCK_PRIOR_VISITS,

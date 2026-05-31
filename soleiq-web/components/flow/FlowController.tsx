@@ -13,6 +13,7 @@ import {
 import { ScreenContainer } from "./ScreenContainer";
 import { ProgressDots } from "./ProgressDots";
 import { ResetButton } from "./ResetButton";
+import { BackButton } from "./BackButton";
 import { ToastHost } from "@/components/ui/toast";
 
 export function FlowController() {
@@ -20,7 +21,9 @@ export function FlowController() {
   const direction = useSoleiqStore((s) => s.direction);
   const profile = useSoleiqStore((s) => s.profile);
   const goTo = useSoleiqStore((s) => s.goTo);
+  const goBack = useSoleiqStore((s) => s.goBack);
   const goNext = useSoleiqStore((s) => s.goNext);
+  const setStep = useSoleiqStore((s) => s.setStep);
   const updateProfile = useSoleiqStore((s) => s.updateProfile);
 
   // ?step=<id> shortcut for quick demos — jumps straight to a screen by id and
@@ -33,7 +36,6 @@ export function FlowController() {
     if (!stepId) return;
     const idx = SCREEN_ORDER.findIndex((s) => s.id === stepId);
     if (idx === -1) return;
-    // Pre-seed conditions so visibility predicates pass for downstream screens.
     if (
       stepId === "diabetes_details" ||
       stepId === "glucose_markers" ||
@@ -44,6 +46,37 @@ export function FlowController() {
     goTo(idx);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Global keyboard navigation: ← back, → next. Suppressed when typing into an
+  // input/textarea/select/contenteditable so we don't hijack form editing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      if (
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      // Block forward navigation while analysis is running so the user can't
+      // accidentally skip past the Results screen.
+      const onProcessing =
+        SCREEN_ORDER[currentStep]?.id === "processing";
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goBack();
+      } else if (e.key === "ArrowRight" && !onProcessing) {
+        e.preventDefault();
+        goNext();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [goBack, goNext, currentStep]);
 
   // Skip hidden conditional screens automatically.
   useEffect(() => {
@@ -59,7 +92,8 @@ export function FlowController() {
       ) {
         next += dir;
       }
-      goTo(Math.max(0, Math.min(next, SCREEN_ORDER.length - 1)));
+      // setStep — internal jump, do NOT push history (would break back-stack).
+      setStep(Math.max(0, Math.min(next, SCREEN_ORDER.length - 1)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, profile]);
@@ -70,6 +104,7 @@ export function FlowController() {
 
   return (
     <div className="relative h-full w-full">
+      <BackButton />
       <ResetButton />
       <AnimatePresence mode="wait" initial={false}>
         <ScreenContainer key={currentStep} direction={direction}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
@@ -26,12 +26,22 @@ export function Processing() {
   const setProcessing = useSoleiqStore((s) => s.setProcessing);
   const [copyIndex, setCopyIndex] = useState(0);
   const [gate, setGate] = useState<CaptureGateResult | null>(null);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
+  // One-shot guards so React Strict Mode's double-effect-fire (dev) doesn't
+  // run the pipeline twice and skip past Results.
+  const ran = useRef(false);
+  const advanced = useRef(false);
 
   // ----- HARD GATE -----
   // Evaluate the visit once on mount. If any capture failed foot detection we
   // refuse to call simulateAIPipeline at all — no placeholder results are
   // produced. Clinician is sent back to recapture.
   useEffect(() => {
+    // Strict-mode double-mount guard: never run the pipeline more than once
+    // per mount. Without this the .then() fires twice and goNext skips Results.
+    if (ran.current) return;
+    ran.current = true;
+
     if (!visit) return;
     const result = evaluateVisitForAnalysis(visit);
     setGate(result);
@@ -45,17 +55,28 @@ export function Processing() {
       () => setCopyIndex((i) => (i + 1) % PROCESSING_COPY.length),
       1500
     );
-    simulateAIPipeline(visit, profile).then((r) => {
-      setResult(r);
-      setProcessing(false);
-      goNext();
-    });
+    simulateAIPipeline(visit, profile)
+      .then((r) => {
+        if (advanced.current) return;
+        advanced.current = true;
+        setResult(r);
+        setProcessing(false);
+        goNext();
+      })
+      .catch((err) => {
+        // Pipeline-level rejection (e.g. defensive assertVisitAnalyzable
+        // throws). Surface it instead of leaving the spinner running.
+        setProcessing(false);
+        setPipelineError(
+          err?.message ?? "Analysis failed. Please retake the foot scan."
+        );
+      });
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Block UI state — analysis refused.
-  if (gate && !gate.ok) {
+  // Block UI state — analysis refused (either pre-flight gate or pipeline).
+  if ((gate && !gate.ok) || pipelineError) {
     const recapturePrep = SCREEN_ORDER.findIndex(
       (s) => s.id === "capture_prep"
     );
@@ -78,20 +99,23 @@ export function Processing() {
         <div className="rounded-2xl border border-risk-high/30 bg-risk-high/5 p-3 text-sm text-warmGray-800">
           <p className="font-semibold text-risk-high">Detected issues</p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
-            {gate.issues.map((msg, i) => (
+            {(gate?.issues ?? []).map((msg, i) => (
               <li key={i}>{msg}</li>
             ))}
+            {pipelineError && <li className="font-medium">{pipelineError}</li>}
           </ul>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-warmGray-600">
-            <div>
-              <p className="font-medium text-warmGray-800">Image confidence</p>
-              <p>{(gate.meanImageConfidence * 100).toFixed(0)}%</p>
+          {gate && (
+            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-warmGray-600">
+              <div>
+                <p className="font-medium text-warmGray-800">Image confidence</p>
+                <p>{(gate.meanImageConfidence * 100).toFixed(0)}%</p>
+              </div>
+              <div>
+                <p className="font-medium text-warmGray-800">Mesh confidence</p>
+                <p>{(gate.meanMeshConfidence * 100).toFixed(0)}%</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium text-warmGray-800">Mesh confidence</p>
-              <p>{(gate.meanMeshConfidence * 100).toFixed(0)}%</p>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="mt-auto pt-4">
