@@ -5,9 +5,7 @@ import { getDefaultOrgId } from "./orgs";
 import type {
   AnalysisResult,
   CapturedImage,
-  FootMesh,
   PatientProfile,
-  ScanPath,
   Visit,
 } from "./types";
 
@@ -82,8 +80,7 @@ export async function upsertPatient(
 
 export async function createVisitRow(
   patientId: string | null,
-  visit: Pick<Visit, "id" | "startedAt">,
-  scanPath: ScanPath
+  visit: Pick<Visit, "id" | "startedAt">
 ): Promise<string | null> {
   const c = await client();
   if (!c) return null;
@@ -94,7 +91,6 @@ export async function createVisitRow(
       patient_id: patientId,
       auth_uid: c.uid,
       started_at: new Date(visit.startedAt).toISOString(),
-      scan_path: scanPath,
     })
     .select("id")
     .single();
@@ -119,23 +115,6 @@ export async function saveImageRow(
     captured_at: new Date(img.capturedAt).toISOString(),
   });
   if (error) console.warn("[soleiq] saveImageRow failed:", error.message);
-}
-
-export async function saveMeshRow(
-  visitDbId: string,
-  mesh: FootMesh
-): Promise<void> {
-  const c = await client();
-  if (!c) return;
-  const { error } = await c.sb.from("foot_meshes").insert({
-    visit_id: visitDbId,
-    side: mesh.side,
-    coverage_pct: mesh.coveragePct,
-    seed_signature: mesh.seedSignature,
-    captured_at: new Date(mesh.capturedAt).toISOString(),
-    heightmap: mesh.heightmap ?? null,
-  });
-  if (error) console.warn("[soleiq] saveMeshRow failed:", error.message);
 }
 
 export async function saveAnalysisRow(
@@ -176,21 +155,18 @@ export async function completeVisitRow(
 export async function syncCompleteVisit(
   profile: Partial<PatientProfile>,
   visit: Visit,
-  scanPath: ScanPath,
   existingPatientId?: string
 ): Promise<{ patientId: string | null; visitId: string | null }> {
   if (!getSupabase()) return { patientId: null, visitId: null };
 
   const patientId = await upsertPatient(profile, existingPatientId);
-  const visitId = await createVisitRow(
-    patientId,
-    { id: visit.id, startedAt: visit.startedAt },
-    scanPath
-  );
+  const visitId = await createVisitRow(patientId, {
+    id: visit.id,
+    startedAt: visit.startedAt,
+  });
   if (!visitId) return { patientId, visitId: null };
 
   await Promise.all(visit.images.map((img) => saveImageRow(visitId, img)));
-  await Promise.all(visit.meshes.map((m) => saveMeshRow(visitId, m)));
   if (visit.result) await saveAnalysisRow(visitId, visit.result);
   if (visit.completedAt) await completeVisitRow(visitId, visit.completedAt);
 
@@ -214,7 +190,6 @@ export interface VisitListRow {
   patient_id: string | null;
   started_at: string;
   completed_at: string | null;
-  scan_path: string | null;
   patients: { full_name: string | null; organization_id: string | null } | null;
   analysis_results: { risk_level: string }[] | null;
 }
@@ -240,7 +215,7 @@ export async function listVisits(): Promise<VisitListRow[]> {
   const { data, error } = await sb
     .from("visits")
     .select(
-      "id, patient_id, started_at, completed_at, scan_path, patients(full_name, organization_id), analysis_results(risk_level)"
+      "id, patient_id, started_at, completed_at, patients(full_name, organization_id), analysis_results(risk_level)"
     )
     .order("started_at", { ascending: false })
     .limit(200);
@@ -278,7 +253,7 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
   const { data, error } = await sb
     .from("visits")
     .select(
-      "id, started_at, completed_at, captured_images(side, view, data_url, captured_at), foot_meshes(side, coverage_pct, seed_signature, captured_at), analysis_results(visit_id, scored_at, risk_level, risk_factors, detections, volumetrics, trend)"
+      "id, started_at, completed_at, captured_images(side, view, data_url, captured_at), analysis_results(visit_id, scored_at, risk_level, risk_factors, detections, volumetrics, trend)"
     )
     .eq("auth_uid", u.user.id)
     .not("completed_at", "is", null)
@@ -296,12 +271,6 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
       view: i.view,
       dataUrl: i.data_url,
       capturedAt: i.captured_at ? Date.parse(i.captured_at) : 0,
-    })),
-    meshes: (row.foot_meshes ?? []).map((m: any) => ({
-      side: m.side,
-      coveragePct: Number(m.coverage_pct),
-      seedSignature: m.seed_signature,
-      capturedAt: m.captured_at ? Date.parse(m.captured_at) : 0,
     })),
     result: row.analysis_results?.[0]
       ? {

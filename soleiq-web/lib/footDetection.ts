@@ -65,6 +65,12 @@ export interface DetectionMetrics {
   aspectRatio: number;
   reasons: FailureReason[];
   quality: QualitySignals;
+  /** Raw grayscale buffer (ANALYSIS_W × ANALYSIS_H). Exposed so the
+   *  guide layer can reuse it for steadiness / frame-diff without
+   *  double-decoding the video frame. */
+  gray: Uint8Array;
+  width: number;
+  height: number;
 }
 
 export function detectFootInVideo(
@@ -238,8 +244,16 @@ export function detectFootInVideo(
     aspectRatio,
     reasons,
     quality,
+    gray,
+    width: ANALYSIS_W,
+    height: ANALYSIS_H,
   };
 }
+
+/** Same analysis grid used by detectFootInVideo. Exposed so
+ *  the guide module can size its steadiness buffer to match. */
+export const CAPTURE_ANALYSIS_W = ANALYSIS_W;
+export const CAPTURE_ANALYSIS_H = ANALYSIS_H;
 
 // ---------- Scoring helpers ----------------------------------------------
 

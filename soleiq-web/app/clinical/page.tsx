@@ -351,10 +351,6 @@ function ClinicalReview({ summary: s }: { summary: PatientSummary }) {
                 "2D images",
                 `${s.captureCounts.images} · mean ${(s.captureCounts.meanImageConfidence * 100).toFixed(0)}% confidence`,
               ],
-              [
-                "3D meshes",
-                `${s.captureCounts.meshes} · mean ${(s.captureCounts.meanMeshConfidence * 100).toFixed(0)}% confidence`,
-              ],
             ]}
           />
         </Card>

@@ -72,7 +72,6 @@ export default function DashboardPage() {
                     <th className="px-4 py-3 text-left">Patient</th>
                     <th className="px-4 py-3 text-left">Started</th>
                     <th className="px-4 py-3 text-left">Completed</th>
-                    <th className="px-4 py-3 text-left">Scan</th>
                     <th className="px-4 py-3 text-left">Risk</th>
                   </tr>
                 </thead>
@@ -86,7 +85,6 @@ export default function DashboardPage() {
                         </td>
                         <td className="px-4 py-3 text-warmGray-600">{fmt(v.started_at)}</td>
                         <td className="px-4 py-3 text-warmGray-600">{fmt(v.completed_at)}</td>
-                        <td className="px-4 py-3 text-warmGray-600">{v.scan_path ?? "—"}</td>
                         <td className="px-4 py-3">
                           {risk ? (
                             <span

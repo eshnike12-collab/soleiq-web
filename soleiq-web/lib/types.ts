@@ -4,7 +4,6 @@ export type Numbness = "right" | "left" | "both" | "neither";
 export type RiskLevel = "low" | "medium" | "high";
 export type FootSide = "left" | "right";
 export type CaptureView = "top" | "sole" | "heel" | "between_toes";
-export type ScanPath = "lidar" | "tof" | "photogrammetry";
 
 export type GlucoseCategory =
   | "severe_hypo"
@@ -167,6 +166,64 @@ export interface PatientProfile {
   painPoints: string[];
 }
 
+// ---------------------------------------------------------------------------
+// Dual-view AI reading — the contract returned by the AI service (via
+// /api/analyze) for every analyzed image, and aggregated per visit.
+// ---------------------------------------------------------------------------
+
+export type ReadingSeverity = "none" | "mild" | "moderate" | "severe";
+export type ReadingConfidence = "low" | "medium" | "high";
+
+/** Plain-language block rendered to the patient. */
+export interface PatientReading {
+  headline: string;
+  likely_finding: string;
+  severity: ReadingSeverity;
+  confidence: ReadingConfidence;
+  care_guidance: string[];
+  see_a_clinician_if: string[];
+  urgent: boolean;
+}
+
+/** Structured snapshot for the podiatrist / wound-care clinician. */
+export interface ClinicianReading {
+  morphology: string;
+  differential: string[];
+  /** "0"–"5" or "n/a" — visual estimate only. */
+  estimated_wagner_grade: string;
+  erythema: boolean;
+  exudate: boolean;
+  necrosis: boolean;
+  infection_signs: boolean;
+  suggested_followup: string;
+}
+
+export interface ReadingFlags {
+  image_quality_ok: boolean;
+  is_foot: boolean;
+  needs_urgent_care: boolean;
+}
+
+/**
+ * Visit-level aggregation of the per-image dual readings — what the
+ * Results screen renders. `patient` is the worst-case image's reading
+ * with guidance merged across images; `perImage` preserves each image's
+ * clinical snapshot for the clinician view.
+ */
+export interface VisitReading {
+  patient: PatientReading;
+  clinician: ClinicianReading;
+  flags: ReadingFlags;
+  perImage: {
+    side: FootSide;
+    view: CaptureView;
+    patient?: PatientReading | null;
+    clinician?: ClinicianReading | null;
+    flags?: ReadingFlags | null;
+  }[];
+  modelVersion?: string | null;
+}
+
 export interface CaptureDetection {
   /** True if a foot was detected with confidence above DETECTION_THRESHOLD. */
   detected: boolean;
@@ -184,27 +241,31 @@ export interface CapturedImage {
   view: CaptureView;
   dataUrl: string;
   capturedAt: number;
+  /** How the image was produced — used when Processing resubmits a
+   *  failed analysis so capture metadata stays accurate. */
+  source?: "live" | "upload";
   detection?: CaptureDetection;
-}
-
-export interface FootMesh {
-  side: FootSide;
-  coveragePct: number;
-  seedSignature: string;
-  capturedAt: number;
-  /**
-   * Reconstructed heightmap from live camera capture. Row-major grid
-   * normalized 0..1; absent when reconstruction failed (camera denied,
-   * silhouette too small, etc.) and we should fall back to a placeholder.
-   */
-  heightmap?: {
-    width: number;
-    height: number;
-    heights: number[];
-    silhouettePx: number;
+  /** Filled in by analyzeFootImage() after the AI call returns. Optional
+   *  so we can render captured previews before the AI has responded. */
+  aiResult?: {
+    assessment?: string | null;
+    summary?: string | null;
+    probability?: number | null;
+    confidence?: string | null;
+    heatmap_url?: string | null;
+    scan_id?: string | null;
+    storage_url?: string | null;
+    urgent_flags?: string[];
+    /** Dual-view reading blocks from the AI service. */
+    patient?: PatientReading | null;
+    clinician?: ClinicianReading | null;
+    flags?: ReadingFlags | null;
+    /** Set when the analyze call failed — lets Processing distinguish
+     *  "still in flight" from "failed; needs resubmission". */
+    error?: string | null;
+    /** Full raw response for downstream aggregation / debugging. */
+    raw?: unknown;
   };
-  /** Best detection observed during the 3D scan window. */
-  detection?: CaptureDetection;
 }
 
 export interface DetectionRegion {
@@ -233,6 +294,9 @@ export interface AnalysisResult {
   detections: DetectionRegion[];
   volumetrics: VolumetricMetrics[];
   trend: "improving" | "stable" | "worsening" | "first_scan";
+  /** Aggregated dual-view reading from the real AI pipeline. Absent on
+   *  legacy/mock results (seeded demo data). */
+  reading?: VisitReading;
 }
 
 export interface Visit {
@@ -240,6 +304,5 @@ export interface Visit {
   startedAt: number;
   completedAt?: number;
   images: CapturedImage[];
-  meshes: FootMesh[];
   result?: AnalysisResult;
 }

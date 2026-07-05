@@ -294,9 +294,6 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
   body(
     `${s.captureCounts.images} 2D image${s.captureCounts.images === 1 ? "" : "s"} (mean detection confidence ${(s.captureCounts.meanImageConfidence * 100).toFixed(0)}%)`
   );
-  body(
-    `${s.captureCounts.meshes} 3D mesh${s.captureCounts.meshes === 1 ? "" : "es"} (mean detection confidence ${(s.captureCounts.meanMeshConfidence * 100).toFixed(0)}%)`
-  );
 
   // ---------- Footer ----------
   hr();

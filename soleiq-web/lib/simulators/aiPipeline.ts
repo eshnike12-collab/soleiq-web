@@ -21,8 +21,6 @@ function assertVisitAnalyzable(visit: Visit): void {
   const issues: string[] = [];
   if (visit.images.length < 8)
     issues.push(`Only ${visit.images.length}/8 foot images captured`);
-  if (visit.meshes.length < 2)
-    issues.push(`Only ${visit.meshes.length}/2 foot meshes captured`);
 
   const badImages = visit.images.filter(
     (i) =>
@@ -33,18 +31,6 @@ function assertVisitAnalyzable(visit: Visit): void {
   if (badImages > 0)
     issues.push(
       `${badImages} image${badImages === 1 ? "" : "s"} below detection threshold`
-    );
-
-  const badMeshes = visit.meshes.filter(
-    (m) =>
-      !m.heightmap ||
-      !m.detection ||
-      !m.detection.detected ||
-      m.detection.confidence < ANALYSIS_THRESHOLD
-  ).length;
-  if (badMeshes > 0)
-    issues.push(
-      `${badMeshes} 3D scan${badMeshes === 1 ? "" : "s"} produced no usable mesh`
     );
 
   if (issues.length > 0) {

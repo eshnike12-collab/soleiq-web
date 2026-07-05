@@ -34,11 +34,6 @@ export interface ClinicalDetail {
       confidence: number;
       silhouettePx: number;
     }[];
-    meshes: {
-      side: string;
-      confidence: number;
-      silhouettePx: number;
-    }[];
   };
   vascular: {
     status: string;
@@ -312,10 +307,8 @@ export function buildClinicalDetail(
 
   // ---------- Capture quality ----------
   const imgConfs = visit.images.map((i) => i.detection?.confidence ?? 0);
-  const meshConfs = visit.meshes.map((m) => m.detection?.confidence ?? 0);
-  const allConfs = [...imgConfs, ...meshConfs];
-  const overallConfidence = allConfs.length
-    ? allConfs.reduce((a, b) => a + b, 0) / allConfs.length
+  const overallConfidence = imgConfs.length
+    ? imgConfs.reduce((a, b) => a + b, 0) / imgConfs.length
     : 0;
   const captureQuality = {
     overallConfidence,
@@ -324,11 +317,6 @@ export function buildClinicalDetail(
       view: i.view,
       confidence: i.detection?.confidence ?? 0,
       silhouettePx: i.detection?.silhouettePx ?? 0,
-    })),
-    meshes: visit.meshes.map((m) => ({
-      side: m.side,
-      confidence: m.detection?.confidence ?? 0,
-      silhouettePx: m.detection?.silhouettePx ?? m.heightmap?.silhouettePx ?? 0,
     })),
   };
 

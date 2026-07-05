@@ -27,7 +27,6 @@ export interface PatientSummary {
     id: string;
     startedAt?: number;
     completedAt?: number;
-    scanPath?: string;
     riskLevel?: string;
   };
   riskFactors: string[];
@@ -83,9 +82,7 @@ export interface PatientSummary {
   conditionDefinitions: ConditionDefinition[];
   captureCounts: {
     images: number;
-    meshes: number;
     meanImageConfidence: number;
-    meanMeshConfidence: number;
   };
 }
 
@@ -99,7 +96,6 @@ export function buildPatientSummary(
   const result = visit.result;
 
   const imgConfs = visit.images.map((i) => i.detection?.confidence ?? 0);
-  const meshConfs = visit.meshes.map((m) => m.detection?.confidence ?? 0);
 
   const diabetes = profile.diabetes
     ? {
@@ -179,12 +175,8 @@ export function buildPatientSummary(
       .filter((c): c is ConditionDefinition => !!c),
     captureCounts: {
       images: visit.images.length,
-      meshes: visit.meshes.length,
       meanImageConfidence: imgConfs.length
         ? imgConfs.reduce((a, b) => a + b, 0) / imgConfs.length
-        : 0,
-      meanMeshConfidence: meshConfs.length
-        ? meshConfs.reduce((a, b) => a + b, 0) / meshConfs.length
         : 0,
     },
   };

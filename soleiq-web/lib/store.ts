@@ -6,9 +6,9 @@ import type {
   PatientProfile,
   Visit,
   CapturedImage,
-  FootMesh,
   AnalysisResult,
-  ScanPath,
+  FootSide,
+  CaptureView,
 } from "./types";
 import { MOCK_PRIOR_VISITS } from "./mock/priorScans";
 import { syncCompleteVisit } from "./db";
@@ -30,13 +30,21 @@ interface SoleiqStore {
   currentVisit: Visit | null;
   startVisit: () => void;
   addImage: (img: CapturedImage) => void;
-  addMesh: (mesh: FootMesh) => void;
+  /**
+   * Merge a per-image AI result onto an existing captured image, keyed by
+   * (side, view). Called from analyzeFootImage() as the fire-and-forget
+   * AI reply arrives. No-op if the target image no longer exists (user
+   * reset the visit before the reply landed).
+   */
+  setImageAiResult: (
+    side: FootSide,
+    view: CaptureView,
+    aiResult: NonNullable<CapturedImage["aiResult"]>,
+  ) => void;
   setResult: (result: AnalysisResult) => void;
   completeVisit: () => void;
 
   priorVisits: Visit[];
-
-  scanPath: ScanPath;
 
   /** Supabase row id for this session's patient row, once synced. */
   patientDbId: string | null;
@@ -46,11 +54,6 @@ interface SoleiqStore {
 
   reset: () => void;
 }
-
-const pickScanPath = (): ScanPath => {
-  const paths: ScanPath[] = ["lidar", "tof", "photogrammetry"];
-  return paths[Math.floor(Math.random() * 3)];
-};
 
 export const useSoleiqStore = create<SoleiqStore>()(
   persist(
@@ -100,31 +103,39 @@ export const useSoleiqStore = create<SoleiqStore>()(
             id: `visit_${Date.now()}`,
             startedAt: Date.now(),
             images: [],
-            meshes: [],
           },
         }),
       addImage: (img) =>
-        set((s) =>
-          s.currentVisit
-            ? {
-                currentVisit: {
-                  ...s.currentVisit,
-                  images: [...s.currentVisit.images, img],
-                },
-              }
-            : {}
-        ),
-      addMesh: (mesh) =>
-        set((s) =>
-          s.currentVisit
-            ? {
-                currentVisit: {
-                  ...s.currentVisit,
-                  meshes: [...s.currentVisit.meshes, mesh],
-                },
-              }
-            : {}
-        ),
+        set((s) => {
+          if (!s.currentVisit) return {};
+          // One image per (side, view) per visit. A re-capture — whether via
+          // the live shutter, a manual click, or an upload — REPLACES the
+          // prior entry instead of appending. Without this guard the visit
+          // accumulates duplicates whenever the user navigates back to a
+          // view and recaptures, and downstream consumers using `.find()`
+          // silently return the stale first match.
+          const others = s.currentVisit.images.filter(
+            (i) => !(i.side === img.side && i.view === img.view)
+          );
+          return {
+            currentVisit: {
+              ...s.currentVisit,
+              images: [...others, img],
+            },
+          };
+        }),
+      setImageAiResult: (side, view, aiResult) =>
+        set((s) => {
+          if (!s.currentVisit) return {};
+          const images = s.currentVisit.images.map((i) =>
+            i.side === side && i.view === view
+              ? { ...i, aiResult: { ...(i.aiResult ?? {}), ...aiResult } }
+              : i
+          );
+          return {
+            currentVisit: { ...s.currentVisit, images },
+          };
+        }),
       setResult: (result) =>
         set((s) =>
           s.currentVisit
@@ -139,7 +150,6 @@ export const useSoleiqStore = create<SoleiqStore>()(
           void syncCompleteVisit(
             s.profile,
             completed,
-            s.scanPath,
             s.patientDbId ?? undefined
           ).then(({ patientId }) => {
             if (patientId && patientId !== s.patientDbId) {
@@ -154,7 +164,6 @@ export const useSoleiqStore = create<SoleiqStore>()(
 
       priorVisits: MOCK_PRIOR_VISITS,
 
-      scanPath: pickScanPath(),
       patientDbId: null,
 
       isProcessing: false,
@@ -169,7 +178,6 @@ export const useSoleiqStore = create<SoleiqStore>()(
           currentVisit: null,
           priorVisits: MOCK_PRIOR_VISITS,
           isProcessing: false,
-          scanPath: pickScanPath(),
           patientDbId: null,
         }),
     }),

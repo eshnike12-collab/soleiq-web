@@ -82,18 +82,6 @@ export function ClinicalDetail() {
                       </td>
                     </tr>
                   ))}
-                  {data.captureQuality.meshes.map((m, idx) => (
-                    <tr key={`m-${idx}`} className="border-t border-warmGray-100 bg-blue-50/40">
-                      <td className="px-2 py-1 capitalize">{m.side}</td>
-                      <td className="px-2 py-1 italic">3D mesh</td>
-                      <td className="px-2 py-1 text-right font-mono">
-                        {(m.confidence * 100).toFixed(0)}%
-                      </td>
-                      <td className="px-2 py-1 text-right font-mono">
-                        {m.silhouettePx}
-                      </td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>
