@@ -113,7 +113,9 @@ export function FlowController() {
               <ProgressDots total={progress.total} current={progress.current} />
             </div>
           )}
-          {Screen ? <Screen /> : <FallbackEnd />}
+          <div className="flex min-h-0 flex-1 flex-col">
+            {Screen ? <Screen /> : <FallbackEnd />}
+          </div>
         </ScreenContainer>
       </AnimatePresence>
       <ToastHost />
