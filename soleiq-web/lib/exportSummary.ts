@@ -4,7 +4,12 @@
  */
 
 import { buildClinicalDetail, type ClinicalDetail } from "./clinicalDetail";
-import { GLUCOSE_RANGES, type PatientProfile, type Visit } from "./types";
+import {
+  GLUCOSE_RANGES,
+  type PatientProfile,
+  type PhotoScreeningResult,
+  type Visit,
+} from "./types";
 import {
   conditionToText,
   getCondition,
@@ -84,6 +89,7 @@ export interface PatientSummary {
     images: number;
     meanImageConfidence: number;
   };
+  screening?: PhotoScreeningResult;
 }
 
 const a1cToEag = (a1c: number) => Math.round(28.7 * a1c - 46.7);
@@ -169,7 +175,7 @@ export function buildPatientSummary(
       confidence: d.confidence,
     })),
     volumetrics: result?.volumetrics ?? [],
-    clinicalDetail: buildClinicalDetail(visit, profile),
+    clinicalDetail: result?.screening ? null : buildClinicalDetail(visit, profile),
     conditionDefinitions: (profile.conditions ?? [])
       .map((c) => getCondition(c))
       .filter((c): c is ConditionDefinition => !!c),
@@ -179,6 +185,7 @@ export function buildPatientSummary(
         ? imgConfs.reduce((a, b) => a + b, 0) / imgConfs.length
         : 0,
     },
+    screening: result?.screening,
   };
 }
 
@@ -214,9 +221,19 @@ export function summaryToEmailBody(s: PatientSummary): string {
   if (s.patient.city || s.patient.state)
     lines.push(`Location: ${[s.patient.city, s.patient.state].filter(Boolean).join(", ")}`);
   lines.push("");
-  if (s.visit.riskLevel)
+  if (s.screening) {
+    const labels = {
+      clear: "Looks clear",
+      watch: "Watch this",
+      see_someone_soon: "See someone soon",
+      urgent: "Urgent, get care now",
+    };
+    lines.push(`RESULT: ${labels[s.screening.overall.level]}`);
+    lines.push(s.screening.overall.headline);
+  } else if (s.visit.riskLevel) {
     lines.push(`OVERALL RISK: ${s.visit.riskLevel.toUpperCase()}`);
-  if (s.riskFactors.length) {
+  }
+  if (!s.screening && s.riskFactors.length) {
     lines.push("");
     lines.push("Top contributing factors:");
     s.riskFactors.forEach((f) => lines.push(`  • ${f}`));
@@ -258,12 +275,28 @@ export function summaryToEmailBody(s: PatientSummary): string {
     lines.push("");
     lines.push(`Recent surgery: ${s.recentSurgery.procedures.join(", ")}`);
   }
-  if (s.detections.length) {
+  if (s.screening?.findings.length) {
+    lines.push("");
+    lines.push("Visible findings:");
+    s.screening.findings.forEach((finding) =>
+      lines.push(
+        `  • ${finding.what_we_saw} — ${finding.foot} ${finding.surface}, ${finding.location_plain}`
+      )
+    );
+    lines.push("");
+    lines.push("What to do next:");
+    s.screening.what_to_do.forEach((item) => lines.push(`  • ${item}`));
+    lines.push("");
+    lines.push("When to get help:");
+    s.screening.when_to_get_help.forEach((item) => lines.push(`  • ${item}`));
+    lines.push("");
+    lines.push(`Photo limits: ${s.screening.limits}`);
+  } else if (s.detections.length) {
     lines.push("");
     lines.push("Detected findings:");
     s.detections.forEach((d) =>
       lines.push(
-        `  • ${d.type} (${d.side} ${d.view}) — ${(d.confidence * 100).toFixed(0)}% confidence`
+        `  • ${d.type} (${d.side} ${d.view})`
       )
     );
   }
@@ -286,7 +319,7 @@ export function summaryToEmailBody(s: PatientSummary): string {
   lines.push("");
   lines.push("---");
   lines.push(
-    "Decision support only. Not a diagnosis. Final clinical judgment rests with the treating provider."
+    "This photo screening is not a diagnosis. A photo cannot rule out every foot problem; seek professional care when concerned."
   );
   return lines.join("\n");
 }

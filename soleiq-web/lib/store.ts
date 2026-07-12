@@ -6,12 +6,15 @@ import type {
   PatientProfile,
   Visit,
   CapturedImage,
+  FootMesh,
   AnalysisResult,
+  ScanPath,
   FootSide,
   CaptureView,
 } from "./types";
 import { MOCK_PRIOR_VISITS } from "./mock/priorScans";
 import { syncCompleteVisit } from "./db";
+import { isSupabaseConfigured } from "./supabase";
 
 interface SoleiqStore {
   currentStep: number;
@@ -30,21 +33,18 @@ interface SoleiqStore {
   currentVisit: Visit | null;
   startVisit: () => void;
   addImage: (img: CapturedImage) => void;
-  /**
-   * Merge a per-image AI result onto an existing captured image, keyed by
-   * (side, view). Called from analyzeFootImage() as the fire-and-forget
-   * AI reply arrives. No-op if the target image no longer exists (user
-   * reset the visit before the reply landed).
-   */
   setImageAiResult: (
     side: FootSide,
     view: CaptureView,
-    aiResult: NonNullable<CapturedImage["aiResult"]>,
+    aiResult: NonNullable<CapturedImage["aiResult"]>
   ) => void;
+  addMesh: (mesh: FootMesh) => void;
   setResult: (result: AnalysisResult) => void;
-  completeVisit: () => void;
+  completeVisit: () => Promise<boolean>;
 
   priorVisits: Visit[];
+
+  scanPath: ScanPath;
 
   /** Supabase row id for this session's patient row, once synced. */
   patientDbId: string | null;
@@ -55,9 +55,14 @@ interface SoleiqStore {
   reset: () => void;
 }
 
+const pickScanPath = (): ScanPath => {
+  const paths: ScanPath[] = ["lidar", "tof", "photogrammetry"];
+  return paths[Math.floor(Math.random() * 3)];
+};
+
 export const useSoleiqStore = create<SoleiqStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentStep: 0,
       direction: "forward",
       history: [],
@@ -103,67 +108,97 @@ export const useSoleiqStore = create<SoleiqStore>()(
             id: `visit_${Date.now()}`,
             startedAt: Date.now(),
             images: [],
+            meshes: [],
           },
         }),
       addImage: (img) =>
-        set((s) => {
-          if (!s.currentVisit) return {};
-          // One image per (side, view) per visit. A re-capture — whether via
-          // the live shutter, a manual click, or an upload — REPLACES the
-          // prior entry instead of appending. Without this guard the visit
-          // accumulates duplicates whenever the user navigates back to a
-          // view and recaptures, and downstream consumers using `.find()`
-          // silently return the stale first match.
-          const others = s.currentVisit.images.filter(
-            (i) => !(i.side === img.side && i.view === img.view)
-          );
-          return {
-            currentVisit: {
-              ...s.currentVisit,
-              images: [...others, img],
-            },
-          };
-        }),
+        set((s) =>
+          s.currentVisit
+            ? {
+                currentVisit: {
+                  ...s.currentVisit,
+                  images: [
+                    ...s.currentVisit.images.filter(
+                      (existing) =>
+                        existing.side !== img.side || existing.view !== img.view
+                    ),
+                    img,
+                  ],
+                },
+              }
+            : {}
+        ),
       setImageAiResult: (side, view, aiResult) =>
         set((s) => {
           if (!s.currentVisit) return {};
-          const images = s.currentVisit.images.map((i) =>
-            i.side === side && i.view === view
-              ? { ...i, aiResult: { ...(i.aiResult ?? {}), ...aiResult } }
-              : i
-          );
           return {
-            currentVisit: { ...s.currentVisit, images },
+            currentVisit: {
+              ...s.currentVisit,
+              images: s.currentVisit.images.map((image) =>
+                image.side === side && image.view === view
+                  ? {
+                      ...image,
+                      aiResult: { ...(image.aiResult ?? {}), ...aiResult },
+                    }
+                  : image
+              ),
+            },
           };
         }),
+      addMesh: (mesh) =>
+        set((s) =>
+          s.currentVisit
+            ? {
+                currentVisit: {
+                  ...s.currentVisit,
+                  meshes: [...s.currentVisit.meshes, mesh],
+                },
+              }
+            : {}
+        ),
       setResult: (result) =>
         set((s) =>
           s.currentVisit
             ? { currentVisit: { ...s.currentVisit, result } }
             : {}
         ),
-      completeVisit: () =>
-        set((s) => {
-          if (!s.currentVisit) return {};
-          const completed = { ...s.currentVisit, completedAt: Date.now() };
-          // Fire-and-forget remote sync — never blocks UI.
-          void syncCompleteVisit(
-            s.profile,
+      completeVisit: async () => {
+        const state = get();
+        if (!state.currentVisit) return false;
+        const completed = { ...state.currentVisit, completedAt: Date.now() };
+        set({
+          currentVisit: completed,
+          priorVisits: [...state.priorVisits, completed],
+        });
+        if (!isSupabaseConfigured()) return true;
+        try {
+          const { patientId, visitId } = await syncCompleteVisit(
+            state.profile,
             completed,
-            s.patientDbId ?? undefined
-          ).then(({ patientId }) => {
-            if (patientId && patientId !== s.patientDbId) {
-              useSoleiqStore.setState({ patientDbId: patientId });
-            }
-          });
-          return {
-            currentVisit: completed,
-            priorVisits: [...s.priorVisits, completed],
-          };
-        }),
+            state.scanPath,
+            state.patientDbId ?? undefined
+          );
+          if (!visitId) return false;
+          set((latest) => ({
+            patientDbId: patientId ?? latest.patientDbId,
+            currentVisit:
+              latest.currentVisit?.id === completed.id
+                ? { ...latest.currentVisit, id: visitId }
+                : latest.currentVisit,
+            priorVisits: latest.priorVisits.map((visit) =>
+              visit.id === completed.id ? { ...visit, id: visitId } : visit
+            ),
+          }));
+          return true;
+        } catch (error) {
+          console.error("[soleiq] visit save failed", error);
+          return false;
+        }
+      },
 
       priorVisits: MOCK_PRIOR_VISITS,
 
+      scanPath: pickScanPath(),
       patientDbId: null,
 
       isProcessing: false,
@@ -178,6 +213,7 @@ export const useSoleiqStore = create<SoleiqStore>()(
           currentVisit: null,
           priorVisits: MOCK_PRIOR_VISITS,
           isProcessing: false,
+          scanPath: pickScanPath(),
           patientDbId: null,
         }),
     }),
@@ -186,6 +222,12 @@ export const useSoleiqStore = create<SoleiqStore>()(
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? sessionStorage : (undefined as never)
       ),
+      // Never persist foot-photo data URLs in browser storage. Photos remain
+      // in memory until the user explicitly saves them to private storage.
+      partialize: (state) => ({
+        profile: state.profile,
+        patientDbId: state.patientDbId,
+      }),
     }
   )
 );

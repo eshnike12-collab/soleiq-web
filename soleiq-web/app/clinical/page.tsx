@@ -105,8 +105,8 @@ function ClinicalReview({ summary: s }: { summary: PatientSummary }) {
               .filter(Boolean)
               .join(" · ")}
           </p>
-          {s.visit.riskLevel && (
-            <RiskPill level={s.visit.riskLevel} />
+          {(s.screening?.overall.level || s.visit.riskLevel) && (
+            <RiskPill level={s.screening?.overall.level ?? s.visit.riskLevel!} />
           )}
         </section>
 
@@ -220,8 +220,7 @@ function ClinicalReview({ summary: s }: { summary: PatientSummary }) {
               {s.detections.map((d, i) => (
                 <li key={i}>
                   <span className="font-semibold capitalize">{d.type}</span> ·{" "}
-                  {d.side} {d.view} ·{" "}
-                  {(d.confidence * 100).toFixed(0)}% confidence
+                  {d.side} {d.view}
                 </li>
               ))}
             </ul>
@@ -347,10 +346,7 @@ function ClinicalReview({ summary: s }: { summary: PatientSummary }) {
         <Card title="Capture quality">
           <Detail
             rows={[
-              [
-                "2D images",
-                `${s.captureCounts.images} · mean ${(s.captureCounts.meanImageConfidence * 100).toFixed(0)}% confidence`,
-              ],
+              ["Foot photos", `${s.captureCounts.images} saved views`],
             ]}
           />
         </Card>
@@ -413,12 +409,25 @@ function RiskPill({ level }: { level: string }) {
     low: "bg-risk-low text-white",
     medium: "bg-risk-medium text-white",
     high: "bg-risk-high text-white",
+    clear: "bg-risk-low text-white",
+    watch: "bg-risk-medium text-white",
+    see_someone_soon: "bg-risk-high text-white",
+    urgent: "bg-risk-high text-white",
+  };
+  const labels: Record<string, string> = {
+    low: "LOW RISK",
+    medium: "MEDIUM RISK",
+    high: "HIGH RISK",
+    clear: "LOOKS CLEAR",
+    watch: "WATCH THIS",
+    see_someone_soon: "SEE SOMEONE SOON",
+    urgent: "URGENT, GET CARE NOW",
   };
   return (
     <span
       className={`mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${styles[level] ?? "bg-warmGray-100 text-warmGray-800"}`}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-white" /> {level.toUpperCase()} RISK
+      <span className="h-1.5 w-1.5 rounded-full bg-white" /> {labels[level] ?? level.toUpperCase()}
     </span>
   );
 }

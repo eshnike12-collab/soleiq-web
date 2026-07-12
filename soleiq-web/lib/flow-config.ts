@@ -15,7 +15,6 @@ import { ShoeSize } from "@/components/screens/10-ShoeSize";
 import { PainAssessment } from "@/components/screens/11-PainAssessment";
 import { CapturePrep } from "@/components/screens/12-CapturePrep";
 import { RightFoot } from "@/components/screens/13-RightFoot";
-import { LeftFoot } from "@/components/screens/15-LeftFoot";
 import { Processing } from "@/components/screens/17-Processing";
 import { Results } from "@/components/screens/18-Results";
 import { NextSteps } from "@/components/screens/19-NextSteps";
@@ -66,7 +65,6 @@ export const SCREEN_ORDER: ScreenDef[] = [
   { id: "pain_assessment", component: PainAssessment, showInProgress: true },
   { id: "capture_prep", component: CapturePrep },
   { id: "right_foot", component: RightFoot },
-  { id: "left_foot", component: LeftFoot },
   { id: "processing", component: Processing },
   { id: "results", component: Results },
   { id: "next_steps", component: NextSteps },

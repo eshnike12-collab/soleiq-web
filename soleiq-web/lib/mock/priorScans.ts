@@ -17,6 +17,12 @@ const seedVisit = (offsetDays: number, woundVolumeMm3: number, id: string): Visi
         capturedAt: startedAt,
       }))
     ),
+    meshes: (["right", "left"] as const).map((side) => ({
+      side,
+      coveragePct: 95,
+      seedSignature: `seed_${id}_${side}`,
+      capturedAt: startedAt,
+    })),
     result: {
       visitId: id,
       scoredAt: startedAt + 11 * 60 * 1000,

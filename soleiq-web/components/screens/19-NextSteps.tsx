@@ -28,6 +28,7 @@ export function NextSteps() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const showToast = useToastStore((s) => s.show);
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const buildSummary = () => {
     const { currentVisit, profile } = useSoleiqStore.getState();
@@ -40,7 +41,7 @@ export function NextSteps() {
       showToast("No analysis available to share yet.");
       return;
     }
-    const subject = `SoleIQ — Foot Risk Screening${s.patient.fullName ? ` — ${s.patient.fullName}` : ""}`;
+    const subject = `SoleIQ — Foot Photo Check${s.patient.fullName ? ` — ${s.patient.fullName}` : ""}`;
     const clinicalUrl = `${window.location.origin}/clinical?data=${encodeSummaryToUrl(s)}`;
     const body =
       summaryToEmailBody(s) +
@@ -106,32 +107,39 @@ export function NextSteps() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="After the exam"
-        title="Document and refer"
-        subtitle="Decision support — finalize the plan based on your clinical judgment."
+        eyebrow="Next steps"
+        title="Save or share"
+        subtitle="Keep this check in your private history or share it with your care team."
       />
       <div className="space-y-2.5">
         <Row
           icon={LineChart}
           title="Add to patient timeline"
-          body="Record this visit for longitudinal comparison."
+          body="Store the four photos and result in your private history."
           action={
             <Button
               size="sm"
-              onClick={() => {
-                completeVisit();
-                showToast("Saved to your timeline.");
-                goTo(99);
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                const saved = await completeVisit();
+                setSaving(false);
+                showToast(
+                  saved
+                    ? "Saved to your private timeline."
+                    : "Saved on this device, but cloud storage failed."
+                );
+                if (saved) goTo(99);
               }}
             >
-              Save
+              {saving ? "Saving…" : "Save"}
             </Button>
           }
         />
         <Row
           icon={Share2}
           title="Share or refer"
-          body="Email a summary, download a PDF, or open the doctor's clinical view."
+          body="Email a summary, download a PDF, or open a care-team view."
           action={
             <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
               Share
@@ -140,8 +148,8 @@ export function NextSteps() {
         />
         <Row
           icon={ShoppingBag}
-          title="Review adjunctive therapy options"
-          body="Risk-tiered, evidence-graded, with PAD-specific cautions."
+          title="Review foot-care options"
+          body="General options only; follow your care team's advice."
           action={
             <Button size="sm" variant="outline" onClick={goNext}>
               View
