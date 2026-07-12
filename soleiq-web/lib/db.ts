@@ -111,14 +111,27 @@ export async function saveImageRow(
 ): Promise<void> {
   const c = await client();
   if (!c) return;
+  const blob = await fetch(img.dataUrl).then((response) => response.blob());
+  const storagePath = `${c.uid}/${visitDbId}/${img.side}-${img.view}-${img.capturedAt}.jpg`;
+  const { error: uploadError } = await c.sb.storage
+    .from("foot-photos")
+    .upload(storagePath, blob, { contentType: "image/jpeg", upsert: false });
+  if (uploadError) {
+    throw new Error(`Photo upload failed: ${uploadError.message}`);
+  }
   const { error } = await c.sb.from("captured_images").insert({
     visit_id: visitDbId,
     side: img.side,
     view: img.view,
-    data_url: img.dataUrl,
+    data_url: null,
+    storage_path: storagePath,
+    quality: img.quality ?? null,
     captured_at: new Date(img.capturedAt).toISOString(),
   });
-  if (error) console.warn("[soleiq] saveImageRow failed:", error.message);
+  if (error) {
+    await c.sb.storage.from("foot-photos").remove([storagePath]);
+    throw new Error(`Photo record save failed: ${error.message}`);
+  }
 }
 
 export async function saveMeshRow(
@@ -152,6 +165,8 @@ export async function saveAnalysisRow(
     detections: r.detections,
     volumetrics: r.volumetrics,
     trend: r.trend,
+    screening_level: r.screening?.overall.level ?? null,
+    screening_result: r.screening ?? null,
   });
   if (error) console.warn("[soleiq] saveAnalysisRow failed:", error.message);
 }
@@ -278,7 +293,7 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
   const { data, error } = await sb
     .from("visits")
     .select(
-      "id, started_at, completed_at, captured_images(side, view, data_url, captured_at), foot_meshes(side, coverage_pct, seed_signature, captured_at), analysis_results(visit_id, scored_at, risk_level, risk_factors, detections, volumetrics, trend)"
+      "id, started_at, completed_at, captured_images(side, view, data_url, storage_path, quality, captured_at), foot_meshes(side, coverage_pct, seed_signature, captured_at), analysis_results(visit_id, scored_at, risk_level, risk_factors, detections, volumetrics, trend, screening_result)"
     )
     .eq("auth_uid", u.user.id)
     .not("completed_at", "is", null)
@@ -287,6 +302,21 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
     console.warn("[soleiq] listMyPriorVisits failed:", error.message);
     return [];
   }
+  const paths = (data ?? []).flatMap((row: any) =>
+    (row.captured_images ?? [])
+      .map((image: any) => image.storage_path)
+      .filter(Boolean)
+  );
+  const signedByPath = new Map<string, string>();
+  if (paths.length > 0) {
+    const { data: signed } = await sb.storage
+      .from("foot-photos")
+      .createSignedUrls(paths, 60 * 60);
+    signed?.forEach((item, index) => {
+      if (item.signedUrl) signedByPath.set(paths[index], item.signedUrl);
+    });
+  }
+
   return (data ?? []).map((row: any): Visit => ({
     id: row.id,
     startedAt: row.started_at ? Date.parse(row.started_at) : Date.now(),
@@ -294,7 +324,12 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
     images: (row.captured_images ?? []).map((i: any) => ({
       side: i.side,
       view: i.view,
-      dataUrl: i.data_url,
+      dataUrl:
+        (i.storage_path && signedByPath.get(i.storage_path)) ||
+        i.data_url ||
+        "/sample-foot.svg",
+      storagePath: i.storage_path ?? undefined,
+      quality: i.quality ?? undefined,
       capturedAt: i.captured_at ? Date.parse(i.captured_at) : 0,
     })),
     meshes: (row.foot_meshes ?? []).map((m: any) => ({
@@ -314,9 +349,31 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
           detections: row.analysis_results[0].detections,
           volumetrics: row.analysis_results[0].volumetrics,
           trend: row.analysis_results[0].trend,
+          screening: row.analysis_results[0].screening_result ?? undefined,
         }
       : undefined,
   }));
+}
+
+export async function deleteMyVisit(visitId: string): Promise<void> {
+  const c = await client();
+  if (!c) return;
+  const { data: images, error: imageError } = await c.sb
+    .from("captured_images")
+    .select("storage_path")
+    .eq("visit_id", visitId);
+  if (imageError) throw new Error(imageError.message);
+  const paths = (images ?? [])
+    .map((image: any) => image.storage_path)
+    .filter(Boolean);
+  if (paths.length > 0) {
+    const { error: storageError } = await c.sb.storage
+      .from("foot-photos")
+      .remove(paths);
+    if (storageError) throw new Error(storageError.message);
+  }
+  const { error } = await c.sb.from("visits").delete().eq("id", visitId);
+  if (error) throw new Error(error.message);
 }
 
 export async function listProfiles() {

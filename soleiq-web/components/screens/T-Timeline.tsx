@@ -1,135 +1,138 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
-import { listMyPriorVisits } from "@/lib/db";
+import { deleteMyVisit, listMyPriorVisits } from "@/lib/db";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { TimelineChart } from "@/components/timeline/TimelineChart";
 import { BeforeAfterSlider } from "@/components/timeline/BeforeAfterSlider";
 import { Card } from "@/components/ui/card";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
-import type { Visit } from "@/lib/types";
+import type { ScreeningLevel, Visit } from "@/lib/types";
 
-const fmtDate = (ts: number) =>
-  new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-
-const daysAgo = (ts: number) => {
-  const ms = Date.now() - ts;
-  const d = Math.round(ms / (24 * 60 * 60 * 1000));
-  if (d <= 0) return "Today";
-  if (d === 1) return "1 day ago";
-  return `${d} days ago`;
+const STATUS: Record<ScreeningLevel, string> = {
+  clear: "Looks clear",
+  watch: "Watch this",
+  see_someone_soon: "See someone soon",
+  urgent: "Urgent, get care now",
 };
 
 export function Timeline() {
-  const fallback = useSoleiqStore((s) => s.priorVisits);
-  const reset = useSoleiqStore((s) => s.reset);
-  const [priors, setPriors] = useState<Visit[]>(
-    isSupabaseConfigured() ? [] : fallback
-  );
+  const fallback = useSoleiqStore((state) => state.priorVisits);
+  const reset = useSoleiqStore((state) => state.reset);
+  const [visits, setVisits] = useState<Visit[]>(isSupabaseConfigured() ? [] : fallback);
   const [loading, setLoading] = useState(isSupabaseConfigured());
-  const [source, setSource] = useState<"live" | "mock">(
-    isSupabaseConfigured() ? "live" : "mock"
-  );
+  const [live, setLive] = useState(isSupabaseConfigured());
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
     let cancelled = false;
     listMyPriorVisits().then((rows) => {
       if (cancelled) return;
-      if (rows.length > 0) {
-        setPriors(rows);
-        setSource("live");
-      } else {
-        setPriors(fallback);
-        setSource("mock");
-      }
+      setVisits(rows.length > 0 ? rows : fallback);
+      setLive(rows.length > 0);
       setLoading(false);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [fallback]);
 
-  const trendData = priors
-    .filter((v) => v.result?.volumetrics?.[0]?.woundVolumeMm3 != null)
-    .map((v) => ({
-      label: fmtDate(v.startedAt),
-      volume: v.result!.volumetrics[0].woundVolumeMm3 ?? 0,
-    }));
-
-  const findSole = (v: Visit | undefined) =>
-    v?.images.find((i) => i.view === "sole" && i.side === "right")?.dataUrl ??
+  const latest = visits[visits.length - 1];
+  const previous = visits[visits.length - 2];
+  const levelRank: Record<ScreeningLevel, number> = {
+    clear: 0,
+    watch: 1,
+    see_someone_soon: 2,
+    urgent: 3,
+  };
+  const latestLevel = latest?.result?.screening?.overall.level;
+  const previousLevel = previous?.result?.screening?.overall.level;
+  const changeText =
+    latestLevel && previousLevel
+      ? levelRank[latestLevel] > levelRank[previousLevel]
+        ? "The latest photo check has a more cautious status than the previous check. Review the highlighted areas and follow the latest care guidance."
+        : levelRank[latestLevel] < levelRank[previousLevel]
+          ? "The latest photo check has a less cautious status. Photos alone cannot confirm healing, so keep following your care team's advice."
+          : "The latest and previous photo checks have the same status. Compare the photos for visible differences and seek help for any change that worries you."
+      : null;
+  const findSole = (visit?: Visit) =>
+    visit?.images.find((image) => image.side === "right" && image.view === "sole")?.dataUrl ??
     "/sample-foot.svg";
 
-  const earliest = priors[0];
-  const latest = priors[priors.length - 1];
-  const trendLabel =
-    trendData.length >= 2
-      ? trendData[trendData.length - 1].volume < trendData[0].volume
-        ? "improving"
-        : trendData[trendData.length - 1].volume > trendData[0].volume
-        ? "worsening"
-        : "stable"
-      : "first scan";
+  const remove = async (visitId: string) => {
+    setDeleting(visitId);
+    try {
+      await deleteMyVisit(visitId);
+      setVisits((current) => current.filter((visit) => visit.id !== visitId));
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   return (
     <div className="-mx-1 flex h-full flex-col overflow-y-auto px-1 pb-2">
       <ScreenHeader
-        eyebrow="Trends"
-        title="Your timeline"
-        subtitle={
-          loading
-            ? "Loading your visits…"
-            : `${priors.length} visit${priors.length === 1 ? "" : "s"} on record${
-                source === "mock" ? " (sample data)" : ""
-              }.`
-        }
+        eyebrow="Photo history"
+        title="Your foot checks"
+        subtitle={loading ? "Loading your saved checks…" : `${visits.length} saved check${visits.length === 1 ? "" : "s"}.`}
       />
-      {!loading && (
-        <div className="space-y-3">
-          {trendData.length > 0 ? (
-            <TimelineChart data={trendData} />
-          ) : (
-            <Card>
-              <p className="text-sm text-warmGray-600">
-                Wound-volume trend will appear here after your next visit with a
-                detected wound.
-              </p>
+
+      {!loading && previous && latest && (
+        <div className="mb-3">
+          {changeText && (
+            <Card className="mb-3">
+              <p className="text-sm font-semibold text-warmGray-800">Compared with last time</p>
+              <p className="mt-1 text-xs leading-relaxed text-warmGray-600">{changeText}</p>
             </Card>
           )}
-
-          {earliest && latest && earliest.id !== latest.id ? (
-            <BeforeAfterSlider
-              beforeSrc={findSole(earliest)}
-              afterSrc={findSole(latest)}
-              beforeLabel={daysAgo(earliest.startedAt)}
-              afterLabel="Most recent"
-            />
-          ) : null}
-
-          <Card>
-            <p className="text-sm font-semibold text-warmGray-800">Summary</p>
-            <ul className="mt-1 space-y-1 text-sm text-warmGray-800">
-              <li>
-                Wound volume trend:{" "}
-                <span className="font-medium text-teal-800">{trendLabel}</span>
-              </li>
-              <li>Visits on record: {priors.length}</li>
-              <li>
-                Most recent risk:{" "}
-                {latest?.result?.riskLevel ?? "—"}
-              </li>
-            </ul>
-          </Card>
+          <BeforeAfterSlider
+            beforeSrc={findSole(previous)}
+            afterSrc={findSole(latest)}
+            beforeLabel={new Date(previous.startedAt).toLocaleDateString()}
+            afterLabel="Most recent"
+          />
+          <p className="mt-2 text-[11px] leading-relaxed text-warmGray-600">
+            This is a visual comparison only. Lighting and camera angle can make areas look different; it does not measure clinical progression.
+          </p>
         </div>
       )}
 
+      <div className="space-y-2.5">
+        {[...visits].reverse().map((visit) => {
+          const level = visit.result?.screening?.overall.level;
+          return (
+            <Card key={visit.id} className="flex items-center gap-3">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-warmGray-50">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={findSole(visit)} alt="Saved right sole" className="h-full w-full object-contain" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-warmGray-800">
+                  {new Date(visit.startedAt).toLocaleDateString()}
+                </p>
+                <p className="truncate text-xs text-warmGray-600">
+                  {level ? STATUS[level] : "Older screening record"}
+                </p>
+              </div>
+              {live && (
+                <button
+                  type="button"
+                  disabled={deleting === visit.id}
+                  onClick={() => void remove(visit.id)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-warmGray-600 hover:bg-warmGray-50 hover:text-risk-high"
+                  aria-label="Delete this saved check"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+
       <div className="mt-auto pt-4">
-        <Button fullWidth variant="outline" onClick={reset}>
-          Reset demo
-        </Button>
+        <Button fullWidth variant="outline" onClick={reset}>Start a new check</Button>
       </div>
     </div>
   );

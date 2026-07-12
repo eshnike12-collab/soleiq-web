@@ -4,7 +4,6 @@
  * with a list of reasons that should be surfaced to the clinician.
  */
 
-import { ANALYSIS_THRESHOLD } from "./footDetection";
 import type { Visit } from "./types";
 
 export interface CaptureGateResult {
@@ -17,8 +16,12 @@ export interface CaptureGateResult {
   meanMeshConfidence: number;
 }
 
-const REQUIRED_IMAGES = 8; // 4 views × 2 feet
-const REQUIRED_MESHES = 2; // left + right
+const REQUIRED = [
+  ["right", "top"],
+  ["right", "sole"],
+  ["left", "top"],
+  ["left", "sole"],
+] as const;
 
 export function evaluateVisitForAnalysis(visit: Visit | null): CaptureGateResult {
   const issues: string[] = [];
@@ -34,18 +37,20 @@ export function evaluateVisitForAnalysis(visit: Visit | null): CaptureGateResult
     };
   }
 
-  const images = visit.images;
-  const meshes = visit.meshes;
+  const images = visit.images.filter(
+    (image) => image.view === "top" || image.view === "sole"
+  );
 
-  if (images.length < REQUIRED_IMAGES) {
-    issues.push(
-      `Only ${images.length} of ${REQUIRED_IMAGES} foot images captured.`
-    );
-  }
-  if (meshes.length < REQUIRED_MESHES) {
-    issues.push(
-      `Only ${meshes.length} of ${REQUIRED_MESHES} foot meshes captured.`
-    );
+  for (const [side, view] of REQUIRED) {
+    const image = images.find((item) => item.side === side && item.view === view);
+    if (!image) {
+      issues.push(`Missing ${side} foot ${view} photo.`);
+    } else if (!image.quality?.passed) {
+      issues.push(
+        image.quality?.issues[0] ??
+          `The ${side} foot ${view} photo did not pass the quality check.`
+      );
+    }
   }
 
   let failedImages = 0;
@@ -53,46 +58,21 @@ export function evaluateVisitForAnalysis(visit: Visit | null): CaptureGateResult
   let imageConfN = 0;
   for (const img of images) {
     const d = img.detection;
-    if (!d || !d.detected || d.confidence < ANALYSIS_THRESHOLD) {
+    if (!img.quality?.passed) {
       failedImages++;
     }
-    if (d) {
-      imageConfSum += d.confidence;
+    if (img.quality) {
+      imageConfSum += img.quality.passed ? 1 : 0;
       imageConfN++;
     }
-  }
-  if (failedImages > 0) {
-    issues.push(
-      `${failedImages} image${failedImages === 1 ? "" : "s"} did not pass foot detection (confidence < ${(ANALYSIS_THRESHOLD * 100).toFixed(0)}%).`
-    );
-  }
-
-  let failedMeshes = 0;
-  let meshConfSum = 0;
-  let meshConfN = 0;
-  for (const m of meshes) {
-    const d = m.detection;
-    const hasMesh = !!m.heightmap;
-    if (!hasMesh || !d || !d.detected || d.confidence < ANALYSIS_THRESHOLD) {
-      failedMeshes++;
-    }
-    if (d) {
-      meshConfSum += d.confidence;
-      meshConfN++;
-    }
-  }
-  if (failedMeshes > 0) {
-    issues.push(
-      `${failedMeshes} 3D scan${failedMeshes === 1 ? "" : "s"} produced no usable foot mesh.`
-    );
   }
 
   return {
     ok: issues.length === 0,
     issues,
     failedImages,
-    failedMeshes,
+    failedMeshes: 0,
     meanImageConfidence: imageConfN ? imageConfSum / imageConfN : 0,
-    meanMeshConfidence: meshConfN ? meshConfSum / meshConfN : 0,
+    meanMeshConfidence: 0,
   };
 }

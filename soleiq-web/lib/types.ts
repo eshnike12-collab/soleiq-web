@@ -5,6 +5,11 @@ export type RiskLevel = "low" | "medium" | "high";
 export type FootSide = "left" | "right";
 export type CaptureView = "top" | "sole" | "heel" | "between_toes";
 export type ScanPath = "lidar" | "tof" | "photogrammetry";
+export type ScreeningLevel =
+  | "clear"
+  | "watch"
+  | "see_someone_soon"
+  | "urgent";
 
 export type GlucoseCategory =
   | "severe_hypo"
@@ -185,6 +190,41 @@ export interface CapturedImage {
   dataUrl: string;
   capturedAt: number;
   detection?: CaptureDetection;
+  quality?: {
+    passed: boolean;
+    brightness: number;
+    sharpness: number;
+    width: number;
+    height: number;
+    issues: string[];
+  };
+  storagePath?: string;
+}
+
+export interface PhotoScreeningFinding {
+  foot: FootSide;
+  surface: "top" | "sole";
+  what_we_saw: string;
+  location_plain: string;
+  concern: "low" | "medium" | "high";
+  why_it_matters: string;
+  region: { x: number; y: number; w: number; h: number } | null;
+}
+
+export interface PhotoScreeningResult {
+  capture_quality: {
+    usable: boolean;
+    retake: { image: string; reason: string }[];
+  };
+  overall: {
+    headline: string;
+    level: ScreeningLevel;
+  };
+  findings: PhotoScreeningFinding[];
+  what_to_do: string[];
+  when_to_get_help: string[];
+  limits: string;
+  not_a_diagnosis: true;
 }
 
 export interface FootMesh {
@@ -233,6 +273,7 @@ export interface AnalysisResult {
   detections: DetectionRegion[];
   volumetrics: VolumetricMetrics[];
   trend: "improving" | "stable" | "worsening" | "first_scan";
+  screening?: PhotoScreeningResult;
 }
 
 export interface Visit {

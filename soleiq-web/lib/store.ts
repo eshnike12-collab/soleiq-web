@@ -12,6 +12,7 @@ import type {
 } from "./types";
 import { MOCK_PRIOR_VISITS } from "./mock/priorScans";
 import { syncCompleteVisit } from "./db";
+import { isSupabaseConfigured } from "./supabase";
 
 interface SoleiqStore {
   currentStep: number;
@@ -32,7 +33,7 @@ interface SoleiqStore {
   addImage: (img: CapturedImage) => void;
   addMesh: (mesh: FootMesh) => void;
   setResult: (result: AnalysisResult) => void;
-  completeVisit: () => void;
+  completeVisit: () => Promise<boolean>;
 
   priorVisits: Visit[];
 
@@ -54,7 +55,7 @@ const pickScanPath = (): ScanPath => {
 
 export const useSoleiqStore = create<SoleiqStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentStep: 0,
       direction: "forward",
       history: [],
@@ -109,7 +110,13 @@ export const useSoleiqStore = create<SoleiqStore>()(
             ? {
                 currentVisit: {
                   ...s.currentVisit,
-                  images: [...s.currentVisit.images, img],
+                  images: [
+                    ...s.currentVisit.images.filter(
+                      (existing) =>
+                        existing.side !== img.side || existing.view !== img.view
+                    ),
+                    img,
+                  ],
                 },
               }
             : {}
@@ -131,26 +138,39 @@ export const useSoleiqStore = create<SoleiqStore>()(
             ? { currentVisit: { ...s.currentVisit, result } }
             : {}
         ),
-      completeVisit: () =>
-        set((s) => {
-          if (!s.currentVisit) return {};
-          const completed = { ...s.currentVisit, completedAt: Date.now() };
-          // Fire-and-forget remote sync — never blocks UI.
-          void syncCompleteVisit(
-            s.profile,
+      completeVisit: async () => {
+        const state = get();
+        if (!state.currentVisit) return false;
+        const completed = { ...state.currentVisit, completedAt: Date.now() };
+        set({
+          currentVisit: completed,
+          priorVisits: [...state.priorVisits, completed],
+        });
+        if (!isSupabaseConfigured()) return true;
+        try {
+          const { patientId, visitId } = await syncCompleteVisit(
+            state.profile,
             completed,
-            s.scanPath,
-            s.patientDbId ?? undefined
-          ).then(({ patientId }) => {
-            if (patientId && patientId !== s.patientDbId) {
-              useSoleiqStore.setState({ patientDbId: patientId });
-            }
-          });
-          return {
-            currentVisit: completed,
-            priorVisits: [...s.priorVisits, completed],
-          };
-        }),
+            state.scanPath,
+            state.patientDbId ?? undefined
+          );
+          if (!visitId) return false;
+          set((latest) => ({
+            patientDbId: patientId ?? latest.patientDbId,
+            currentVisit:
+              latest.currentVisit?.id === completed.id
+                ? { ...latest.currentVisit, id: visitId }
+                : latest.currentVisit,
+            priorVisits: latest.priorVisits.map((visit) =>
+              visit.id === completed.id ? { ...visit, id: visitId } : visit
+            ),
+          }));
+          return true;
+        } catch (error) {
+          console.error("[soleiq] visit save failed", error);
+          return false;
+        }
+      },
 
       priorVisits: MOCK_PRIOR_VISITS,
 
@@ -178,6 +198,12 @@ export const useSoleiqStore = create<SoleiqStore>()(
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? sessionStorage : (undefined as never)
       ),
+      // Never persist foot-photo data URLs in browser storage. Photos remain
+      // in memory until the user explicitly saves them to private storage.
+      partialize: (state) => ({
+        profile: state.profile,
+        patientDbId: state.patientDbId,
+      }),
     }
   )
 );

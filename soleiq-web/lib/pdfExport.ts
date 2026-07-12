@@ -80,7 +80,7 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
   };
 
   // ---------- Header ----------
-  heading("SoleIQ — Foot Risk Screening", 18);
+  heading("SoleIQ — Foot Photo Screening", 18);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(95, 94, 90);
@@ -112,8 +112,23 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
   hr();
 
   // ---------- Risk ----------
-  subheading("Risk assessment");
-  if (s.visit.riskLevel) {
+  subheading("Photo screening result");
+  if (s.screening) {
+    const labels = {
+      clear: "LOOKS CLEAR",
+      watch: "WATCH THIS",
+      see_someone_soon: "SEE SOMEONE SOON",
+      urgent: "URGENT, GET CARE NOW",
+    };
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text(labels[s.screening.overall.level], margin, y);
+    y += 18;
+    body(s.screening.overall.headline);
+    s.screening.findings.forEach((finding) =>
+      bullet(`${finding.what_we_saw} — ${finding.foot} ${finding.surface}, ${finding.location_plain}`)
+    );
+  } else if (s.visit.riskLevel) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     const colors: Record<string, [number, number, number]> = {
@@ -127,7 +142,7 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
     doc.setTextColor(28, 28, 28);
     y += 18;
   }
-  if (s.riskFactors.length) {
+  if (!s.screening && s.riskFactors.length) {
     body("Top contributing factors:");
     s.riskFactors.forEach((f) => bullet(f));
   }
@@ -192,11 +207,11 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
 
   // ---------- Findings ----------
   subheading("Detected findings");
-  if (s.detections.length === 0) body("(no skin/wound findings detected)");
+  if (s.detections.length === 0) body("(no visible surface findings recorded)");
   else
     s.detections.forEach((d) =>
       bullet(
-        `${d.type} — ${d.side} ${d.view} (confidence ${(d.confidence * 100).toFixed(0)}%)`
+        `${d.type} — ${d.side} ${d.view}`
       )
     );
   hr();
@@ -291,20 +306,16 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
   // ---------- Capture quality ----------
   hr();
   subheading("Capture quality");
-  body(
-    `${s.captureCounts.images} 2D image${s.captureCounts.images === 1 ? "" : "s"} (mean detection confidence ${(s.captureCounts.meanImageConfidence * 100).toFixed(0)}%)`
-  );
-  body(
-    `${s.captureCounts.meshes} 3D mesh${s.captureCounts.meshes === 1 ? "" : "es"} (mean detection confidence ${(s.captureCounts.meanMeshConfidence * 100).toFixed(0)}%)`
-  );
+  body(`${s.captureCounts.images} foot photo${s.captureCounts.images === 1 ? "" : "s"} saved with this check.`);
 
   // ---------- Footer ----------
   hr();
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);
   doc.setTextColor(95, 94, 90);
-  const disclaimer =
-    "Decision support only. Not a diagnosis. Final clinical judgment rests with the treating provider. SoleIQ is a wellness monitoring tool and is not a substitute for professional medical examination.";
+  const disclaimer = s.screening
+    ? `${s.screening.limits} This photo screening is not a diagnosis.`
+    : "Decision support only. Not a diagnosis. Final clinical judgment rests with the treating provider.";
   const wrapped = doc.splitTextToSize(disclaimer, pageW - margin * 2);
   wrapped.forEach((line: string) => {
     ensureSpace(11);
