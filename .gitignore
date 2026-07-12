@@ -40,3 +40,7 @@ yarn-error.log*
 .turbo
 .cache
 coverage/
+
+# Python AI service — has its own venv, models, and a .env with secrets.
+# Kept in its own project; never commit into this web monorepo.
+soleiq-foot-ai/

@@ -7,6 +7,7 @@ Monorepo for the SoleIQ platform — AI-assisted diabetic foot screening for pri
 | Folder | Stack | Role |
 |---|---|---|
 | [`soleiq-web/`](./soleiq-web) | Next.js 14 + TypeScript + Tailwind + Supabase | Unified platform: patient clinical-screening flow at `/`, clinic dashboard at `/dashboard`, super-admin console at `/admin`, blog CMS at `/admin/blog`, BLE test page at `/bt`. |
+| [`soleiq-foot-ai/`](./soleiq-foot-ai) | Python 3.11 + FastAPI + PyTorch + FAISS | Foot-image AI service: quality gate, calibrated DFU classifier, similar-case retrieval, Grad-CAM, and the Claude vision judge producing the dual patient/clinician reading. `soleiq-web` proxies to it via `/api/analyze` (`AI_BASE_URL`, default `localhost:8000`). |
 | [`soleiq-website/`](./soleiq-website) | Vite + React + Tailwind + Supabase | Public marketing site with live blog reads. |
 | [`soleiq-admin/`](./soleiq-admin) | Vite + React | Legacy standalone admin (now superseded by `soleiq-web/app/admin`). Kept for reference. |
 | [`soleiq-dashboard/`](./soleiq-dashboard) | Vite + React | Legacy standalone clinic dashboard (now superseded by `soleiq-web/app/dashboard`). Kept for reference. |
@@ -32,6 +33,10 @@ Each app has its own `package.json`. Pick one:
 ```bash
 cd soleiq-web && npm install && npm run dev      # → localhost:3000
 cd soleiq-website && npm install && npm run dev  # → localhost:5173
+
+# AI service (required for real analyses in soleiq-web)
+cd soleiq-foot-ai && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python scripts/serve.py --config config.quick.yaml   # → localhost:8000
 ```
 
 Both apps read Supabase creds from a local `.env.local` (template at `*/. env.local.example`).
