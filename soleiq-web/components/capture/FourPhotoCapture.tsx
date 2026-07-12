@@ -6,6 +6,7 @@ import { useSoleiqStore } from "@/lib/store";
 import { prepareFootPhoto } from "@/lib/photoQuality";
 import type { CaptureView, FootSide } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { PhotoGuideAnimation } from "./PhotoGuideAnimation";
 
 const SHOTS: {
   side: FootSide;
@@ -152,12 +153,7 @@ export function FourPhotoCapture() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={current.dataUrl} alt={shot.title} className="h-full w-full object-contain" />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center px-8 text-center text-warmGray-600">
-            <ImagePlus className="h-10 w-10 text-warmGray-100" />
-            <p className="mt-3 text-sm font-semibold text-warmGray-800">No photo selected</p>
-            <p className="mt-1 text-xs">Use even light, no flash, and a plain background. Include the whole foot.</p>
-            <p className="mt-2 text-[11px]">Optional: place a coin or card beside the foot for scale.</p>
-          </div>
+          <PhotoGuideAnimation side={shot.side} view={shot.view} />
         )}
         {current && (
           <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-teal-600 px-2.5 py-1 text-xs font-medium text-white">
@@ -178,7 +174,7 @@ export function FourPhotoCapture() {
           <ImagePlus className="mr-1.5 h-4 w-4" /> Upload photo
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
             className="sr-only"
             disabled={busy}
             onChange={(event) => {

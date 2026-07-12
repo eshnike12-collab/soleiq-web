@@ -11,16 +11,23 @@ export interface PreparedPhoto {
 }
 
 const MAX_EDGE = 1400;
+const HEIC_NAME = /\.(heic|heif)$/i;
+const SUPPORTED_NAME = /\.(jpe?g|png|webp|heic|heif)$/i;
 
 export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
-  if (!file.type.startsWith("image/")) {
-    throw new Error("Choose a JPEG, PNG, or WebP image.");
+  const isHeic =
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    HEIC_NAME.test(file.name);
+  if (!isHeic && !file.type.startsWith("image/") && !SUPPORTED_NAME.test(file.name)) {
+    throw new Error("Choose a JPEG, PNG, WebP, HEIC, or HEIF image.");
   }
   if (file.size > 15 * 1024 * 1024) {
     throw new Error("This image is larger than 15 MB. Choose a smaller photo.");
   }
 
-  const image = await loadImage(file);
+  const browserImage = isHeic ? await convertHeicToJpeg(file) : file;
+  const image = await loadImage(browserImage);
   const scale = Math.min(1, MAX_EDGE / Math.max(image.width, image.height));
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));
@@ -96,7 +103,23 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
   };
 }
 
-function loadImage(file: File): Promise<HTMLImageElement> {
+async function convertHeicToJpeg(file: File): Promise<Blob> {
+  try {
+    const { default: heic2any } = await import("heic2any");
+    const converted = await heic2any({
+      blob: file,
+      toType: "image/jpeg",
+      quality: 0.92,
+    });
+    return Array.isArray(converted) ? converted[0] : converted;
+  } catch {
+    throw new Error(
+      "This HEIC photo could not be converted. Try exporting it as JPEG and upload it again."
+    );
+  }
+}
+
+function loadImage(file: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();

@@ -7,7 +7,7 @@ Built with Next.js, TypeScript, Tailwind CSS, Supabase, Zustand, and React Three
 ## Features
 
 - Guided patient screening flow with conditional health-history questions
-- Upload or camera capture for the top and sole of both feet
+- Upload or camera capture for the top and sole of both feet, including HEIC/HEIF conversion
 - Local blur, lighting, and resolution checks before submission
 - Server-side multimodal photo analysis with structured, safety-wrapped results
 - Private Supabase image storage, history, signed image URLs, and deletion
