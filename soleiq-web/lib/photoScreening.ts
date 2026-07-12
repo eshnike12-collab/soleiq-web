@@ -182,10 +182,12 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
                 additionalProperties: false,
                 required: ["x", "y", "w", "h"],
                 properties: {
-                  x: { type: "number", minimum: 0, maximum: 1 },
-                  y: { type: "number", minimum: 0, maximum: 1 },
-                  w: { type: "number", minimum: 0, maximum: 1 },
-                  h: { type: "number", minimum: 0, maximum: 1 },
+                  // Structured outputs rejects minimum/maximum on numbers;
+                  // the 0..1 range is enforced by PhotoScreeningSchema (zod).
+                  x: { type: "number" },
+                  y: { type: "number" },
+                  w: { type: "number" },
+                  h: { type: "number" },
                 },
               },
               { type: "null" },
