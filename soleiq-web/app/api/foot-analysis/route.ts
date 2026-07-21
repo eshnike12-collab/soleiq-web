@@ -45,7 +45,9 @@ export async function POST(request: Request) {
   const content: any[] = [
     {
       type: "text",
-      text: `Reported symptoms: pain=${Boolean(body?.symptoms?.pain)}; numbness=${body?.symptoms?.numbness ?? "not reported"}. Check image quality first. If any photo is unusable or shows the wrong surface, request a retake and do not provide a confident screening result.`,
+      text:
+        buildPatientContext(body?.context, body?.symptoms) +
+        "\n\nCheck image quality first. If any photo is unusable or shows the wrong surface, request a retake and do not provide a confident screening result.",
     },
   ];
   for (const image of images) {
@@ -128,6 +130,58 @@ export async function POST(request: Request) {
       numbness: body?.symptoms?.numbness,
     })
   );
+}
+
+/**
+ * Format the questionnaire answers into the patient-context block the
+ * prompt expects. Everything is optional; unstated answers are omitted
+ * rather than sent as "unknown" noise. Free-text values are length-capped
+ * because they end up inside the model prompt.
+ */
+function buildPatientContext(context: any, symptoms: any): string {
+  const clip = (value: unknown, max = 80) =>
+    String(value ?? "").slice(0, max);
+  const lines: string[] = [];
+
+  if (context && typeof context === "object") {
+    if (context.age) lines.push(`Age: ${clip(context.age, 6)}`);
+    if (context.diabetes && typeof context.diabetes === "object") {
+      const d = context.diabetes;
+      const parts = [clip(d.type, 20).replace("_", " ")];
+      if (d.yearDiagnosed) {
+        const years = new Date().getFullYear() - Number(d.yearDiagnosed);
+        if (Number.isFinite(years) && years >= 0) parts.push(`about ${years} years`);
+      }
+      if (d.hba1c) parts.push(`most recent HbA1c ${clip(d.hba1c, 6)}`);
+      if (d.glucoseCategory) parts.push(`recent glucose: ${clip(d.glucoseCategory, 30).replace(/_/g, " ")}`);
+      lines.push(`Diabetes: ${parts.join(", ")}`);
+    }
+    if (context.numbness && context.numbness !== "neither") {
+      lines.push(`Numbness in feet: ${clip(context.numbness, 10)}`);
+    }
+    if (context.pad && typeof context.pad === "object" && context.pad.status && context.pad.status !== "none") {
+      lines.push(
+        `Circulation (peripheral artery disease): ${clip(context.pad.status, 12)}${context.pad.restPain ? ", has rest pain" : ""}${context.pad.claudication ? ", leg pain when walking" : ""}`
+      );
+    }
+    if (Array.isArray(context.priorEvents) && context.priorEvents.length > 0) {
+      const events = context.priorEvents
+        .slice(0, 4)
+        .map((e: any) => `${clip(e.type, 12)} on ${clip(e.side, 6)} foot (${clip(e.region, 16).replace(/_/g, " ")}, ${clip(e.year, 6)})`)
+        .join("; ");
+      lines.push(`Past foot events: ${events}`);
+    }
+    if (context.smoking) lines.push("Smokes: yes");
+    if (Array.isArray(context.painPoints) && context.painPoints.length > 0) {
+      lines.push(`Reported pain locations: ${context.painPoints.slice(0, 6).map((p: any) => clip(p, 24)).join(", ")}`);
+    }
+  }
+
+  lines.push(
+    `Reported symptoms today: pain=${Boolean(symptoms?.pain)}; numbness=${clip(symptoms?.numbness ?? "not reported", 16)}`
+  );
+
+  return "Patient questionnaire summary (use per the system prompt; do not repeat verbatim):\n" + lines.join("\n");
 }
 
 function parseDataUrl(dataUrl: string): {

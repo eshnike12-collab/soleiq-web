@@ -23,6 +23,7 @@ export const PhotoScreeningSchema = z.object({
       location_plain: z.string(),
       concern: z.enum(["low", "medium", "high"]),
       why_it_matters: z.string(),
+      deeper_explanation: z.string(),
       region: z
         .object({
           x: z.number().min(0).max(1),
@@ -33,6 +34,8 @@ export const PhotoScreeningSchema = z.object({
         .nullable(),
     })
   ),
+  looks_good: z.array(z.string()),
+  personal_notes: z.array(z.string()),
   what_to_do: z.array(z.string()),
   when_to_get_help: z.array(z.string()),
   limits: z.string(),
@@ -116,6 +119,8 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
     "capture_quality",
     "overall",
     "findings",
+    "looks_good",
+    "personal_notes",
     "what_to_do",
     "when_to_get_help",
     "limits",
@@ -166,6 +171,7 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
           "location_plain",
           "concern",
           "why_it_matters",
+          "deeper_explanation",
           "region",
         ],
         properties: {
@@ -175,6 +181,7 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
           location_plain: { type: "string" },
           concern: { type: "string", enum: ["low", "medium", "high"] },
           why_it_matters: { type: "string" },
+          deeper_explanation: { type: "string" },
           region: {
             anyOf: [
               {
@@ -196,6 +203,8 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
         },
       },
     },
+    looks_good: { type: "array", items: { type: "string" } },
+    personal_notes: { type: "array", items: { type: "string" } },
     what_to_do: { type: "array", items: { type: "string" } },
     when_to_get_help: { type: "array", items: { type: "string" } },
     limits: { type: "string" },

@@ -270,6 +270,10 @@ export interface PhotoScreeningFinding {
   location_plain: string;
   concern: "low" | "medium" | "high";
   why_it_matters: string;
+  /** 2–4 plain sentences shown when the person taps the marker: what this
+   *  is, why it can become a problem for someone with diabetes, and what
+   *  makes it better or worse. */
+  deeper_explanation: string;
   region: { x: number; y: number; w: number; h: number } | null;
 }
 
@@ -283,6 +287,12 @@ export interface PhotoScreeningResult {
     level: ScreeningLevel;
   };
   findings: PhotoScreeningFinding[];
+  /** Plain positives actually visible in the photos ("the skin on top of
+   *  both feet looks intact with even color"). Reassurance, not clearance. */
+  looks_good: string[];
+  /** Plain sentences connecting the person's questionnaire answers to what
+   *  they should watch ("because you feel numbness in your right foot…"). */
+  personal_notes: string[];
   what_to_do: string[];
   when_to_get_help: string[];
   limits: string;

@@ -27,16 +27,18 @@ export function isSupabaseConfigured(): boolean {
   return !!(URL && KEY);
 }
 
-/** Idempotent anonymous sign-in. Returns the user's auth.uid() or null. */
+/**
+ * Returns the signed-in user's auth.uid(), or null when logged out.
+ *
+ * This used to create an anonymous session on demand — that's why data
+ * "reset": every fresh browser session became a new anonymous user and
+ * orphaned its rows. The app is now gated behind real Supabase Auth
+ * (AuthGate → /login), so this only reports the existing session and never
+ * mints anonymous users.
+ */
 export async function ensureAnonAuth(): Promise<string | null> {
   const sb = getSupabase();
   if (!sb) return null;
   const { data: existing } = await sb.auth.getUser();
-  if (existing.user) return existing.user.id;
-  const { data, error } = await sb.auth.signInAnonymously();
-  if (error) {
-    console.warn("[soleiq] anonymous sign-in failed:", error.message);
-    return null;
-  }
-  return data.user?.id ?? null;
+  return existing.user?.id ?? null;
 }

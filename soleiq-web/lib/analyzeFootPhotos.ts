@@ -38,6 +38,17 @@ export async function analyzeFootPhotos(
         pain: profile.painPresent ?? false,
         numbness: profile.numbness ?? "not reported",
       },
+      // Questionnaire answers the model uses to calibrate vigilance and
+      // write the personal notes. The server formats these into the prompt.
+      context: {
+        age: profile.age,
+        diabetes: profile.diabetes,
+        numbness: profile.numbness,
+        pad: profile.pad,
+        priorEvents: profile.priorEvents,
+        smoking: profile.smoking,
+        painPoints: profile.painPoints,
+      },
     }),
   });
 

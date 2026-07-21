@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Camera, Check, ImagePlus, RotateCcw } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
 import { prepareFootPhoto } from "@/lib/photoQuality";
 import type { CaptureView, FootSide } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { LiveCamera } from "./LiveCamera";
 import { PhotoGuideAnimation } from "./PhotoGuideAnimation";
 
 const SHOTS: {
@@ -47,6 +48,7 @@ export function FourPhotoCapture() {
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const reviewing = index === SHOTS.length;
   const shot = SHOTS[Math.min(index, SHOTS.length - 1)];
   const images = visit?.images ?? [];
@@ -83,6 +85,17 @@ export function FourPhotoCapture() {
       setBusy(false);
     }
   };
+
+  const handleCameraCapture = useCallback((file: File) => {
+    setCameraOpen(false);
+    void choosePhoto(file);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shot.side, shot.view]);
+
+  const handleCameraUnavailable = useCallback((message: string) => {
+    setCameraOpen(false);
+    setError(message);
+  }, []);
 
   if (reviewing) {
     return (
@@ -149,13 +162,19 @@ export function FourPhotoCapture() {
       </header>
 
       <div className="relative min-h-0 flex-1 overflow-hidden rounded-3xl border border-warmGray-100 bg-warmGray-50">
-        {current ? (
+        {cameraOpen ? (
+          <LiveCamera
+            onCapture={handleCameraCapture}
+            onClose={() => setCameraOpen(false)}
+            onUnavailable={handleCameraUnavailable}
+          />
+        ) : current ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={current.dataUrl} alt={shot.title} className="h-full w-full object-contain" />
         ) : (
           <PhotoGuideAnimation side={shot.side} view={shot.view} />
         )}
-        {current && (
+        {!cameraOpen && current && (
           <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-teal-600 px-2.5 py-1 text-xs font-medium text-white">
             <Check className="h-3.5 w-3.5" /> Quality check passed
           </span>
@@ -183,25 +202,22 @@ export function FourPhotoCapture() {
             }}
           />
         </label>
-        <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl bg-brand text-sm font-semibold text-white">
+        <button
+          type="button"
+          disabled={busy || cameraOpen}
+          onClick={() => {
+            setError(null);
+            setCameraOpen(true);
+          }}
+          className="inline-flex h-11 items-center justify-center rounded-2xl bg-brand text-sm font-semibold text-white disabled:opacity-60"
+        >
           <Camera className="mr-1.5 h-4 w-4" /> Take photo
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="sr-only"
-            disabled={busy}
-            onChange={(event) => {
-              void choosePhoto(event.target.files?.[0]);
-              event.target.value = "";
-            }}
-          />
-        </label>
+        </button>
       </div>
       <div className="pt-2">
         <Button
           fullWidth
-          disabled={!current || busy}
+          disabled={!current || busy || cameraOpen}
           onClick={() => setIndex((value) => value + 1)}
         >
           {index === SHOTS.length - 1 ? "Review all photos" : "Use this photo"}

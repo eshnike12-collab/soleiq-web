@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSupabase } from "./supabase";
 
-export type AppRole = "super_admin" | "clinic_admin" | "patient";
+export type AppRole = "admin" | "doctor" | "patient";
 
 export interface Profile {
   id: string;
@@ -69,18 +69,53 @@ export function useAuth(): AuthState {
   return state;
 }
 
+/** Where each role lands after login. Patients get their dashboard home
+ *  base at /home; the visit flow itself lives at "/". */
+export function homeForRole(role: AppRole | undefined | null): string {
+  if (role === "admin") return "/admin";
+  if (role === "doctor") return "/dashboard";
+  return "/home";
+}
+
+// ---------------------------------------------------------------------------
+// Sign-in methods — email + password only.
+// ---------------------------------------------------------------------------
+
 export async function signInWithPassword(email: string, password: string) {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase not configured");
   const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 }
 
-export async function signUpWithPassword(email: string, password: string) {
+export async function signUpWithPassword(
+  email: string,
+  password: string,
+  requestedRole: "patient" | "doctor" = "patient"
+) {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase not configured");
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) throw error;
+  // requested_role is read by the handle_new_user trigger; it only honors
+  // 'doctor' (admin comes from the ADMIN_EMAIL list, never from here).
+  const { error } = await sb.auth.signUp({
+    email,
+    password,
+    options: { data: { requested_role: requestedRole } },
+  });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Demo path: anonymous Supabase session — no account, no email, no
+ * confirmation step. The signup trigger still creates a patient profile,
+ * so saving and Open Results work; data lives with the anonymous user
+ * until the browser storage is cleared.
+ */
+export async function signInAsGuest() {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase not configured");
+  const { error } = await sb.auth.signInAnonymously();
+  if (error) throw new Error(error.message);
 }
 
 export async function signOut() {

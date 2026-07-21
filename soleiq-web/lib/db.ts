@@ -34,6 +34,21 @@ export async function upsertPatient(
   const c = await client();
   if (!c) return null;
 
+  // One patients row per account: if the caller doesn't know the row id
+  // (fresh browser session), look it up by auth_uid before inserting.
+  // Without this, every new session created a duplicate patients row and
+  // visits scattered across them.
+  if (!existingId) {
+    const { data: mine } = await c.sb
+      .from("patients")
+      .select("id")
+      .eq("auth_uid", c.uid)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (mine?.id) existingId = mine.id;
+  }
+
   const orgId = await getDefaultOrgId();
 
   const row = {
@@ -216,6 +231,7 @@ export async function syncCompleteVisit(
 
 export interface PatientListRow {
   id: string;
+  auth_uid: string;
   full_name: string | null;
   city: string | null;
   state: string | null;
@@ -239,7 +255,7 @@ export async function listPatients(): Promise<PatientListRow[]> {
   if (!sb) return [];
   const { data, error } = await sb
     .from("patients")
-    .select("id, full_name, city, state, age, organization_id, created_at")
+    .select("id, auth_uid, full_name, city, state, age, organization_id, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) {
@@ -280,10 +296,13 @@ export async function listOrganizations() {
   return data ?? [];
 }
 
+const VISIT_SELECT =
+  "id, auth_uid, started_at, completed_at, captured_images(side, view, data_url, storage_path, quality, captured_at), foot_meshes(side, coverage_pct, seed_signature, captured_at), analysis_results(visit_id, scored_at, risk_level, risk_factors, detections, volumetrics, trend, screening_result)";
+
 /**
- * Patient-side: fetch the current (anonymous) user's prior visits including
- * the analysis result and the sole-view captured images, in chronological
- * order. RLS limits results to rows where auth_uid = auth.uid().
+ * Patient-side: fetch the current user's prior visits including the analysis
+ * result and captured images, in chronological order. RLS limits results to
+ * rows where auth_uid = auth.uid().
  */
 export async function listMyPriorVisits(): Promise<Visit[]> {
   const sb = getSupabase();
@@ -292,9 +311,7 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
   if (!u.user) return [];
   const { data, error } = await sb
     .from("visits")
-    .select(
-      "id, started_at, completed_at, captured_images(side, view, data_url, storage_path, quality, captured_at), foot_meshes(side, coverage_pct, seed_signature, captured_at), analysis_results(visit_id, scored_at, risk_level, risk_factors, detections, volumetrics, trend, screening_result)"
-    )
+    .select(VISIT_SELECT)
     .eq("auth_uid", u.user.id)
     .not("completed_at", "is", null)
     .order("started_at", { ascending: true });
@@ -302,6 +319,103 @@ export async function listMyPriorVisits(): Promise<Visit[]> {
     console.warn("[soleiq] listMyPriorVisits failed:", error.message);
     return [];
   }
+  return mapVisitRows(sb, data ?? []);
+}
+
+/**
+ * "Open Results": the most recent saved analysis for a user. With no
+ * argument, the current user's own; doctors/admins pass a patient's
+ * auth uid (RLS decides whether they may actually read it — patients get
+ * only their own rows, doctors their assigned patients', admins anyone's).
+ * Returns null when the user has no saved analysis yet.
+ */
+export async function getLatestVisitWithResult(
+  targetAuthUid?: string | null
+): Promise<Visit | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  let authUid = targetAuthUid ?? null;
+  if (!authUid) {
+    const { data: u } = await sb.auth.getUser();
+    authUid = u.user?.id ?? null;
+  }
+  if (!authUid) return null;
+  const { data, error } = await sb
+    .from("visits")
+    .select(VISIT_SELECT)
+    .eq("auth_uid", authUid)
+    .not("completed_at", "is", null)
+    .order("started_at", { ascending: false })
+    .limit(5);
+  if (error) {
+    console.warn("[soleiq] getLatestVisitWithResult failed:", error.message);
+    return null;
+  }
+  const visits = await mapVisitRows(sb, data ?? []);
+  return visits.find((visit) => visit.result?.screening) ?? visits[0] ?? null;
+}
+
+/**
+ * Doctor/admin view: every completed visit for one patient (their auth uid),
+ * oldest first — the photo timeline. RLS returns rows only if the viewer is
+ * the patient, an assigned doctor, or an admin.
+ */
+export async function listVisitsForUser(authUid: string): Promise<Visit[]> {
+  const sb = getSupabase();
+  if (!sb || !authUid) return [];
+  const { data, error } = await sb
+    .from("visits")
+    .select(VISIT_SELECT)
+    .eq("auth_uid", authUid)
+    .not("completed_at", "is", null)
+    .order("started_at", { ascending: true });
+  if (error) {
+    console.warn("[soleiq] listVisitsForUser failed:", error.message);
+    return [];
+  }
+  return mapVisitRows(sb, data ?? []);
+}
+
+export interface PatientRecord {
+  id: string;
+  auth_uid: string;
+  full_name: string | null;
+  age: number | null;
+  sex: string | null;
+  city: string | null;
+  state: string | null;
+  conditions: string[] | null;
+  numbness: string | null;
+  pain_present: boolean | null;
+  created_at: string;
+}
+
+/** Latest patients row for one auth uid (RLS-scoped). */
+export async function getPatientByAuthUid(
+  authUid: string
+): Promise<PatientRecord | null> {
+  const sb = getSupabase();
+  if (!sb || !authUid) return null;
+  const { data, error } = await sb
+    .from("patients")
+    .select(
+      "id, auth_uid, full_name, age, sex, city, state, conditions, numbness, pain_present, created_at"
+    )
+    .eq("auth_uid", authUid)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.warn("[soleiq] getPatientByAuthUid failed:", error.message);
+    return null;
+  }
+  return (data as PatientRecord) ?? null;
+}
+
+async function mapVisitRows(
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+  data: any[]
+): Promise<Visit[]> {
   const paths = (data ?? []).flatMap((row: any) =>
     (row.captured_images ?? [])
       .map((image: any) => image.storage_path)
@@ -389,4 +503,168 @@ export async function listProfiles() {
     return [];
   }
   return data ?? [];
+}
+
+// ---------- RBAC management (admin console) --------------------------------
+// All of these are RLS-enforced: only an admin's session can actually change
+// roles or assignments; these helpers just surface the errors.
+
+export async function updateProfileRole(
+  profileId: string,
+  role: "admin" | "doctor" | "patient"
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase not configured");
+  const { error } = await sb.from("profiles").update({ role }).eq("id", profileId);
+  if (error) throw new Error(error.message);
+}
+
+export interface AssignmentRow {
+  id: string;
+  doctor_id: string;
+  patient_id: string;
+  created_at: string;
+}
+
+export async function listAssignments(): Promise<AssignmentRow[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from("doctor_patient_assignments")
+    .select("id, doctor_id, patient_id, created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) {
+    console.warn("[soleiq] listAssignments failed:", error.message);
+    return [];
+  }
+  return (data ?? []) as AssignmentRow[];
+}
+
+export async function createAssignment(
+  doctorId: string,
+  patientId: string
+): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase not configured");
+  const { error } = await sb
+    .from("doctor_patient_assignments")
+    .insert({ doctor_id: doctorId, patient_id: patientId });
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteAssignment(assignmentId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase not configured");
+  const { error } = await sb
+    .from("doctor_patient_assignments")
+    .delete()
+    .eq("id", assignmentId);
+  if (error) throw new Error(error.message);
+}
+
+// ---------- Patient-initiated sharing --------------------------------------
+// Backed by the dpa_patient_share / profiles_doctor_directory policies in
+// 2026-07-patient-share.sql. The assignment row is the persistent link: once
+// it exists, RLS lets that doctor read this patient's visits and results.
+
+export interface DoctorRow {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+}
+
+/** Doctor directory — visible to any signed-in user so a patient can pick. */
+export async function listDoctors(): Promise<DoctorRow[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from("profiles")
+    .select("id, email, full_name")
+    .eq("role", "doctor")
+    .order("email", { ascending: true })
+    .limit(200);
+  if (error) {
+    console.warn("[soleiq] listDoctors failed:", error.message);
+    return [];
+  }
+  return (data ?? []) as DoctorRow[];
+}
+
+/** The current patient's doctor links (assignment id + doctor id). */
+export async function listMyDoctorLinks(): Promise<AssignmentRow[]> {
+  const c = await client();
+  if (!c) return [];
+  const { data, error } = await c.sb
+    .from("doctor_patient_assignments")
+    .select("id, doctor_id, patient_id, created_at")
+    .eq("patient_id", c.uid)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.warn("[soleiq] listMyDoctorLinks failed:", error.message);
+    return [];
+  }
+  return (data ?? []) as AssignmentRow[];
+}
+
+/** Link the current patient to a doctor. Idempotent (duplicate = no-op). */
+export async function shareWithDoctor(doctorId: string): Promise<void> {
+  const c = await client();
+  if (!c) throw new Error("You need to be signed in to share.");
+  const { error } = await c.sb
+    .from("doctor_patient_assignments")
+    .upsert(
+      { doctor_id: doctorId, patient_id: c.uid },
+      { onConflict: "doctor_id,patient_id", ignoreDuplicates: true }
+    );
+  if (error) throw new Error(error.message);
+}
+
+/** Remove one of the current patient's doctor links. */
+export async function unshareDoctor(assignmentId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase not configured");
+  const { error } = await sb
+    .from("doctor_patient_assignments")
+    .delete()
+    .eq("id", assignmentId);
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * Doctor side: the patients who shared with (or were assigned to) the
+ * signed-in doctor, with their profile info. Two queries because the
+ * assignments table has no PostgREST relationship alias to profiles.
+ */
+export async function listMyAssignedPatients(): Promise<
+  { assignmentId: string; profile: DoctorRow; since: string }[]
+> {
+  const c = await client();
+  if (!c) return [];
+  const { data: links, error } = await c.sb
+    .from("doctor_patient_assignments")
+    .select("id, patient_id, created_at")
+    .eq("doctor_id", c.uid)
+    .order("created_at", { ascending: false });
+  if (error) {
+    console.warn("[soleiq] listMyAssignedPatients failed:", error.message);
+    return [];
+  }
+  const ids = (links ?? []).map((l: any) => l.patient_id);
+  if (ids.length === 0) return [];
+  const { data: profiles } = await c.sb
+    .from("profiles")
+    .select("id, email, full_name")
+    .in("id", ids);
+  const byId = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+  return (links ?? []).map((l: any) => ({
+    assignmentId: l.id,
+    since: l.created_at,
+    profile:
+      (byId.get(l.patient_id) as DoctorRow | undefined) ?? {
+        id: l.patient_id,
+        email: null,
+        full_name: null,
+      },
+  }));
 }
