@@ -38,6 +38,18 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
   if (!context) throw new Error("The browser could not read this image.");
   context.drawImage(image, 0, 0, width, height);
 
+  // Lighting normalization BEFORE analysis: hard shadows and color casts are
+  // the main source of "dark spot" false positives downstream. Two passes —
+  // the second flattens whatever gradient survives the first's clamps — so
+  // lighting is corrected in software instead of bouncing the photo back to
+  // the patient. Best-effort: a failure must never block the capture flow.
+  try {
+    normalizeLighting(context, width, height);
+    normalizeLighting(context, width, height);
+  } catch {
+    /* keep the unnormalized image */
+  }
+
   const sample = document.createElement("canvas");
   sample.width = 120;
   sample.height = 120;
@@ -89,6 +101,10 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
   if (sharpness < 35) {
     issues.push("The photo looks blurry. Hold the phone steady and tap to focus.");
   }
+  // Uneven lighting is NOT a blocker: it gets corrected in software by the
+  // two normalization passes above, and the analysis prompt is told to treat
+  // residual shading as lighting, not lesions. The only lighting reasons to
+  // reject a photo are the absolute too-dark / overexposed limits above.
 
   return {
     dataUrl: canvas.toDataURL("image/jpeg", 0.84),
@@ -101,6 +117,142 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
       issues,
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Lighting normalization — gray-world white balance + CLAHE-style local
+// luminance flattening. Runs on the full-resolution prepared canvas so the
+// image the model sees has hard shadows and color casts damped down.
+// ---------------------------------------------------------------------------
+
+const WB_GAIN_MIN = 0.8;
+const WB_GAIN_MAX = 1.25;
+/** Tile grid for the local luminance map. */
+const TILE_GRID = 8;
+/** Clamp on the per-pixel shadow-lift factor: enough to flatten a shadow,
+ *  not enough to erase true dark discoloration (which is small and keeps
+ *  its local contrast after a smooth, tile-scale correction). Applied in
+ *  two passes, so the effective range is roughly the square of this. */
+const LIFT_MIN = 0.65;
+const LIFT_MAX = 1.9;
+
+export function normalizeLighting(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number
+): void {
+  const imageData = context.getImageData(0, 0, width, height);
+  const data = imageData.data;
+  const pixelCount = width * height;
+
+  // ---- 1. Gray-world white balance ---------------------------------------
+  let sumR = 0;
+  let sumG = 0;
+  let sumB = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    sumR += data[i];
+    sumG += data[i + 1];
+    sumB += data[i + 2];
+  }
+  const meanR = sumR / pixelCount;
+  const meanG = sumG / pixelCount;
+  const meanB = sumB / pixelCount;
+  const gray = (meanR + meanG + meanB) / 3;
+  const clampGain = (value: number) =>
+    Math.min(WB_GAIN_MAX, Math.max(WB_GAIN_MIN, value));
+  const gainR = clampGain(gray / (meanR || 1));
+  const gainG = clampGain(gray / (meanG || 1));
+  const gainB = clampGain(gray / (meanB || 1));
+
+  // ---- 2. Local luminance map (tile means, bilinearly interpolated) ------
+  const tileW = Math.max(1, Math.ceil(width / TILE_GRID));
+  const tileH = Math.max(1, Math.ceil(height / TILE_GRID));
+  const tileSum = new Float64Array(TILE_GRID * TILE_GRID);
+  const tileCount = new Float64Array(TILE_GRID * TILE_GRID);
+  let lumaSum = 0;
+  for (let y = 0; y < height; y++) {
+    const ty = Math.min(TILE_GRID - 1, Math.floor(y / tileH));
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const luma = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+      const tile = ty * TILE_GRID + Math.min(TILE_GRID - 1, Math.floor(x / tileW));
+      tileSum[tile] += luma;
+      tileCount[tile] += 1;
+      lumaSum += luma;
+    }
+  }
+  const globalMean = lumaSum / pixelCount || 1;
+  const tileMean = new Float64Array(TILE_GRID * TILE_GRID);
+  for (let t = 0; t < tileMean.length; t++) {
+    tileMean[t] = tileCount[t] > 0 ? tileSum[t] / tileCount[t] : globalMean;
+  }
+
+  const localMeanAt = (x: number, y: number): number => {
+    // Bilinear interpolation between tile centers → smooth correction map
+    // with no visible tile seams.
+    const fx = Math.min(TILE_GRID - 1, Math.max(0, x / tileW - 0.5));
+    const fy = Math.min(TILE_GRID - 1, Math.max(0, y / tileH - 0.5));
+    const x0 = Math.floor(fx);
+    const y0 = Math.floor(fy);
+    const x1 = Math.min(TILE_GRID - 1, x0 + 1);
+    const y1 = Math.min(TILE_GRID - 1, y0 + 1);
+    const dx = fx - x0;
+    const dy = fy - y0;
+    const top = tileMean[y0 * TILE_GRID + x0] * (1 - dx) + tileMean[y0 * TILE_GRID + x1] * dx;
+    const bottom = tileMean[y1 * TILE_GRID + x0] * (1 - dx) + tileMean[y1 * TILE_GRID + x1] * dx;
+    return top * (1 - dy) + bottom * dy;
+  };
+
+  // ---- 3. Apply white balance + shadow lift ------------------------------
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const local = localMeanAt(x, y) || globalMean;
+      const lift = Math.min(LIFT_MAX, Math.max(LIFT_MIN, globalMean / local));
+      data[i] = Math.min(255, data[i] * gainR * lift);
+      data[i + 1] = Math.min(255, data[i + 1] * gainG * lift);
+      data[i + 2] = Math.min(255, data[i + 2] * gainB * lift);
+    }
+  }
+  context.putImageData(imageData, 0, 0);
+}
+
+/**
+ * 0 = perfectly even, higher = stronger directional lighting. Ratio of the
+ * spread of center-region tile means to the global mean, so a shadowed half
+ * of the frame scores high while normal foot/background contrast doesn't.
+ */
+export function measureLightingUnevenness(
+  gray: Float32Array,
+  width: number,
+  height: number
+): number {
+  const GRID = 6;
+  const tileW = Math.max(1, Math.floor(width / GRID));
+  const tileH = Math.max(1, Math.floor(height / GRID));
+  const means: number[] = [];
+  // Center 4×4 of the 6×6 grid — ignore the outer ring where background
+  // and floor dominate.
+  for (let ty = 1; ty < GRID - 1; ty++) {
+    for (let tx = 1; tx < GRID - 1; tx++) {
+      let sum = 0;
+      let count = 0;
+      for (let y = ty * tileH; y < Math.min(height, (ty + 1) * tileH); y++) {
+        for (let x = tx * tileW; x < Math.min(width, (tx + 1) * tileW); x++) {
+          sum += gray[y * width + x];
+          count++;
+        }
+      }
+      if (count > 0) means.push(sum / count);
+    }
+  }
+  if (means.length === 0) return 0;
+  const globalMean = means.reduce((a, b) => a + b, 0) / means.length;
+  if (globalMean <= 1) return 0;
+  const sorted = [...means].sort((a, b) => a - b);
+  const darkest = sorted.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+  const brightest = sorted.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  return (brightest - darkest) / globalMean;
 }
 
 async function convertHeicToJpeg(file: File): Promise<Blob> {

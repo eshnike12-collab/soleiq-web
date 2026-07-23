@@ -24,6 +24,7 @@ export const PhotoScreeningSchema = z.object({
       concern: z.enum(["low", "medium", "high"]),
       why_it_matters: z.string(),
       deeper_explanation: z.string(),
+      lighting_artifact_possible: z.boolean(),
       region: z
         .object({
           x: z.number().min(0).max(1),
@@ -172,6 +173,7 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
           "concern",
           "why_it_matters",
           "deeper_explanation",
+          "lighting_artifact_possible",
           "region",
         ],
         properties: {
@@ -182,6 +184,7 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
           concern: { type: "string", enum: ["low", "medium", "high"] },
           why_it_matters: { type: "string" },
           deeper_explanation: { type: "string" },
+          lighting_artifact_possible: { type: "boolean" },
           region: {
             anyOf: [
               {

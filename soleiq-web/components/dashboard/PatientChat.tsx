@@ -17,6 +17,80 @@ interface ChatMessage {
   content: string;
 }
 
+// ---------------------------------------------------------------------------
+// Lightweight, safe markdown for assistant replies: paragraphs, dash bullets,
+// bold, headings. Built as React elements (no innerHTML), with stray code
+// fences stripped defensively — the prompt forbids them, but a reply that
+// slips through should still read as text, not raw ``` markers.
+// ---------------------------------------------------------------------------
+
+function inlineBold(text: string, keyPrefix: string) {
+  const parts = text.split(/\*\*(.+?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={`${keyPrefix}-${i}`}>{part}</strong> : part
+  );
+}
+
+function AssistantMessage({ content }: { content: string }) {
+  const cleaned = content
+    .replace(/```[a-zA-Z]*\n?/g, "")
+    .replace(/```/g, "")
+    .replace(/`([^`]+)`/g, "$1");
+
+  const blocks: React.ReactNode[] = [];
+  let bullets: string[] = [];
+  let paragraph: string[] = [];
+  let key = 0;
+
+  const flushBullets = () => {
+    if (bullets.length === 0) return;
+    blocks.push(
+      <ul key={key++} className="list-disc space-y-1 pl-4">
+        {bullets.map((item, i) => (
+          <li key={i}>{inlineBold(item, `b${key}-${i}`)}</li>
+        ))}
+      </ul>
+    );
+    bullets = [];
+  };
+  const flushParagraph = () => {
+    if (paragraph.length === 0) return;
+    const text = paragraph.join(" ");
+    blocks.push(<p key={key++}>{inlineBold(text, `p${key}`)}</p>);
+    paragraph = [];
+  };
+
+  for (const raw of cleaned.split("\n")) {
+    const line = raw.trim();
+    if (!line) {
+      flushBullets();
+      flushParagraph();
+      continue;
+    }
+    const bullet = line.match(/^[-*•]\s+(.*)$/);
+    const heading = line.match(/^#{1,4}\s+(.*)$/);
+    if (bullet) {
+      flushParagraph();
+      bullets.push(bullet[1]);
+    } else if (heading) {
+      flushBullets();
+      flushParagraph();
+      blocks.push(
+        <p key={key++} className="font-semibold">
+          {inlineBold(heading[1], `h${key}`)}
+        </p>
+      );
+    } else {
+      flushBullets();
+      paragraph.push(line);
+    }
+  }
+  flushBullets();
+  flushParagraph();
+
+  return <div className="space-y-2">{blocks}</div>;
+}
+
 const STARTERS = [
   "Summarize this patient's history and current status.",
   "Any recurring findings or trends I should watch?",
@@ -107,13 +181,17 @@ export function PatientChat({
           <div
             key={index}
             className={cn(
-              "max-w-[92%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed",
+              "max-w-[92%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
               message.role === "user"
-                ? "ml-auto bg-brand text-white"
+                ? "ml-auto whitespace-pre-wrap bg-brand text-white"
                 : "bg-warmGray-50 text-warmGray-800"
             )}
           >
-            {message.content}
+            {message.role === "assistant" ? (
+              <AssistantMessage content={message.content} />
+            ) : (
+              message.content
+            )}
           </div>
         ))}
         {busy && (

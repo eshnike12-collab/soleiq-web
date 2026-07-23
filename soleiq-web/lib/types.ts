@@ -274,6 +274,11 @@ export interface PhotoScreeningFinding {
    *  is, why it can become a problem for someone with diabetes, and what
    *  makes it better or worse. */
   deeper_explanation: string;
+  /** True when the model can't rule out that a dark area is a cast shadow /
+   *  lighting gradient rather than real discoloration — the UI shows it as
+   *  "may be lighting; retake to confirm" instead of a hard finding.
+   *  Optional because results saved before this field existed lack it. */
+  lighting_artifact_possible?: boolean;
   region: { x: number; y: number; w: number; h: number } | null;
 }
 

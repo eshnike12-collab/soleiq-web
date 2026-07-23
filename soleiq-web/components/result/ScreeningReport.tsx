@@ -197,6 +197,12 @@ function FindingCard({
         )}
       </button>
       <p className="mt-2 text-xs leading-relaxed text-warmGray-800">{finding.why_it_matters}</p>
+      {finding.lighting_artifact_possible && (
+        <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-amber-800">
+          This darker area may just be a shadow or uneven lighting. Retake this
+          photo in bright, even light to confirm before worrying.
+        </p>
+      )}
       {hasDetail && !open && (
         <p className="mt-2 text-[11px] font-medium text-brand">
           {finding.region ? "Tap the marked spot for what this means" : "Tap for what this means"}

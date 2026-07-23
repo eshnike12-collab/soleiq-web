@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Camera, Check, ImagePlus, RotateCcw } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { Camera, Check, ImagePlus, Loader2, RotateCcw } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
 import { prepareFootPhoto } from "@/lib/photoQuality";
 import type { CaptureView, FootSide } from "@/lib/types";
@@ -49,6 +49,8 @@ export function FourPhotoCapture() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const lastSource = useRef<"camera" | "upload">("camera");
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   const reviewing = index === SHOTS.length;
   const shot = SHOTS[Math.min(index, SHOTS.length - 1)];
   const images = visit?.images ?? [];
@@ -86,7 +88,19 @@ export function FourPhotoCapture() {
     }
   };
 
+  const retry = () => {
+    setError(null);
+    if (lastSource.current === "upload") {
+      // A button tap is a user gesture, so programmatically reopening the
+      // picker is allowed.
+      uploadInputRef.current?.click();
+    } else {
+      setCameraOpen(true);
+    }
+  };
+
   const handleCameraCapture = useCallback((file: File) => {
+    lastSource.current = "camera";
     setCameraOpen(false);
     void choosePhoto(file);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,12 +193,30 @@ export function FourPhotoCapture() {
             <Check className="h-3.5 w-3.5" /> Quality check passed
           </span>
         )}
+        {busy && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70">
+            <Loader2 className="h-6 w-6 animate-spin text-brand" />
+            <p className="mt-2 text-xs font-medium text-warmGray-800">
+              Checking your photo…
+            </p>
+          </div>
+        )}
       </div>
 
       {error && (
-        <div className="mt-2 rounded-xl border border-risk-high/30 bg-risk-high/5 px-3 py-2 text-xs text-risk-high">
-          <p className="font-semibold">Please retake this photo</p>
-          <p className="mt-0.5">{error}</p>
+        <div className="mt-2 flex items-start justify-between gap-2 rounded-xl border border-risk-high/30 bg-risk-high/5 px-3 py-2 text-xs text-risk-high">
+          <div>
+            <p className="font-semibold">Please retake this photo</p>
+            <p className="mt-0.5">{error}</p>
+          </div>
+          <button
+            type="button"
+            onClick={retry}
+            disabled={busy}
+            className="shrink-0 rounded-lg bg-risk-high px-2.5 py-1.5 font-semibold text-white"
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -192,12 +224,15 @@ export function FourPhotoCapture() {
         <label className="inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl border border-warmGray-100 bg-white text-sm font-semibold text-brand">
           <ImagePlus className="mr-1.5 h-4 w-4" /> Upload photo
           <input
+            ref={uploadInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+            accept="image/*,.heic,.heif"
             className="sr-only"
             disabled={busy}
             onChange={(event) => {
+              lastSource.current = "upload";
               void choosePhoto(event.target.files?.[0]);
+              // Reset so picking the same file again still fires onChange.
               event.target.value = "";
             }}
           />

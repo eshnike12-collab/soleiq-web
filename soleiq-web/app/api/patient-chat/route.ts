@@ -24,7 +24,11 @@ Rules:
 - The screening results come from photo analysis: surface-level, screening-grade signal, not a diagnosis. Frame answers accordingly ("the photo check flagged…", "the record shows…").
 - You may summarize trends across visits (levels over time, recurring findings, gaps between checks) and point out care-relevant patterns (e.g. repeat findings at the same site, worsening levels, long gaps since the last photos).
 - Be concise and clinical; short paragraphs or tight bullet lists. The reader is a professional — plain clinical vocabulary is fine.
-- If asked for a treatment plan or diagnosis, give what the record supports (observations, screening levels, guidance already issued) and defer clinical decisions to the clinician's own judgment and in-person exam.`;
+- If asked for a treatment plan or diagnosis, give what the record supports (observations, screening levels, guidance already issued) and defer clinical decisions to the clinician's own judgment and in-person exam.
+
+Output format — strict:
+- Write plain professional prose for a clinician. NEVER output JSON, code blocks, backticks, tables, or raw field names (no "yearDiagnosed", "screening_level", "pain_points"). If the record contains structured data, convert it into readable sentences or simple labeled lines, e.g. "HbA1c: 7.2%" or "Diagnosed with type 2 diabetes in 2015 (about 11 years)".
+- The only formatting you may use: short paragraphs, simple dash bullets ("- "), and **bold** for a key phrase. Nothing else — no headings deeper than bold, no numbered code, no markdown links.`;
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -146,11 +150,35 @@ function buildRecord(patient: any, visits: any[]): string {
     if (patient.age) lines.push(`- Age: ${patient.age}${patient.sex ? `, ${patient.sex}` : ""}`);
     if (Array.isArray(patient.conditions) && patient.conditions.length)
       lines.push(`- Conditions: ${patient.conditions.join(", ")}`);
-    if (patient.diabetes)
-      lines.push(`- Diabetes: ${JSON.stringify(patient.diabetes)}`);
-    if (patient.pad) lines.push(`- PAD/circulation: ${JSON.stringify(patient.pad)}`);
-    if (Array.isArray(patient.prior_events) && patient.prior_events.length)
-      lines.push(`- Prior foot events: ${JSON.stringify(patient.prior_events)}`);
+    if (patient.diabetes) {
+      const d = patient.diabetes;
+      const parts: string[] = [];
+      if (d.type) parts.push(String(d.type).replace(/_/g, " "));
+      if (d.yearDiagnosed) parts.push(`diagnosed ${d.yearDiagnosed}`);
+      if (d.hba1c) parts.push(`most recent HbA1c ${d.hba1c}%`);
+      if (d.glucoseCategory)
+        parts.push(`recent glucose: ${String(d.glucoseCategory).replace(/_/g, " ")}`);
+      lines.push(`- Diabetes: ${parts.join(", ") || "reported, no details"}`);
+    }
+    if (patient.pad) {
+      const p = patient.pad;
+      const parts: string[] = [];
+      if (p.status) parts.push(`status ${p.status}`);
+      if (p.claudication) parts.push("leg pain when walking");
+      if (p.restPain) parts.push("pain at rest");
+      if (p.abi) parts.push(`ABI ${p.abi}`);
+      if (Array.isArray(p.signs) && p.signs.length) parts.push(`signs: ${p.signs.join(", ")}`);
+      lines.push(`- PAD/circulation: ${parts.join(", ") || "reported, no details"}`);
+    }
+    if (Array.isArray(patient.prior_events) && patient.prior_events.length) {
+      const events = patient.prior_events
+        .map(
+          (e: any) =>
+            `${e.type ?? "event"} on the ${e.side ?? "?"} foot (${String(e.region ?? "unspecified region").replace(/_/g, " ")}, ${e.year ?? "year unknown"})`
+        )
+        .join("; ");
+      lines.push(`- Prior foot events: ${events}`);
+    }
     if (patient.numbness && patient.numbness !== "neither")
       lines.push(`- Numbness: ${patient.numbness}`);
     if (patient.smoking) lines.push("- Smokes: yes");

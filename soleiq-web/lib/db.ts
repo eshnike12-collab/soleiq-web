@@ -412,6 +412,70 @@ export async function getPatientByAuthUid(
   return (data as PatientRecord) ?? null;
 }
 
+/**
+ * Full intake row for the clinical report. RLS decides access: the patient
+ * themself, an assigned doctor, or an admin. Column names mirror the
+ * patients table.
+ */
+export interface PatientIntakeRow {
+  id: string;
+  auth_uid: string;
+  full_name: string | null;
+  city: string | null;
+  state: string | null;
+  age: number | null;
+  sex: string | null;
+  ethnicity: string | null;
+  conditions: string[] | null;
+  diabetes: {
+    type?: string;
+    yearDiagnosed?: number;
+    hba1c?: number;
+    glucose10d?: number[];
+    glucoseCategory?: string;
+  } | null;
+  prior_events:
+    | { type?: string; side?: string; region?: string; year?: number }[]
+    | null;
+  recent_surgery: { flag?: boolean; procedures?: string[] } | null;
+  numbness: string | null;
+  alcohol: boolean | null;
+  smoking: boolean | null;
+  shoe_size_us: number | null;
+  foot_length_mm: number | null;
+  pain_present: boolean | null;
+  pain_points: string[] | null;
+  pad: {
+    status?: string;
+    claudication?: boolean;
+    restPain?: boolean;
+    signs?: string[];
+    abi?: number;
+  } | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getPatientIntake(
+  targetAuthUid?: string | null
+): Promise<PatientIntakeRow | null> {
+  const c = await client();
+  if (!c) return null;
+  const authUid = targetAuthUid ?? c.uid;
+  const { data, error } = await c.sb
+    .from("patients")
+    .select("*")
+    .eq("auth_uid", authUid)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.warn("[soleiq] getPatientIntake failed:", error.message);
+    return null;
+  }
+  return (data as PatientIntakeRow) ?? null;
+}
+
 async function mapVisitRows(
   sb: NonNullable<ReturnType<typeof getSupabase>>,
   data: any[]
