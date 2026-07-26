@@ -1,17 +1,46 @@
 import { NextResponse } from "next/server";
-import { FOOT_ANALYSIS_SYSTEM_PROMPT } from "@/lib/foot-analysis-prompt";
+import {
+  FOOT_ANALYSIS_SYSTEM_PROMPT,
+  buildPatientContext,
+} from "@/lib/foot-analysis-prompt";
 import {
   enforceScreeningSafety,
   PHOTO_SCREENING_JSON_SCHEMA,
   PhotoScreeningSchema,
 } from "@/lib/photoScreening";
+import { requireAuth } from "@/server/auth";
+import { enforceRateLimit } from "@/server/rate-limit";
+import { requestMeta } from "@/server/http";
+import { DomainError } from "@/server/errors";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const IMAGE_PATTERN = /^data:image\/(jpeg|png|webp);base64,/;
+const MAX_REQUEST_BYTES = 24 * 1024 * 1024;
+const MAX_IMAGE_DATA_URL_BYTES = 6 * 1024 * 1024;
 
 export async function POST(request: Request) {
+  const meta = requestMeta(request);
+  try {
+    const { user } = await requireAuth();
+    enforceRateLimit(`foot-analysis:${user.id}:${meta.ip ?? "unknown"}`, 6, 60_000);
+  } catch (error) {
+    if (error instanceof DomainError) {
+      return NextResponse.json(
+        { error: error.message, requestId: meta.requestId },
+      { status: error.status }
+      );
+    }
+    throw error;
+  }
+  const declaredLength = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) {
+    return NextResponse.json(
+      { error: "The photo set is too large.", requestId: meta.requestId },
+      { status: 413 }
+    );
+  }
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -34,7 +63,15 @@ export async function POST(request: Request) {
   if (
     images.length !== 4 ||
     [...expected].some((key) => !received.has(key)) ||
-    images.some((image: any) => !IMAGE_PATTERN.test(image?.dataUrl ?? ""))
+    images.some(
+      (image: any) =>
+        !IMAGE_PATTERN.test(image?.dataUrl ?? "") ||
+        image.dataUrl.length > MAX_IMAGE_DATA_URL_BYTES
+    ) ||
+    images.reduce(
+      (total: number, image: any) => total + (image?.dataUrl?.length ?? 0),
+      0
+    ) > MAX_REQUEST_BYTES
   ) {
     return NextResponse.json(
       { error: "Four valid foot photos are required: top and sole of both feet." },
@@ -89,7 +126,14 @@ export async function POST(request: Request) {
 
   const payload = await upstream.json().catch(() => null);
   if (!upstream.ok) {
-    console.error("[soleiq] Anthropic photo analysis failed", upstream.status, payload);
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "analysis.provider_failed",
+        requestId: meta.requestId,
+        status: upstream.status,
+      })
+    );
     return NextResponse.json(
       { error: "The photo analysis service could not complete this check." },
       { status: 502 }
@@ -117,7 +161,13 @@ export async function POST(request: Request) {
   }
   const parsed = PhotoScreeningSchema.safeParse(parsedJson);
   if (!parsed.success) {
-    console.error("[soleiq] Invalid photo analysis response", parsed.error.flatten());
+    console.error(
+      JSON.stringify({
+        level: "error",
+        event: "analysis.schema_invalid",
+        requestId: meta.requestId,
+      })
+    );
     return NextResponse.json(
       { error: "The photo analysis response did not pass safety validation." },
       { status: 502 }
@@ -130,58 +180,6 @@ export async function POST(request: Request) {
       numbness: body?.symptoms?.numbness,
     })
   );
-}
-
-/**
- * Format the questionnaire answers into the patient-context block the
- * prompt expects. Everything is optional; unstated answers are omitted
- * rather than sent as "unknown" noise. Free-text values are length-capped
- * because they end up inside the model prompt.
- */
-function buildPatientContext(context: any, symptoms: any): string {
-  const clip = (value: unknown, max = 80) =>
-    String(value ?? "").slice(0, max);
-  const lines: string[] = [];
-
-  if (context && typeof context === "object") {
-    if (context.age) lines.push(`Age: ${clip(context.age, 6)}`);
-    if (context.diabetes && typeof context.diabetes === "object") {
-      const d = context.diabetes;
-      const parts = [clip(d.type, 20).replace("_", " ")];
-      if (d.yearDiagnosed) {
-        const years = new Date().getFullYear() - Number(d.yearDiagnosed);
-        if (Number.isFinite(years) && years >= 0) parts.push(`about ${years} years`);
-      }
-      if (d.hba1c) parts.push(`most recent HbA1c ${clip(d.hba1c, 6)}`);
-      if (d.glucoseCategory) parts.push(`recent glucose: ${clip(d.glucoseCategory, 30).replace(/_/g, " ")}`);
-      lines.push(`Diabetes: ${parts.join(", ")}`);
-    }
-    if (context.numbness && context.numbness !== "neither") {
-      lines.push(`Numbness in feet: ${clip(context.numbness, 10)}`);
-    }
-    if (context.pad && typeof context.pad === "object" && context.pad.status && context.pad.status !== "none") {
-      lines.push(
-        `Circulation (peripheral artery disease): ${clip(context.pad.status, 12)}${context.pad.restPain ? ", has rest pain" : ""}${context.pad.claudication ? ", leg pain when walking" : ""}`
-      );
-    }
-    if (Array.isArray(context.priorEvents) && context.priorEvents.length > 0) {
-      const events = context.priorEvents
-        .slice(0, 4)
-        .map((e: any) => `${clip(e.type, 12)} on ${clip(e.side, 6)} foot (${clip(e.region, 16).replace(/_/g, " ")}, ${clip(e.year, 6)})`)
-        .join("; ");
-      lines.push(`Past foot events: ${events}`);
-    }
-    if (context.smoking) lines.push("Smokes: yes");
-    if (Array.isArray(context.painPoints) && context.painPoints.length > 0) {
-      lines.push(`Reported pain locations: ${context.painPoints.slice(0, 6).map((p: any) => clip(p, 24)).join(", ")}`);
-    }
-  }
-
-  lines.push(
-    `Reported symptoms today: pain=${Boolean(symptoms?.pain)}; numbness=${clip(symptoms?.numbness ?? "not reported", 16)}`
-  );
-
-  return "Patient questionnaire summary (use per the system prompt; do not repeat verbatim):\n" + lines.join("\n");
 }
 
 function parseDataUrl(dataUrl: string): {

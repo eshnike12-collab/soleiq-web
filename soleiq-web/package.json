@@ -6,14 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint . --ext .js,.ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@react-three/drei": "^9.114.3",
     "@react-three/fiber": "^8.17.10",
-    "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.110.2",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.8",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -22,8 +24,9 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^0.447.0",
     "marked": "^18.0.3",
-    "next": "14.2.15",
-    "postcss": "^8.4.47",
+    "next": "^15.5.22",
+    "postcss": "8.5.23",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
@@ -38,12 +41,22 @@
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.169.0",
     "@types/web-bluetooth": "^0.0.21",
     "eslint": "^8.57.1",
-    "eslint-config-next": "14.2.15",
-    "prettier": "^3.3.3"
+    "eslint-config-next": "^15.5.22",
+    "prettier": "^3.3.3",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "brace-expansion@^1.0.0": "1.1.16",
+    "brace-expansion@^5.0.0": "5.0.8",
+    "dompurify": "3.4.12",
+    "js-yaml": "4.3.0",
+    "postcss": "$postcss",
+    "sharp": "0.35.3"
   }
 }

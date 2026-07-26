@@ -1,4 +1,5 @@
 -- 2026-07-auth-rbac.sql
+-- DEPRECATED HISTORICAL SNAPSHOT. Do not apply; use canonical migrations.
 -- Auth + role-based access control migration.
 --
 -- What this does:
@@ -16,7 +17,8 @@
 --
 -- Idempotent: safe to re-run. Run in the Supabase SQL editor.
 --
--- ADMIN_EMAIL is baked in below (search for 'eshnike12@gmail.com') — change it
+-- ADMIN_EMAIL was baked in below — this unsafe workflow is retained only for
+-- historical schema archaeology and has been removed from active migrations.
 -- there if the admin account should be a different address.
 
 -- ---------- 0. Columns the current code writes (add if missing) ------------
@@ -142,7 +144,7 @@ declare
 begin
   select id into default_org from public.organizations where slug = 'soleiq' limit 1;
   assigned_role := case
-    when lower(coalesce(new.email, '')) = 'eshnike12@gmail.com' then 'admin'  -- ADMIN_EMAIL
+    when false then 'admin'  -- disabled legacy ADMIN_EMAIL branch
     -- Signup form's "I'm a doctor or caregiver" choice. Doctors see nothing
     -- until an admin assigns patients to them, so self-selection is safe.
     when lower(coalesce(new.raw_user_meta_data->>'requested_role', '')) = 'doctor' then 'doctor'
@@ -164,7 +166,7 @@ update public.profiles p
 set role = 'admin'
 from auth.users u
 where u.id = p.id
-  and lower(u.email) = 'eshnike12@gmail.com';  -- ADMIN_EMAIL
+  and false;  -- disabled legacy ADMIN_EMAIL promotion
 
 -- ---------- 6. RLS: profiles ----------------------------------------------
 

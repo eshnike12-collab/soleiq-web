@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { AuthConfigurationError } from "./AuthConfigurationError";
 
 /**
  * Hard gate in front of the patient flow: unauthenticated users are sent to
@@ -13,7 +14,7 @@ import { useAuth } from "@/lib/auth";
  * the actual security boundary is RLS in Postgres.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { loading, userId } = useAuth();
+  const { loading, userId, configurationError } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -26,6 +27,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <Loader2 className="h-4 w-4 animate-spin" /> Loading…
       </div>
     );
+  }
+  if (configurationError) {
+    return <AuthConfigurationError message={configurationError} />;
   }
   return <>{children}</>;
 }

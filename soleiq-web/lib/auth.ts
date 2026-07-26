@@ -5,81 +5,134 @@ import { getSupabase } from "./supabase";
 
 export type AppRole = "admin" | "doctor" | "patient";
 
+/** Global identity contains no role or hospital. */
 export interface Profile {
   id: string;
-  role: AppRole;
-  organization_id: string | null;
   email: string | null;
   full_name: string | null;
+  phone: string | null;
+  account_status: "pending" | "active" | "suspended" | "closed";
+}
+
+export interface HospitalMembership {
+  id: string;
+  organization_id: string;
+  role: AppRole;
+  status: "invited" | "active" | "suspended" | "ended";
+  permissions: Record<string, boolean>;
+  organizations: {
+    slug: string;
+    display_name: string;
+    branding: Record<string, unknown>;
+  } | null;
 }
 
 export interface AuthState {
   loading: boolean;
   userId: string | null;
   profile: Profile | null;
+  memberships: HospitalMembership[];
+  configurationError: string | null;
 }
 
-/** Live auth + profile state. Subscribes to Supabase auth changes. */
+/** Live auth, global profile, and hospital-membership state. */
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({
     loading: true,
     userId: null,
     profile: null,
+    memberships: [],
+    configurationError: null,
   });
 
   useEffect(() => {
     const sb = getSupabase();
     if (!sb) {
-      setState({ loading: false, userId: null, profile: null });
+      setState({
+        loading: false,
+        userId: null,
+        profile: null,
+        memberships: [],
+        configurationError: null,
+      });
       return;
     }
 
     let cancelled = false;
-
     const refresh = async () => {
-      const { data: u } = await sb.auth.getUser();
-      const userId = u.user?.id ?? null;
+      const { data: userData } = await sb.auth.getUser();
+      const userId = userData.user?.id ?? null;
       if (!userId) {
-        if (!cancelled) setState({ loading: false, userId: null, profile: null });
+        if (!cancelled) {
+          setState({
+            loading: false,
+            userId: null,
+            profile: null,
+            memberships: [],
+            configurationError: null,
+          });
+        }
         return;
       }
-      const { data: p } = await sb
-        .from("profiles")
-        .select("id, role, organization_id, email, full_name")
-        .eq("id", userId)
-        .maybeSingle();
-      if (!cancelled)
+
+      const [profileResult, membershipResult] = await Promise.all([
+        sb
+          .from("profiles")
+          .select("id, email, full_name, phone, account_status")
+          .eq("id", userId)
+          .maybeSingle(),
+        sb
+          .from("organization_memberships")
+          .select(
+            "id, organization_id, role, status, permissions, organizations(slug, display_name, branding)"
+          )
+          .eq("user_id", userId)
+          .in("status", ["active", "invited"]),
+      ]);
+
+      if (!cancelled) {
+        const schemaIsMissing =
+          profileResult.error?.code === "42703" ||
+          profileResult.error?.code === "PGRST204" ||
+          membershipResult.error?.code === "42P01" ||
+          membershipResult.error?.code === "PGRST205";
+        const configurationError = schemaIsMissing
+          ? "This SoleIQ environment has not applied the hospital-membership database upgrade."
+          : profileResult.error || membershipResult.error
+            ? "SoleIQ could not load your hospital access. Please try again or contact the platform operator."
+            : null;
         setState({
           loading: false,
           userId,
-          profile: (p as Profile) ?? null,
+          profile: (profileResult.data as Profile) ?? null,
+          memberships: (membershipResult.data ?? []) as unknown as HospitalMembership[],
+          configurationError,
         });
+      }
     };
 
-    refresh();
-    const { data: sub } = sb.auth.onAuthStateChange(() => {
-      refresh();
+    void refresh();
+    const { data: subscription } = sb.auth.onAuthStateChange(() => {
+      void refresh();
     });
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
+      subscription.subscription.unsubscribe();
     };
   }, []);
 
   return state;
 }
 
-/** Where each role lands after login. Patients get their dashboard home
- *  base at /home; the visit flow itself lives at "/". */
-export function homeForRole(role: AppRole | undefined | null): string {
-  if (role === "admin") return "/admin";
-  if (role === "doctor") return "/dashboard";
+/** Resolve a landing route from an active hospital membership. */
+export function homeForMemberships(memberships: HospitalMembership[]): string {
+  const active = memberships.filter((membership) => membership.status === "active");
+  const admin = active.find((membership) => membership.role === "admin");
+  if (admin?.organizations?.slug) return `/h/${admin.organizations.slug}/admin`;
+  const doctor = active.find((membership) => membership.role === "doctor");
+  if (doctor?.organizations?.slug) return `/h/${doctor.organizations.slug}/doctor`;
   return "/home";
 }
-
-// ---------------------------------------------------------------------------
-// Sign-in methods — email + password only.
-// ---------------------------------------------------------------------------
 
 export async function signInWithPassword(email: string, password: string) {
   const sb = getSupabase();
@@ -88,33 +141,28 @@ export async function signInWithPassword(email: string, password: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function signUpWithPassword(
-  email: string,
-  password: string,
-  requestedRole: "patient" | "doctor" = "patient"
-) {
+/** Public signup creates a global patient identity only. */
+export async function signUpWithPassword(email: string, password: string) {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase not configured");
-  // requested_role is read by the handle_new_user trigger; it only honors
-  // 'doctor' (admin comes from the ADMIN_EMAIL list, never from here).
-  const { error } = await sb.auth.signUp({
-    email,
-    password,
-    options: { data: { requested_role: requestedRole } },
-  });
+  const { error } = await sb.auth.signUp({ email, password });
   if (error) throw new Error(error.message);
 }
 
-/**
- * Demo path: anonymous Supabase session — no account, no email, no
- * confirmation step. The signup trigger still creates a patient profile,
- * so saving and Open Results work; data lives with the anonymous user
- * until the browser storage is cleared.
- */
+/** Anonymous sessions may use the local capture flow but receive no hospital role. */
 export async function signInAsGuest() {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase not configured");
   const { error } = await sb.auth.signInAnonymously();
+  if (error) throw new Error(error.message);
+}
+
+export async function requestPasswordReset(email: string) {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase not configured");
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/login?recovery=1`,
+  });
   if (error) throw new Error(error.message);
 }
 
@@ -124,6 +172,12 @@ export async function signOut() {
   await sb.auth.signOut();
 }
 
-export function hasRole(profile: Profile | null, ...roles: AppRole[]) {
-  return !!profile && roles.includes(profile.role);
+export function hasActiveRole(
+  memberships: HospitalMembership[],
+  ...roles: AppRole[]
+) {
+  return memberships.some(
+    (membership) =>
+      membership.status === "active" && roles.includes(membership.role)
+  );
 }

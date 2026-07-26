@@ -1,6 +1,7 @@
 "use client";
 
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY =
@@ -17,9 +18,7 @@ export function getSupabase(): SupabaseClient | null {
     cached = null;
     return cached;
   }
-  cached = createClient(URL, KEY, {
-    auth: { persistSession: true, autoRefreshToken: true },
-  });
+  cached = createBrowserClient(URL, KEY);
   return cached;
 }
 

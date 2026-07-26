@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, HeartPulse, Loader2, Stethoscope } from "lucide-react";
 import {
-  homeForRole,
+  homeForMemberships,
+  requestPasswordReset,
   signInAsGuest,
   signInWithPassword,
   signUpWithPassword,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AuthConfigurationError } from "@/components/auth/AuthConfigurationError";
 import { cn } from "@/lib/utils";
 
 type Mode = "signin" | "signup";
@@ -31,10 +33,24 @@ export default function LoginPage() {
   // Already signed in (fresh login or returning session) → land on the
   // role's home: admin → /admin, doctor → /dashboard, patient → /.
   useEffect(() => {
-    if (!auth.loading && auth.userId) {
-      router.replace(homeForRole(auth.profile?.role));
+    if (!auth.loading && auth.userId && !auth.configurationError) {
+      const requestedNext =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("next")
+          : null;
+      const safeNext =
+        requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
+          ? requestedNext
+          : null;
+      router.replace(safeNext ?? homeForMemberships(auth.memberships));
     }
-  }, [auth.loading, auth.userId, auth.profile?.role, router]);
+  }, [
+    auth.loading,
+    auth.userId,
+    auth.memberships,
+    auth.configurationError,
+    router,
+  ]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +61,12 @@ export default function LoginPage() {
       if (mode === "signin") {
         await signInWithPassword(email.trim(), password);
       } else {
-        await signUpWithPassword(
-          email.trim(),
-          password,
-          audience === "doctor" ? "doctor" : "patient"
-        );
+        if (audience === "doctor") {
+          throw new Error(
+            "Staff accounts are created from a hospital invitation. Ask your hospital administrator for an invite."
+          );
+        }
+        await signUpWithPassword(email.trim(), password);
         setInfo(
           "Account created. If email confirmation is enabled, check your inbox first; otherwise you can sign in now."
         );
@@ -62,7 +79,17 @@ export default function LoginPage() {
     }
   };
 
-  if (auth.loading || auth.userId) {
+  if (auth.loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center gap-2 text-sm text-warmGray-600">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+      </div>
+    );
+  }
+  if (auth.userId && auth.configurationError) {
+    return <AuthConfigurationError message={auth.configurationError} />;
+  }
+  if (auth.userId) {
     return (
       <div className="flex min-h-screen items-center justify-center gap-2 text-sm text-warmGray-600">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading…
@@ -150,7 +177,10 @@ export default function LoginPage() {
       </p>
 
       <div className="mt-6 inline-flex rounded-xl bg-warmGray-50 p-1 text-sm">
-        {(["signin", "signup"] as Mode[]).map((m) => (
+        {(audience === "doctor"
+          ? (["signin"] as Mode[])
+          : (["signin", "signup"] as Mode[])
+        ).map((m) => (
           <button
             key={m}
             type="button"
@@ -196,6 +226,31 @@ export default function LoginPage() {
         <Button type="submit" fullWidth disabled={busy}>
           {busy ? "Working…" : mode === "signin" ? "Sign in" : "Create account"}
         </Button>
+        {mode === "signin" && (
+          <button
+            type="button"
+            className="w-full text-center text-xs font-medium text-brand"
+            onClick={async () => {
+              if (!email.trim()) {
+                setError("Enter your email first.");
+                return;
+              }
+              setBusy(true);
+              try {
+                await requestPasswordReset(email.trim());
+                setInfo("Password recovery email requested.");
+              } catch (err) {
+                setError(
+                  err instanceof Error ? err.message : "Recovery request failed."
+                );
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Forgot password?
+          </button>
+        )}
       </form>
 
       {audience === "patient" && (
@@ -229,8 +284,8 @@ export default function LoginPage() {
 
       <p className="mt-6 text-[11px] leading-relaxed text-warmGray-600">
         {audience === "doctor"
-          ? "Doctor accounts start with no patients — an administrator links patients to you."
-          : "New accounts are patient accounts. Doctor and admin access is granted by an administrator."}
+          ? "Doctor and administrator access comes only from an expiring hospital invitation. New doctors remain inactive until the hospital verifies them."
+          : "New accounts do not choose a staff role. Hospital access is added through an invitation or patient-record linking workflow."}
       </p>
     </div>
   );
