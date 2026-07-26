@@ -1,4 +1,5 @@
 -- 2026-07-scans.sql
+-- DEPRECATED HISTORICAL SNAPSHOT. Do not apply; use canonical migrations.
 -- Phase 6 — server-side persistence for the AI-analyzed foot scans.
 --
 -- Runs alongside the existing schema.sql. Idempotent — safe to re-run.

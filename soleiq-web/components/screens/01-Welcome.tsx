@@ -10,8 +10,14 @@ import { Button } from "@/components/ui/button";
 
 export function Welcome() {
   const goNext = useSoleiqStore((s) => s.goNext);
-  const { profile } = useAuth();
+  const { profile, memberships } = useAuth();
   const router = useRouter();
+  const adminMembership = memberships.find(
+    (membership) => membership.status === "active" && membership.role === "admin"
+  );
+  const doctorMembership = memberships.find(
+    (membership) => membership.status === "active" && membership.role === "doctor"
+  );
 
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
@@ -45,22 +51,24 @@ export function Welcome() {
         {/* View switcher — admins can enter any point of view; doctors get
             their dashboard. Patients see nothing extra. UX only; RLS still
             decides what each role can actually read. */}
-        {(profile?.role === "admin" || profile?.role === "doctor") && (
+        {(adminMembership || doctorMembership) && (
           <div className="mt-4 grid gap-2">
-            {profile.role === "admin" && (
+            {adminMembership?.organizations?.slug && (
               <Link
-                href="/admin"
+                href={`/h/${adminMembership.organizations.slug}/admin`}
                 className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl bg-warmGray-800 text-xs font-semibold text-white"
               >
                 <ShieldCheck className="h-3.5 w-3.5" /> Admin console
               </Link>
             )}
-            <Link
-              href="/dashboard"
-              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-warmGray-100 bg-white text-xs font-semibold text-warmGray-800"
-            >
-              <Stethoscope className="h-3.5 w-3.5" /> Doctor dashboard
-            </Link>
+            {doctorMembership?.organizations?.slug && (
+              <Link
+                href={`/h/${doctorMembership.organizations.slug}/doctor`}
+                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-warmGray-100 bg-white text-xs font-semibold text-warmGray-800"
+              >
+                <Stethoscope className="h-3.5 w-3.5" /> Doctor dashboard
+              </Link>
+            )}
           </div>
         )}
       </div>
@@ -72,7 +80,9 @@ export function Welcome() {
             <span className="font-medium text-warmGray-800">
               {profile.email ?? "your account"}
             </span>{" "}
-            ({profile.role})
+            {memberships.length > 0
+              ? `(${memberships.map((membership) => membership.role).join(", ")})`
+              : "(no hospital membership)"}
           </span>
           <button
             type="button"

@@ -12,8 +12,6 @@ import {
   type FailureReason,
 } from "@/lib/footDetection";
 import { countFacesInVideo } from "@/lib/faceDetection";
-import { AnalyzeFootError } from "@/lib/analyzeFootImage";
-import { submitImageForAnalysis } from "@/lib/visitAnalysis";
 import {
   attachDeviceMotion,
   computeGuide,
@@ -113,8 +111,6 @@ export function CaptureFrame({ side, view, onCaptured, step }: Props) {
   const metricsRef = useRef<DetectionMetrics | null>(null);
 
   const addImage = useSoleiqStore((s) => s.addImage);
-  const currentVisit = useSoleiqStore((s) => s.currentVisit);
-  const patientDbId = useSoleiqStore((s) => s.patientDbId);
 
   // Derived booleans for the existing render branches.
   const isCaptured = captureState === "captured";
@@ -395,37 +391,8 @@ export function CaptureFrame({ side, view, onCaptured, step }: Props) {
       detection: opts.detection,
     });
 
-    // 2. Foundation AI analysis via the app's /api/analyze route.
-    //    The server route ALSO handles the Supabase Storage upload and
-    //    the scans-row insert now (Phase 6) — so the client no longer
-    //    talks to Storage directly and the service-role key never
-    //    enters the browser bundle.
-    //    SINGLE code path — both live capture and upload flow through
-    //    finalizeCapture, so both feed the same analyzer here.
-    //    Fire-and-forget: the auto-advance timer below fires immediately
-    //    so users don't stare at a spinner between views; the AI reply
-    //    lands on the store keyed by (side, view) whenever it arrives.
-    void submitImageForAnalysis(
-      { side, view, dataUrl: opts.dataUrl, capturedAt },
-      {
-        source: opts.source,
-        visitId: currentVisit?.id ?? null,
-        patientId: patientDbId ?? null,
-      },
-    ).catch((err: unknown) => {
-      // The failure is already recorded on the image (Processing offers a
-      // retry). A 404 while /api/analyze is not deployed is expected —
-      // log softly. All other errors are warnings.
-      if (err instanceof AnalyzeFootError && err.kind === "not_wired") {
-        // eslint-disable-next-line no-console
-        console.info("[analyze] /api/analyze not deployed yet", side, view);
-      } else {
-        // eslint-disable-next-line no-console
-        console.warn("[analyze] failed", side, view, err);
-      }
-    });
-
-    // 3. Auto-advance — but only after a brief preview window so the user
+    // 2. Auto-advance — analysis runs only after the complete four-photo set
+    //    passes the local gate, avoiding duplicate per-image clinical writes.
     //    can see the captured image, and only if they don't retake in time.
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
     advanceTimer.current = setTimeout(() => {

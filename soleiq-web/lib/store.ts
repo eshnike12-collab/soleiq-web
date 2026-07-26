@@ -13,7 +13,7 @@ import type {
   CaptureView,
 } from "./types";
 import { MOCK_PRIOR_VISITS } from "./mock/priorScans";
-import { syncCompleteVisit } from "./db";
+import { saveCanonicalScreening } from "./canonicalScreenings";
 import { isSupabaseConfigured } from "./supabase";
 
 interface SoleiqStore {
@@ -40,7 +40,7 @@ interface SoleiqStore {
   ) => void;
   addMesh: (mesh: FootMesh) => void;
   setResult: (result: AnalysisResult) => void;
-  completeVisit: () => Promise<boolean>;
+  completeVisit: () => Promise<"saved" | "local" | "failed">;
 
   priorVisits: Visit[];
 
@@ -164,35 +164,35 @@ export const useSoleiqStore = create<SoleiqStore>()(
         ),
       completeVisit: async () => {
         const state = get();
-        if (!state.currentVisit) return false;
+        if (!state.currentVisit) return "failed";
         const completed = { ...state.currentVisit, completedAt: Date.now() };
         set({
           currentVisit: completed,
           priorVisits: [...state.priorVisits, completed],
         });
-        if (!isSupabaseConfigured()) return true;
+        if (!isSupabaseConfigured()) return "local";
         try {
-          const { patientId, visitId } = await syncCompleteVisit(
-            state.profile,
-            completed,
-            state.scanPath,
-            state.patientDbId ?? undefined
-          );
-          if (!visitId) return false;
+          const result = await saveCanonicalScreening(state.profile, completed);
+          if (!result.saved) {
+            // Anonymous/unlinked patients keep the complete in-memory result;
+            // no hospital record is invented and no default tenancy is used.
+            return "local";
+          }
           set((latest) => ({
-            patientDbId: patientId ?? latest.patientDbId,
             currentVisit:
               latest.currentVisit?.id === completed.id
-                ? { ...latest.currentVisit, id: visitId }
+                ? { ...latest.currentVisit, id: result.sessionId }
                 : latest.currentVisit,
             priorVisits: latest.priorVisits.map((visit) =>
-              visit.id === completed.id ? { ...visit, id: visitId } : visit
+              visit.id === completed.id
+                ? { ...visit, id: result.sessionId }
+                : visit
             ),
           }));
-          return true;
+          return "saved";
         } catch (error) {
           console.error("[soleiq] visit save failed", error);
-          return false;
+          return "failed";
         }
       },
 

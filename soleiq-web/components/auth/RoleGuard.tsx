@@ -3,7 +3,8 @@
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth, AppRole } from "@/lib/auth";
+import { hasActiveRole, useAuth, AppRole } from "@/lib/auth";
+import { AuthConfigurationError } from "./AuthConfigurationError";
 
 export function RoleGuard({
   allow,
@@ -12,7 +13,7 @@ export function RoleGuard({
   allow: AppRole[];
   children: ReactNode;
 }) {
-  const { loading, userId, profile } = useAuth();
+  const { loading, userId, memberships, configurationError } = useAuth();
   const router = useRouter();
 
   if (loading) {
@@ -26,13 +27,15 @@ export function RoleGuard({
     if (typeof window !== "undefined") router.replace("/login");
     return null;
   }
-  if (!profile || !allow.includes(profile.role)) {
+  if (configurationError) {
+    return <AuthConfigurationError message={configurationError} />;
+  }
+  if (!hasActiveRole(memberships, ...allow)) {
     return (
       <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-3 px-6 text-center">
         <h1 className="text-xl font-semibold text-warmGray-800">Not authorized</h1>
         <p className="text-sm text-warmGray-600">
-          Your account ({profile?.role ?? "unknown"}) doesn't have access to this
-          area.
+          You do not have an active hospital membership for this area.
         </p>
         <Link href="/" className="text-sm font-medium text-brand">
           Back to patient flow

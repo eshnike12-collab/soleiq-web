@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   FileDown,
   Loader2,
-  Mail,
   Share2,
   ShoppingBag,
   Stethoscope,
@@ -17,15 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { useToastStore } from "@/components/ui/toast";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
-import {
-  buildPatientSummary,
-  encodeSummaryToUrl,
-  summaryToEmailBody,
-} from "@/lib/exportSummary";
+import { buildPatientSummary } from "@/lib/exportSummary";
 import { downloadPatientSummaryPdf } from "@/lib/pdfExport";
 import { ShareWithDoctorDialog } from "@/components/share/ShareWithDoctorDialog";
 
-type SaveState = "idle" | "saving" | "saved" | "failed";
+type SaveState = "idle" | "saving" | "saved" | "local" | "failed";
 
 export function NextSteps() {
   const completeVisit = useSoleiqStore((s) => s.completeVisit);
@@ -39,9 +34,9 @@ export function NextSteps() {
   const saveAndContinue = async () => {
     if (save === "saving" || save === "saved") return;
     setSave("saving");
-    const ok = await completeVisit();
-    if (ok) {
-      setSave("saved");
+    const outcome = await completeVisit();
+    if (outcome === "saved" || outcome === "local") {
+      setSave(outcome);
       // Brief success beat so the user sees the confirmation, then home.
       setTimeout(() => router.push("/home"), 1200);
     } else {
@@ -52,24 +47,6 @@ export function NextSteps() {
   const buildSummary = () => {
     const { currentVisit, profile } = useSoleiqStore.getState();
     return buildPatientSummary(currentVisit, profile);
-  };
-
-  const sendEmail = () => {
-    const s = buildSummary();
-    if (!s) {
-      showToast("No analysis available to share yet.");
-      return;
-    }
-    const subject = `SoleIQ — Foot Photo Check${s.patient.fullName ? ` — ${s.patient.fullName}` : ""}`;
-    const clinicalUrl = `${window.location.origin}/clinical?data=${encodeSummaryToUrl(s)}`;
-    const body =
-      summaryToEmailBody(s) +
-      `\n\nFull clinical view:\n${clinicalUrl}\n`;
-    // Open the OS mail composer with subject + body pre-filled. User reviews
-    // and sends. (mailto cannot auto-send without an SMTP backend.)
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    showToast("Email draft prepared.");
-    setShareOpen(false);
   };
 
   const downloadPdf = async () => {
@@ -88,28 +65,21 @@ export function NextSteps() {
     setShareOpen(false);
   };
 
-  const openClinicalView = () => {
-    const s = buildSummary();
-    if (!s) {
-      showToast("No analysis available to share yet.");
-      return;
-    }
-    const url = `${window.location.origin}/clinical?data=${encodeSummaryToUrl(s)}`;
-    window.open(url, "_blank", "noopener");
-    showToast("Clinical view opened.");
-    setShareOpen(false);
-  };
-
   // ----- Success state: full-screen confirmation, then auto-redirect -------
-  if (save === "saved") {
+  if (save === "saved" || save === "local") {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-50">
           <CheckCircle2 className="h-9 w-9 text-teal-600" />
         </span>
-        <h1 className="mt-4 text-2xl font-semibold text-warmGray-800">Saved</h1>
+        <h1 className="mt-4 text-2xl font-semibold text-warmGray-800">
+          {save === "saved" ? "Submitted securely" : "Kept on this device"}
+        </h1>
         <p className="mt-1 max-w-[260px] text-sm text-warmGray-600">
-          This check is in your history. Taking you to your dashboard…
+          {save === "saved"
+            ? "Your hospital screening is queued for analysis and clinician review."
+            : "This account is not linked to one hospital patient record, so no hospital record was created."}{" "}
+          Taking you to your dashboard…
         </p>
         <button
           type="button"
@@ -184,7 +154,7 @@ export function NextSteps() {
             <span className="flex-1">
               <span className="block text-sm font-semibold text-warmGray-800">Share or refer</span>
               <span className="block text-xs text-warmGray-600">
-                Email a summary, download a PDF, or open a care-team view.
+                Manage hospital access or download your personal summary.
               </span>
             </span>
           </button>
@@ -219,19 +189,13 @@ export function NextSteps() {
           >
             <Stethoscope className="mr-2 h-4 w-4" /> Share with my doctor in SoleIQ
           </Button>
-          <Button fullWidth variant="outline" onClick={sendEmail}>
-            <Mail className="mr-2 h-4 w-4" /> Email — opens your mail client
-          </Button>
           <Button fullWidth variant="outline" onClick={downloadPdf}>
             <FileDown className="mr-2 h-4 w-4" /> Download PDF
           </Button>
-          <Button fullWidth variant="outline" onClick={openClinicalView}>
-            <Stethoscope className="mr-2 h-4 w-4" /> Open care-team view
-          </Button>
         </div>
         <p className="mt-3 text-[10px] italic text-warmGray-600">
-          Sharing in SoleIQ links your account to your doctor so your saved
-          checks appear on their dashboard. Email and PDF send a one-off copy.
+          SoleIQ sharing uses hospital-scoped assignments or expiring,
+          patient-controlled consent. It never places clinical data in a URL.
         </p>
       </Dialog>
 

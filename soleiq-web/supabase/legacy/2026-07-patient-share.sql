@@ -1,4 +1,5 @@
 -- 2026-07-patient-share.sql
+-- DEPRECATED HISTORICAL SNAPSHOT. Do not apply; use canonical migrations.
 -- Patient-initiated "Share with doctor".
 --
 -- The RBAC migration created doctor_patient_assignments but only admins
