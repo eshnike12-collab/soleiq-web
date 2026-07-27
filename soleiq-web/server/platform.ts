@@ -21,6 +21,20 @@ export async function listPlatformOrganizations() {
   return data ?? [];
 }
 
+/** Care-team feedback inbox (RLS: platform admin only). Returns [] when the
+ *  feedback migration hasn't been applied yet rather than crashing the
+ *  console. */
+export async function listPlatformFeedback() {
+  const { supabase } = await requirePlatformAdmin();
+  const { data, error } = await supabase
+    .from("feedback")
+    .select("id, role, category, message, contact_email, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) return [];
+  return data ?? [];
+}
+
 export const OrganizationOnboardingSchema = z.object({
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80),
   legalName: z.string().trim().min(2).max(200),

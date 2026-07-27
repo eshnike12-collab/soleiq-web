@@ -1,5 +1,6 @@
 "use client";
 
+import { PRESSURE_POINTS } from "@/components/pain-map/pressurePoints";
 import type { PatientSummary } from "./exportSummary";
 
 /**
@@ -69,13 +70,18 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
     y += 10;
   };
   const tag = (label: string, value: string | number | undefined) => {
-    if (value == null || value === "") return;
+    // Skipped intake answers print as "Not provided" — clinicians need to
+    // see what wasn't answered, not have it silently disappear.
+    const empty = value == null || value === "";
     ensureSpace(lineH);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text(`${label}:`, margin, y);
+    doc.setFont("helvetica", empty ? "italic" : "normal");
+    if (empty) doc.setTextColor(130, 128, 120);
+    doc.text(empty ? "Not provided" : String(value), margin + 110, y);
+    if (empty) doc.setTextColor(28, 28, 28);
     doc.setFont("helvetica", "normal");
-    doc.text(String(value), margin + 110, y);
     y += lineH;
   };
 
@@ -148,6 +154,49 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
   }
   hr();
 
+  // ---------- Captured photos ----------
+  if (s.photos.length > 0) {
+    subheading("Captured photos");
+    const boxW = (pageW - margin * 2 - 16) / 2;
+    const boxH = 300;
+    let column = 0;
+    let rowTop = y;
+    let rowMaxH = 0;
+    for (const photo of s.photos) {
+      const label = `${photo.side === "left" ? "Left" : "Right"} foot — ${photo.view}`;
+      try {
+        const props = doc.getImageProperties(photo.dataUrl);
+        const scale = Math.min(boxW / props.width, boxH / props.height);
+        const w = props.width * scale;
+        const h = props.height * scale;
+        const blockH = h + 16;
+        if (column === 0) {
+          // Starting a new row — keep the photo pair on one page.
+          if (y + boxH + 16 > pageH - margin && y !== margin) {
+            newPage();
+          }
+          rowTop = y;
+          rowMaxH = 0;
+        }
+        const x = margin + column * (boxW + 16);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(label, x, rowTop);
+        doc.addImage(photo.dataUrl, "JPEG", x, rowTop + 6, w, h);
+        rowMaxH = Math.max(rowMaxH, blockH);
+        if (column === 1) {
+          y = rowTop + rowMaxH + 10;
+        }
+        column = (column + 1) % 2;
+      } catch {
+        ensureSpace(lineH);
+        body(`${label}: (photo could not be embedded)`);
+      }
+    }
+    if (column === 1) y = rowTop + rowMaxH + 10;
+    hr();
+  }
+
   // ---------- Medical history ----------
   subheading("Medical history");
   if (s.medicalHistory.length === 0) body("(none reported)");
@@ -199,8 +248,17 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
   subheading("Symptoms & lifestyle");
   tag("Numbness", s.numbness);
   tag("Pain reported", s.painPresent ? "yes" : "no");
-  if (s.painPoints.length)
-    bullet(`Pain regions: ${s.painPoints.length} marked`);
+  if (s.painPoints.length) {
+    body("Pain map locations:");
+    s.painPoints.forEach((pointId) => {
+      const point = PRESSURE_POINTS.find((p) => p.id === pointId);
+      bullet(
+        point
+          ? `${point.side === "left" ? "Left" : "Right"} — ${point.label}`
+          : pointId
+      );
+    });
+  }
   tag("Alcohol", s.alcohol ? "yes" : "no");
   tag("Smoking", s.smoking ? "yes" : "no");
   hr();

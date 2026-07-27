@@ -89,6 +89,9 @@ export interface PatientSummary {
     images: number;
     meanImageConfidence: number;
   };
+  /** The raw captured photos (data URLs) for print/PDF embedding. Stripped
+   *  before URL encoding — photos never travel in a link. */
+  photos: { side: string; view: string; dataUrl: string }[];
   screening?: PhotoScreeningResult;
 }
 
@@ -185,13 +188,20 @@ export function buildPatientSummary(
         ? imgConfs.reduce((a, b) => a + b, 0) / imgConfs.length
         : 0,
     },
+    photos: visit.images.map((image) => ({
+      side: image.side,
+      view: image.view,
+      dataUrl: image.dataUrl,
+    })),
     screening: result?.screening,
   };
 }
 
 /** URL-safe base64 encoder for sharing summaries via querystring. */
 export function encodeSummaryToUrl(summary: PatientSummary): string {
-  const json = JSON.stringify(summary);
+  // Photos are megabytes of base64 — they can never ride in a URL. The
+  // linked clinical view ships without photos; the PDF is the full artifact.
+  const json = JSON.stringify({ ...summary, photos: [] });
   // Convert to UTF-8 bytes via encodeURIComponent (handles non-ASCII) then b64.
   const b64 = btoa(unescape(encodeURIComponent(json)));
   // Make URL-safe.

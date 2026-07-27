@@ -30,17 +30,20 @@ export function NextSteps() {
   const [shareOpen, setShareOpen] = useState(false);
   const [doctorOpen, setDoctorOpen] = useState(false);
   const [save, setSave] = useState<SaveState>("idle");
+  const [failReason, setFailReason] = useState<string | null>(null);
 
   const saveAndContinue = async () => {
     if (save === "saving" || save === "saved") return;
     setSave("saving");
+    setFailReason(null);
     const outcome = await completeVisit();
-    if (outcome === "saved" || outcome === "local") {
-      setSave(outcome);
+    if (outcome.status === "saved" || outcome.status === "local") {
+      setSave(outcome.status);
       // Brief success beat so the user sees the confirmation, then home.
       setTimeout(() => router.push("/home"), 1200);
     } else {
       setSave("failed");
+      setFailReason(outcome.reason ?? null);
     }
   };
 
@@ -106,8 +109,10 @@ export function NextSteps() {
             <AlertTriangle className="h-4 w-4" /> Couldn&apos;t save to your account
           </p>
           <p className="mt-1">
-            Check your connection and try again. Your result stays on this
-            device either way.
+            {failReason
+              ? `Couldn't save: ${failReason}`
+              : "The save request failed. Try again in a moment."}{" "}
+            Your result stays on this device either way.
           </p>
         </div>
       )}

@@ -18,26 +18,26 @@ const SHOTS: {
   {
     side: "right",
     view: "top",
-    title: "Top of right foot",
-    hint: "Point straight down. Show every toe, the sides, and the heel.",
+    title: "Right foot — TOP",
+    hint: "Toenails facing the camera. Point straight down; show every toe, the sides, and the ankle.",
   },
   {
     side: "right",
     view: "sole",
-    title: "Sole of right foot",
-    hint: "Rest the foot on a low surface and hold the phone below it, use a mirror, or ask a helper.",
+    title: "Right foot — SOLE",
+    hint: "Bottom of the foot facing the camera (no toenails visible). Rest the foot up, use a mirror, or ask a helper.",
   },
   {
     side: "left",
     view: "top",
-    title: "Top of left foot",
-    hint: "Use the same lighting, background, and distance as the right foot.",
+    title: "Left foot — TOP",
+    hint: "Toenails facing the camera. Same lighting, background, and distance as the right foot.",
   },
   {
     side: "left",
     view: "sole",
-    title: "Sole of left foot",
-    hint: "Show the entire sole from heel to every toe. Ask a helper if needed.",
+    title: "Left foot — SOLE",
+    hint: "Bottom of the foot facing the camera, heel to every toe. Ask a helper if needed.",
   },
 ];
 
@@ -181,6 +181,8 @@ export function FourPhotoCapture() {
             onCapture={handleCameraCapture}
             onClose={() => setCameraOpen(false)}
             onUnavailable={handleCameraUnavailable}
+            guideSide={shot.side}
+            guideView={shot.view}
           />
         ) : current ? (
           // eslint-disable-next-line @next/next/no-img-element

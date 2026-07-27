@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Activity, Building2, ClipboardList, Settings, ShieldCheck, Users } from "lucide-react";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 
 export function HospitalShell({
@@ -36,6 +37,7 @@ export function HospitalShell({
             <h1 className="text-lg font-semibold">{hospitalName}</h1>
           </div>
           <div className="flex items-center gap-4">
+            <FeedbackButton compact />
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold capitalize text-brand">
               {role}
             </span>

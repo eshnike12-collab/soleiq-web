@@ -67,23 +67,49 @@ export function PhotoGuideAnimation({
 
             {view === "top" ? (
               <>
-                <path d="M124 121 C145 109 174 111 191 128" fill="none" stroke="#B77E61" strokeWidth="2" opacity="0.6" />
+                {/* The leg/ankle entering the frame is what makes a TOP view
+                    read as a top view — a bare silhouette reads as a sole. */}
+                <path
+                  d="M126 316 C128 344 126 368 124 390 L 178 390 C 176 366 174 342 176 314 C 168 326 136 328 126 316 Z"
+                  fill={`url(#${id}-skin)`}
+                  stroke="#A96F4D"
+                  strokeWidth="2"
+                />
+                <ellipse cx="129" cy="322" rx="6" ry="7" fill="#D8A883" opacity="0.8" />
+                <ellipse cx="173" cy="320" rx="6" ry="7" fill="#D8A883" opacity="0.8" />
+                {/* Tendon + vein hints running toward the toes */}
                 <path d="M139 130 C145 174 139 211 132 247" fill="none" stroke="#8FA6B8" strokeWidth="1.8" opacity="0.65" />
                 <path d="M162 126 C166 165 174 199 177 237" fill="none" stroke="#8FA6B8" strokeWidth="1.8" opacity="0.55" />
                 <path d="M151 146 C143 166 133 177 124 183" fill="none" stroke="#8FA6B8" strokeWidth="1.4" opacity="0.5" />
-                <ellipse cx="114" cy="75" rx="10" ry="9" fill="#F4D9CA" opacity="0.85" />
-                <ellipse cx="139" cy="62" rx="7" ry="7" fill="#F4D9CA" opacity="0.85" />
-                <ellipse cx="160" cy="60" rx="6" ry="6" fill="#F4D9CA" opacity="0.85" />
-                <ellipse cx="180" cy="67" rx="5" ry="5" fill="#F4D9CA" opacity="0.85" />
+                {/* Bold outlined toenails — the second unmistakable TOP cue */}
+                <ellipse cx="114" cy="73" rx="11" ry="10" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.6" />
+                <ellipse cx="139" cy="60" rx="8" ry="8" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.5" />
+                <ellipse cx="160" cy="58" rx="7" ry="7" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.4" />
+                <ellipse cx="180" cy="65" rx="6" ry="6" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.3" />
+                <ellipse cx="196" cy="77" rx="5" ry="5" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.2" />
               </>
             ) : (
               <>
-                <ellipse cx="150" cy="128" rx="43" ry="37" fill="#D4916A" opacity="0.34" />
-                <ellipse cx="151" cy="290" rx="34" ry="31" fill="#C9805B" opacity="0.32" />
-                <path d="M121 170 C143 181 143 236 124 252" fill="none" stroke="#B87859" strokeWidth="3" opacity="0.45" />
-                <path d="M175 170 C163 195 164 230 180 252" fill="none" stroke="#B87859" strokeWidth="2" opacity="0.35" />
-                <path d="M126 139 C143 151 168 151 187 138" fill="none" stroke="#B87859" strokeWidth="2" opacity="0.35" />
-                <path d="M132 275 C145 266 162 266 174 276" fill="none" stroke="#B87859" strokeWidth="2" opacity="0.35" />
+                {/* SOLE: prominent ball + heel pads with an arch waist, toe
+                    pads with NO nails — a footprint, not a foot from above. */}
+                <ellipse cx="150" cy="130" rx="44" ry="40" fill="#C9805B" opacity="0.5" />
+                <ellipse cx="151" cy="292" rx="36" ry="34" fill="#BE7350" opacity="0.55" />
+                <path
+                  d="M112 175 C136 192 138 234 118 258"
+                  fill="none"
+                  stroke="#B87859"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  opacity="0.55"
+                />
+                <ellipse cx="150" cy="212" rx="20" ry="34" fill="#EBC5A6" opacity="0.5" />
+                <ellipse cx="116" cy="83" rx="10" ry="12" fill="#C9805B" opacity="0.45" />
+                <ellipse cx="140" cy="68" rx="8" ry="10" fill="#C9805B" opacity="0.45" />
+                <ellipse cx="161" cy="66" rx="7" ry="9" fill="#C9805B" opacity="0.45" />
+                <ellipse cx="181" cy="72" rx="6" ry="8" fill="#C9805B" opacity="0.45" />
+                <ellipse cx="197" cy="83" rx="5" ry="7" fill="#C9805B" opacity="0.45" />
+                <path d="M126 139 C143 151 168 151 187 138" fill="none" stroke="#B87859" strokeWidth="2" opacity="0.4" />
+                <path d="M132 277 C145 268 162 268 174 278" fill="none" stroke="#B87859" strokeWidth="2" opacity="0.4" />
               </>
             )}
           </motion.g>
@@ -135,11 +161,78 @@ export function PhotoGuideAnimation({
         </g>
       </svg>
 
-      <div className="pointer-events-none absolute inset-x-3 bottom-2 flex justify-center gap-1.5 text-[10px] font-medium text-warmGray-600">
-        <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">Whole foot</span>
-        <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">No flash</span>
-        <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">Coin/card optional</span>
+      <div className="pointer-events-none absolute inset-x-3 bottom-2 flex flex-col items-center gap-1.5">
+        <span className="rounded-full bg-brand px-3 py-1 text-[11px] font-semibold text-white shadow-sm">
+          {side === "left" ? "Left" : "Right"} foot — {view === "top"
+            ? "TOP (toenails facing the camera)"
+            : "SOLE (bottom of foot facing the camera)"}
+        </span>
+        <div className="flex justify-center gap-1.5 text-[10px] font-medium text-warmGray-600">
+          <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">Whole foot</span>
+          <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">No flash</span>
+          <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">Coin/card optional</span>
+        </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Stroke-only ghost of the same foot shape, overlaid on the live camera so
+ * the patient can line their foot up with the exact silhouette the guide
+ * showed. Same geometry as the animated guide — the two must never drift
+ * apart, or the guide teaches one framing and the camera asks for another.
+ */
+export function FootGhostOverlay({
+  side,
+  view,
+}: {
+  side: FootSide;
+  view: "top" | "sole";
+}) {
+  const mirror = side === "left";
+  return (
+    <svg
+      viewBox="0 0 300 390"
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      aria-hidden
+    >
+      <g
+        transform={mirror ? "translate(300 0) scale(-1 1)" : undefined}
+        fill="none"
+        stroke="white"
+        strokeOpacity="0.65"
+        strokeWidth="3"
+        strokeDasharray="10 7"
+      >
+        <path d="M150 337 C119 337 103 314 108 278 C112 247 110 222 104 193 C96 154 99 117 116 94 C126 81 139 75 150 75 C164 75 178 84 187 99 C201 123 203 157 196 194 C190 224 188 248 192 279 C197 314 181 337 150 337 Z" />
+        <ellipse cx="116" cy="83" rx="18" ry="25" />
+        <ellipse cx="140" cy="68" rx="14" ry="21" />
+        <ellipse cx="161" cy="66" rx="12" ry="19" />
+        <ellipse cx="181" cy="72" rx="10" ry="16" />
+        <ellipse cx="197" cy="83" rx="8" ry="13" />
+        {view === "top" ? (
+          // Ankle/leg direction cue for the top view
+          <path d="M126 316 C128 344 126 368 124 390 M176 314 C174 342 176 366 178 390" />
+        ) : (
+          // Heel + ball pads for the sole view
+          <>
+            <ellipse cx="150" cy="130" rx="44" ry="40" strokeOpacity="0.35" />
+            <ellipse cx="151" cy="292" rx="36" ry="34" strokeOpacity="0.35" />
+          </>
+        )}
+      </g>
+      <text
+        x="150"
+        y="374"
+        textAnchor="middle"
+        fill="white"
+        fillOpacity="0.85"
+        fontSize="13"
+        fontWeight="700"
+      >
+        {side === "left" ? "LEFT" : "RIGHT"} · {view === "top" ? "TOP" : "SOLE"}
+      </text>
+    </svg>
   );
 }

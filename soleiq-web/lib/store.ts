@@ -40,7 +40,10 @@ interface SoleiqStore {
   ) => void;
   addMesh: (mesh: FootMesh) => void;
   setResult: (result: AnalysisResult) => void;
-  completeVisit: () => Promise<"saved" | "local" | "failed">;
+  completeVisit: () => Promise<{
+    status: "saved" | "local" | "failed";
+    reason?: string;
+  }>;
 
   priorVisits: Visit[];
 
@@ -164,19 +167,21 @@ export const useSoleiqStore = create<SoleiqStore>()(
         ),
       completeVisit: async () => {
         const state = get();
-        if (!state.currentVisit) return "failed";
+        if (!state.currentVisit) {
+          return { status: "failed", reason: "No check in progress." };
+        }
         const completed = { ...state.currentVisit, completedAt: Date.now() };
         set({
           currentVisit: completed,
           priorVisits: [...state.priorVisits, completed],
         });
-        if (!isSupabaseConfigured()) return "local";
+        if (!isSupabaseConfigured()) return { status: "local" };
         try {
           const result = await saveCanonicalScreening(state.profile, completed);
           if (!result.saved) {
             // Anonymous/unlinked patients keep the complete in-memory result;
             // no hospital record is invented and no default tenancy is used.
-            return "local";
+            return { status: "local", reason: result.reason };
           }
           set((latest) => ({
             currentVisit:
@@ -189,10 +194,17 @@ export const useSoleiqStore = create<SoleiqStore>()(
                 : visit
             ),
           }));
-          return "saved";
+          return { status: "saved" };
         } catch (error) {
+          // Surface the real step + reason to the UI — a swallowed error here
+          // is exactly how "check your connection" got blamed for a server
+          // configuration problem.
           console.error("[soleiq] visit save failed", error);
-          return "failed";
+          return {
+            status: "failed",
+            reason:
+              error instanceof Error ? error.message : "The save request failed.",
+          };
         }
       },
 

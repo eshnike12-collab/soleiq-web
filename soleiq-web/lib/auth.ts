@@ -141,11 +141,48 @@ export async function signInWithPassword(email: string, password: string) {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Password policy: longer than 6 characters AND at least one number or
+ * special character. Returns a user-facing message, or null when valid.
+ * (Also mirror this in the Supabase dashboard's password settings so the
+ * auth server enforces it for requests that bypass this client.)
+ */
+export function validatePassword(password: string): string | null {
+  if (password.length <= 6 || !/[0-9]|[^A-Za-z0-9]/.test(password)) {
+    return "Password must be longer than 6 characters and include at least one number or symbol.";
+  }
+  return null;
+}
+
 /** Public signup creates a global patient identity only. */
 export async function signUpWithPassword(email: string, password: string) {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase not configured");
-  const { error } = await sb.auth.signUp({ email, password });
+  const policyError = validatePassword(password);
+  if (policyError) throw new Error(policyError);
+  const { error } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      // The confirmation link lands back on the sign-in page; the client
+      // exchanges the token, and the page shows the signed-in confirmation.
+      emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
+    },
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Re-send the signup confirmation email for an unconfirmed account. */
+export async function resendConfirmationEmail(email: string) {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase not configured");
+  const { error } = await sb.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
+    },
+  });
   if (error) throw new Error(error.message);
 }
 

@@ -2,14 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, HeartPulse, Loader2, Stethoscope } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  HeartPulse,
+  Loader2,
+  Stethoscope,
+} from "lucide-react";
 import {
   homeForMemberships,
   requestPasswordReset,
+  resendConfirmationEmail,
   signInAsGuest,
   signInWithPassword,
   signUpWithPassword,
   useAuth,
+  validatePassword,
 } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +37,22 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
-  // Already signed in (fresh login or returning session) → land on the
-  // role's home: admin → /admin, doctor → /dashboard, patient → /.
+  // Arriving from the email-confirmation link (?confirmed=1). If the link
+  // also signed the user in, the redirect effect below takes over; if not,
+  // tell them their email is confirmed and to sign in.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("confirmed") === "1") {
+      setAudience("patient");
+      setInfo("Email confirmed — sign in below.");
+    }
+  }, []);
+
+  // Signed in (fresh login, confirmation link, or returning session) →
+  // show a clear "Successfully signed in" beat, then land on the role's
+  // home from their hospital memberships.
   useEffect(() => {
     if (!auth.loading && auth.userId && !auth.configurationError) {
       const requestedNext =
@@ -42,7 +63,9 @@ export default function LoginPage() {
         requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
           ? requestedNext
           : null;
-      router.replace(safeNext ?? homeForMemberships(auth.memberships));
+      const target = safeNext ?? homeForMemberships(auth.memberships);
+      const timer = setTimeout(() => router.replace(target), 1100);
+      return () => clearTimeout(timer);
     }
   }, [
     auth.loading,
@@ -56,6 +79,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setInfo(null);
+    setNeedsConfirmation(false);
     setBusy(true);
     try {
       if (mode === "signin") {
@@ -66,14 +90,45 @@ export default function LoginPage() {
             "Staff accounts are created from a hospital invitation. Ask your hospital administrator for an invite."
           );
         }
+        const policyError = validatePassword(password);
+        if (policyError) {
+          setError(policyError);
+          return;
+        }
         await signUpWithPassword(email.trim(), password);
         setInfo(
-          "Account created. If email confirmation is enabled, check your inbox first; otherwise you can sign in now."
+          "Account created — we've sent a confirmation email. Open the link in it, then sign in here."
         );
         setMode("signin");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed.");
+      const message = err instanceof Error ? err.message : "Sign-in failed.";
+      if (/not confirmed/i.test(message)) {
+        setNeedsConfirmation(true);
+        setError(
+          "Your email isn't confirmed yet. Open the confirmation link we sent you — or resend it below."
+        );
+      } else {
+        setError(message);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resend = async () => {
+    if (!email.trim()) {
+      setError("Enter your email first.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await resendConfirmationEmail(email.trim());
+      setInfo("Confirmation email sent — check your inbox (and spam).");
+      setNeedsConfirmation(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not resend the email.");
     } finally {
       setBusy(false);
     }
@@ -90,9 +145,15 @@ export default function LoginPage() {
     return <AuthConfigurationError message={auth.configurationError} />;
   }
   if (auth.userId) {
+    // The redirect effect fires ~1s later — this is the explicit
+    // "Successfully signed in" confirmation the user sees first.
     return (
-      <div className="flex min-h-screen items-center justify-center gap-2 text-sm text-warmGray-600">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-50">
+          <CheckCircle2 className="h-8 w-8 text-teal-600" />
+        </span>
+        <h1 className="text-xl font-semibold text-warmGray-800">Successfully signed in</h1>
+        <p className="text-sm text-warmGray-600">Taking you to your dashboard…</p>
       </div>
     );
   }
@@ -217,12 +278,39 @@ export default function LoginPage() {
             autoComplete={mode === "signin" ? "current-password" : "new-password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            minLength={6}
+            minLength={7}
             required
           />
+          {mode === "signup" && (
+            <p
+              className={cn(
+                "mt-1 text-[11px] leading-snug",
+                password.length === 0
+                  ? "text-warmGray-600"
+                  : validatePassword(password)
+                    ? "text-risk-medium"
+                    : "text-teal-800"
+              )}
+            >
+              {password.length === 0
+                ? "More than 6 characters, with at least one number or symbol."
+                : validatePassword(password) ??
+                  "Password meets the requirements."}
+            </p>
+          )}
         </div>
         {error && <p className="text-xs text-risk-medium">{error}</p>}
         {info && <p className="text-xs text-teal-800">{info}</p>}
+        {needsConfirmation && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void resend()}
+            className="w-full rounded-xl border border-warmGray-100 bg-white py-2 text-xs font-semibold text-brand"
+          >
+            Resend confirmation email
+          </button>
+        )}
         <Button type="submit" fullWidth disabled={busy}>
           {busy ? "Working…" : mode === "signin" ? "Sign in" : "Create account"}
         </Button>

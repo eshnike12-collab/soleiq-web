@@ -5,6 +5,58 @@ import { requireAuth } from "./auth";
 import { resolveHospital } from "./tenancy";
 import { writeAudit } from "./audit";
 
+export interface ReportPhoto {
+  assetId: string;
+  side: string;
+  view: string;
+  url: string;
+}
+
+/**
+ * Resolve the photo assets for a set of screening sessions into short-lived
+ * signed URLs, keyed by session id. Runs under the caller's RLS: patients
+ * only get media for released reports, so this never leaks in-review photos.
+ */
+async function signSessionPhotos(
+  supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
+  sessionIds: string[],
+  ttlSeconds = 3600
+): Promise<Map<string, ReportPhoto[]>> {
+  const bySession = new Map<string, ReportPhoto[]>();
+  const ids = sessionIds.filter(Boolean);
+  if (ids.length === 0) return bySession;
+  const { data: assets } = await supabase
+    .from("media_assets")
+    .select("id, screening_session_id, side, view, storage_bucket, storage_path")
+    .in("screening_session_id", ids)
+    .eq("asset_type", "photo");
+  if (!assets || assets.length === 0) return bySession;
+
+  const urlByPath = new Map<string, string>();
+  const buckets = new Map<string, string[]>();
+  for (const asset of assets) {
+    const list = buckets.get(asset.storage_bucket) ?? [];
+    list.push(asset.storage_path);
+    buckets.set(asset.storage_bucket, list);
+  }
+  for (const [bucket, paths] of Array.from(buckets)) {
+    const { data: signed } = await supabase.storage
+      .from(bucket)
+      .createSignedUrls(paths, ttlSeconds);
+    signed?.forEach((item, index) => {
+      if (item.signedUrl) urlByPath.set(paths[index], item.signedUrl);
+    });
+  }
+  for (const asset of assets) {
+    const url = urlByPath.get(asset.storage_path);
+    if (!url) continue;
+    const list = bySession.get(asset.screening_session_id) ?? [];
+    list.push({ assetId: asset.id, side: asset.side, view: asset.view, url });
+    bySession.set(asset.screening_session_id, list);
+  }
+  return bySession;
+}
+
 export async function getPatientClinicalRecord(
   hospitalSlug: string,
   organizationPatientId: string,
@@ -58,7 +110,7 @@ export async function getPatientReleasedReport(
   const { data: report, error } = await supabase
     .from("reports")
     .select(
-      "id, organization_id, organization_patient_id, version, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at, completed_at)"
+      "id, organization_id, organization_patient_id, screening_session_id, version, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at, completed_at)"
     )
     .eq("id", reportId)
     .eq("status", "released")
@@ -80,7 +132,13 @@ export async function getPatientReleasedReport(
     purpose: "patient_request",
     requestId,
   });
-  return report;
+  const photosBySession = await signSessionPhotos(supabase, [
+    (report as any).screening_session_id,
+  ]);
+  return {
+    ...report,
+    photos: photosBySession.get((report as any).screening_session_id) ?? [],
+  };
 }
 
 export async function getPatientDashboard() {
@@ -134,7 +192,7 @@ export async function getPatientDashboard() {
     ? await supabase
         .from("reports")
         .select(
-          "id, organization_patient_id, version, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at)"
+          "id, organization_patient_id, screening_session_id, version, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at)"
         )
         .in("organization_patient_id", enrollmentIds)
         .eq("status", "released")
@@ -142,11 +200,23 @@ export async function getPatientDashboard() {
         .limit(100)
     : { data: [], error: null };
   if (reportError) throw new Error(reportError.message);
+  // Thumbnails for the most recent checks (bounded so a long history
+  // doesn't fan out into hundreds of signing calls).
+  const photosBySession = await signSessionPhotos(
+    supabase,
+    (reports ?? [])
+      .slice(0, 12)
+      .map((report: any) => report.screening_session_id)
+  );
+  const reportsWithPhotos = (reports ?? []).map((report: any) => ({
+    ...report,
+    photos: photosBySession.get(report.screening_session_id) ?? [],
+  }));
   return {
     profile,
     patient,
     enrollments: enrollments ?? [],
-    reports: reports ?? [],
+    reports: reportsWithPhotos,
     configurationError: null,
   };
 }

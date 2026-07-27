@@ -3,8 +3,9 @@
 import { useSoleiqStore } from "@/lib/store";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, ExternalLink, Info } from "lucide-react";
+import { AlertTriangle, ExternalLink, Info, ShoppingBag } from "lucide-react";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
+import { suggestProducts } from "@/lib/productCatalog";
 
 type EvidenceLevel = "established" | "emerging" | "investigational";
 
@@ -71,6 +72,7 @@ export function ProductRecommendation() {
   const profile = useSoleiqStore((s) => s.profile);
   const goTo = useSoleiqStore((s) => s.goTo);
   const risk = visit?.result?.riskLevel ?? "low";
+  const suggestions = suggestProducts(visit?.result?.screening, profile);
 
   const padPresent =
     profile.pad?.status === "diagnosed" || profile.pad?.status === "suspected";
@@ -116,6 +118,51 @@ export function ProductRecommendation() {
         </div>
       )}
 
+      {/* OTC products matched to this patient's actual findings */}
+      {suggestions.length > 0 && (
+        <div className="mb-5">
+          <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-warmGray-600">
+            <ShoppingBag className="h-3.5 w-3.5" /> Products that may help, based on your check
+          </p>
+          <div className="space-y-2.5">
+            {suggestions.map(({ product, reason }) => (
+              <Card key={product.id}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold text-warmGray-800">{product.name}</p>
+                  <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-brand">
+                    {product.helpsWith}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-warmGray-800">{reason}</p>
+                <p className="mt-1 text-xs leading-relaxed text-warmGray-600">{product.howItHelps}</p>
+                {product.caution && (
+                  <p className="mt-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-amber-800">
+                    {product.caution}
+                  </p>
+                )}
+                <a
+                  href={product.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex items-center text-xs font-semibold text-brand"
+                >
+                  View product <ExternalLink className="ml-1 h-3 w-3" />
+                </a>
+              </Card>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] leading-snug text-warmGray-600">
+            These are general over-the-counter suggestions, not medical advice
+            and not endorsements. With diabetes, always check with your
+            clinician before starting a new foot product — and never use
+            acid-based callus removers or blades on your own feet.
+          </p>
+        </div>
+      )}
+
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-warmGray-600">
+        SoleIQ therapy devices
+      </p>
       <div className="space-y-2.5">
         {PRODUCTS.map((p) => {
           const recommended = allowed.has(p.key);

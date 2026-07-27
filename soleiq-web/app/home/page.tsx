@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Camera, FileClock, ShieldCheck } from "lucide-react";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { AuthConfigurationError } from "@/components/auth/AuthConfigurationError";
 import { getPatientDashboard } from "@/server/patients";
@@ -31,7 +32,10 @@ export default async function PatientHomePage() {
               {data.patient?.full_name || data.profile?.full_name || "My foot health"}
             </h1>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-3">
+            <FeedbackButton prefillEmail={data.profile?.email ?? null} />
+            <SignOutButton />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-5xl space-y-6 px-5 py-8">
@@ -80,6 +84,29 @@ export default async function PatientHomePage() {
               <p className="mt-4 text-sm leading-relaxed text-slate-700">
                 {latestSummary?.overall?.headline || "Your care team released a patient-safe screening summary."}
               </p>
+              {(latest.photos ?? []).length > 0 && (
+                <div className="mt-4 grid max-w-md grid-cols-4 gap-2">
+                  {(latest.photos ?? []).slice(0, 4).map((photo: any) => (
+                    <Link
+                      key={photo.assetId}
+                      href={`/records/${latest.id}`}
+                      className="relative block overflow-hidden rounded-xl bg-slate-100"
+                    >
+                      <div className="aspect-square">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.url}
+                          alt={`${photo.side} foot ${photo.view}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <span className="absolute inset-x-0 bottom-0 bg-black/45 px-1 py-0.5 text-center text-[9px] font-semibold uppercase text-white">
+                        {photo.side === "left" ? "L" : "R"} · {photo.view}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
               <Link href={`/records/${latest.id}`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand">
                 Open exact report <ArrowRight className="h-4 w-4" />
               </Link>
@@ -100,13 +127,32 @@ export default async function PatientHomePage() {
               <p className="py-5 text-sm text-slate-500">No released reports.</p>
             ) : data.reports.map((report: any) => (
               <Link key={report.id} href={`/records/${report.id}`} className="flex items-center justify-between gap-4 py-4">
-                <div>
-                  <p className="font-medium text-slate-900">{report.hospital_name_snapshot}</p>
-                  <p className="text-xs text-slate-500">
-                    {new Date(report.finalized_at || report.created_at).toLocaleDateString()} · version {report.version}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  {(report.photos ?? []).length > 0 && (
+                    <div className="flex shrink-0 -space-x-2">
+                      {(report.photos ?? []).slice(0, 4).map((photo: any) => (
+                        <span
+                          key={photo.assetId}
+                          className="block h-10 w-10 overflow-hidden rounded-lg border-2 border-white bg-slate-100"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photo.url}
+                            alt={`${photo.side} ${photo.view}`}
+                            className="h-full w-full object-cover"
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-900">{report.hospital_name_snapshot}</p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(report.finalized_at || report.created_at).toLocaleDateString()} · version {report.version}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-xs font-semibold capitalize text-brand">{report.risk_level.replaceAll("_", " ")} →</span>
+                <span className="shrink-0 text-xs font-semibold capitalize text-brand">{report.risk_level.replaceAll("_", " ")} →</span>
               </Link>
             ))}
           </div>

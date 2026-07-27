@@ -2,9 +2,8 @@ import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
-import { conflict, notFound } from "./errors";
+import { DomainError, conflict, notFound } from "./errors";
 import { requireAuth } from "./auth";
-import { infrastructureClient } from "./storage";
 import { anthropicAnalysisProvider } from "./providers/anthropic-analysis";
 import { processAnalysisEvent } from "./workers/analysis-worker";
 
@@ -116,7 +115,13 @@ export async function createCanonicalScreening(
     return { sessionId: session.id, status: session.status, resumed: true };
   }
 
-  const infrastructure = infrastructureClient();
+  // Uploads run under the CALLER'S session (storage RLS policy
+  // clinical_media_patient_insert, migration 0007), not the service-role
+  // client — so a missing/rotated SUPABASE_SERVICE_ROLE_KEY can no longer
+  // fail every patient save. Step errors are DomainErrors so the real
+  // reason reaches the UI instead of a generic connection blame.
+  const stepFailure = (step: string, detail: string) =>
+    new DomainError("DEPENDENCY_ERROR", `${step}: ${detail}`, 502);
   const uploadedPaths: string[] = [];
   try {
     for (const image of body.images) {
@@ -129,14 +134,19 @@ export async function createCanonicalScreening(
         `${image.side}-${image.view}-${assetId}.${parsed.extension}`,
       ].join("/");
       const checksum = createHash("sha256").update(parsed.bytes).digest("hex");
-      const { error: uploadError } = await infrastructure.storage
+      const { error: uploadError } = await supabase.storage
         .from("clinical-media")
         .upload(objectPath, parsed.bytes, {
           contentType: parsed.mimeType,
           cacheControl: "3600",
           upsert: false,
         });
-      if (uploadError) throw new Error(uploadError.message);
+      if (uploadError) {
+        throw stepFailure(
+          `Uploading the ${image.side}-${image.view} photo failed`,
+          uploadError.message
+        );
+      }
       uploadedPaths.push(objectPath);
 
       const { error: assetError } = await supabase.from("media_assets").insert({
@@ -154,14 +164,18 @@ export async function createCanonicalScreening(
         idempotency_key: `${body.idempotencyKey}:${image.side}:${image.view}`,
         captured_at: new Date(image.capturedAt).toISOString(),
       });
-      if (assetError) throw new Error(assetError.message);
+      if (assetError) {
+        throw stepFailure("Recording the photo metadata failed", assetError.message);
+      }
     }
 
     const { data: eventId, error: enqueueError } = await supabase.rpc(
       "enqueue_screening_analysis",
       { target_session_id: session.id, request_id: requestId }
     );
-    if (enqueueError) throw new Error(enqueueError.message);
+    if (enqueueError) {
+      throw stepFailure("Queueing the analysis failed", enqueueError.message);
+    }
 
     // Without a managed queue the outbox event would never be processed, so
     // run the worker inline when this server holds analysis credentials.
@@ -194,13 +208,21 @@ export async function createCanonicalScreening(
     };
   } catch (error) {
     if (uploadedPaths.length) {
-      await infrastructure.storage.from("clinical-media").remove(uploadedPaths);
+      // Best-effort cleanup under the caller's own permissions; leftover
+      // objects are harmless (each retry writes fresh asset ids).
+      await supabase.storage
+        .from("clinical-media")
+        .remove(uploadedPaths)
+        .catch(() => undefined);
     }
     await supabase
       .from("screening_sessions")
       .update({
         status: "failed",
-        failure_reason: "Media persistence or analysis enqueue failed.",
+        failure_reason:
+          error instanceof Error
+            ? error.message.slice(0, 500)
+            : "Media persistence or analysis enqueue failed.",
       })
       .eq("id", session.id);
     throw error;

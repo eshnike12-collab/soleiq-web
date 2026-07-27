@@ -13,17 +13,40 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RefreshCcw, Sun, X } from "lucide-react";
+import { Monitor, RefreshCcw, Smartphone, Sun, X } from "lucide-react";
 import { measureLightingUnevenness } from "@/lib/photoQuality";
+import { FootGhostOverlay } from "./PhotoGuideAnimation";
+import type { FootSide } from "@/lib/types";
+
+type CameraOrientation = "portrait" | "landscape";
+
+const ORIENTATION_KEY = "soleiq-camera-orientation";
+
+/** Default: portrait on a vertically-held phone, landscape on a laptop; an
+ *  explicit user choice (localStorage) always wins. */
+function detectOrientation(): CameraOrientation {
+  if (typeof window === "undefined") return "portrait";
+  const stored = window.localStorage.getItem(ORIENTATION_KEY);
+  if (stored === "portrait" || stored === "landscape") return stored;
+  return window.matchMedia("(orientation: portrait)").matches
+    ? "portrait"
+    : "landscape";
+}
 
 export function LiveCamera({
   onCapture,
   onClose,
   onUnavailable,
+  guideSide,
+  guideView,
 }: {
   onCapture: (file: File) => void;
   onClose: () => void;
   onUnavailable: (message: string) => void;
+  /** When provided, a ghost outline of the requested shot is drawn over the
+   *  preview so the patient can line the foot up with it. */
+  guideSide?: FootSide;
+  guideView?: "top" | "sole";
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -33,6 +56,30 @@ export function LiveCamera({
   const [capturing, setCapturing] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [unevenLight, setUnevenLight] = useState(false);
+  const [orientation, setOrientation] = useState<CameraOrientation>(detectOrientation);
+
+  const chooseOrientation = (value: CameraOrientation) => {
+    try {
+      window.localStorage.setItem(ORIENTATION_KEY, value);
+    } catch {
+      /* private mode — the in-memory choice still applies */
+    }
+    setOrientation(value);
+  };
+
+  // Follow device rotation while the camera is open — but only when the user
+  // hasn't made an explicit Phone/Laptop choice.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(orientation: portrait)");
+    const onChange = () => {
+      const stored = window.localStorage.getItem(ORIENTATION_KEY);
+      if (stored === "portrait" || stored === "landscape") return;
+      setOrientation(media.matches ? "portrait" : "landscape");
+    };
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
 
   // Live lighting check: sample the preview about once a second and warn on
   // strong directional shadows BEFORE the shot is taken. Advisory only — it
@@ -81,12 +128,25 @@ export function LiveCamera({
         return;
       }
       try {
+        // Ask for a stream shaped like the mode we'll display. Browsers may
+        // still grant a different shape (phones often ignore landscape
+        // requests); the shutter compensates by cropping the capture to the
+        // previewed region, so preview and JPEG always match regardless.
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: facing },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
+          video:
+            orientation === "portrait"
+              ? {
+                  facingMode: { ideal: facing },
+                  width: { ideal: 1080 },
+                  height: { ideal: 1920 },
+                  aspectRatio: { ideal: 9 / 16 },
+                }
+              : {
+                  facingMode: { ideal: facing },
+                  width: { ideal: 1920 },
+                  height: { ideal: 1080 },
+                  aspectRatio: { ideal: 16 / 9 },
+                },
           audio: false,
         });
         if (cancelled) {
@@ -121,7 +181,7 @@ export function LiveCamera({
       cancelled = true;
       stop();
     };
-  }, [facing, onUnavailable, stop]);
+  }, [facing, orientation, onUnavailable, stop]);
 
   /** Max output edge. The quality gate downsizes to 1400 anyway; capping the
    *  capture canvas keeps memory low enough that iOS Safari's toBlob doesn't
@@ -151,19 +211,38 @@ export function LiveCamera({
     }
     setCapturing(true);
     try {
-      const scale = Math.min(
-        1,
-        MAX_CAPTURE_EDGE / Math.max(video.videoWidth, video.videoHeight)
-      );
+      // WYSIWYG capture: the preview shows an object-cover crop of the
+      // stream, so capture exactly that region. Crop the source frame to the
+      // preview element's aspect ratio (centered, like object-cover), then
+      // scale. This is what keeps portrait phone shots upright and framed
+      // exactly as previewed even when the browser granted a landscape
+      // stream — no rotation ever needed, frames arrive upright.
+      const viewAspect =
+        video.clientWidth > 0 && video.clientHeight > 0
+          ? video.clientWidth / video.clientHeight
+          : video.videoWidth / video.videoHeight;
+      const sourceAspect = video.videoWidth / video.videoHeight;
+      let sx = 0;
+      let sy = 0;
+      let sw = video.videoWidth;
+      let sh = video.videoHeight;
+      if (sourceAspect > viewAspect) {
+        sw = Math.round(video.videoHeight * viewAspect);
+        sx = Math.round((video.videoWidth - sw) / 2);
+      } else if (sourceAspect < viewAspect) {
+        sh = Math.round(video.videoWidth / viewAspect);
+        sy = Math.round((video.videoHeight - sh) / 2);
+      }
+      const scale = Math.min(1, MAX_CAPTURE_EDGE / Math.max(sw, sh));
       const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      canvas.width = Math.max(1, Math.round(sw * scale));
+      canvas.height = Math.max(1, Math.round(sh * scale));
       const context = canvas.getContext("2d");
       if (!context) {
         failCapture("This browser couldn't read the camera frame. Try again, or use Upload photo.");
         return;
       }
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      context.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
         (blob) => {
           if (blob) {
@@ -195,15 +274,29 @@ export function LiveCamera({
   };
 
   return (
-    <div className="absolute inset-0 bg-black">
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <video
-        ref={videoRef}
-        playsInline
-        muted
-        autoPlay
-        className="h-full w-full object-cover"
-      />
+    <div className="absolute inset-0 flex flex-col justify-center bg-black">
+      {/* Portrait mode fills the tall frame; landscape mode letterboxes a
+          16:9 strip in the middle. The shutter captures exactly the visible
+          video region, so this wrapper defines the photo's framing. */}
+      <div
+        className={
+          orientation === "portrait"
+            ? "relative h-full w-full"
+            : "relative aspect-video w-full"
+        }
+      >
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video
+          ref={videoRef}
+          playsInline
+          muted
+          autoPlay
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {ready && guideSide && guideView && (
+          <FootGhostOverlay side={guideSide} view={guideView} />
+        )}
+      </div>
       {!ready && (
         <p className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-sm text-white/80">
           Starting camera…
@@ -255,6 +348,34 @@ export function LiveCamera({
           <RefreshCcw className="h-5 w-5" />
         </button>
       )}
+
+      {/* Phone (portrait) / Laptop (landscape) mode toggle */}
+      <div className="absolute left-1/2 top-3 flex -translate-x-1/2 overflow-hidden rounded-full bg-black/50 text-[11px] font-semibold text-white">
+        <button
+          type="button"
+          onClick={() => chooseOrientation("portrait")}
+          aria-pressed={orientation === "portrait"}
+          className={
+            orientation === "portrait"
+              ? "flex items-center gap-1 bg-white/25 px-2.5 py-1.5"
+              : "flex items-center gap-1 px-2.5 py-1.5 opacity-70"
+          }
+        >
+          <Smartphone className="h-3.5 w-3.5" /> Phone
+        </button>
+        <button
+          type="button"
+          onClick={() => chooseOrientation("landscape")}
+          aria-pressed={orientation === "landscape"}
+          className={
+            orientation === "landscape"
+              ? "flex items-center gap-1 bg-white/25 px-2.5 py-1.5"
+              : "flex items-center gap-1 px-2.5 py-1.5 opacity-70"
+          }
+        >
+          <Monitor className="h-3.5 w-3.5" /> Laptop
+        </button>
+      </div>
 
       <div className="absolute inset-x-0 bottom-4 flex justify-center">
         <button

@@ -36,6 +36,35 @@ export default async function PatientReportPage({
               {summary?.overall?.headline || "Your care team released this screening summary."}
             </p>
           </div>
+          {((report as any).photos ?? []).length > 0 && (
+            <section className="mt-6">
+              <h2 className="font-semibold">Your photos from this check</h2>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {((report as any).photos ?? []).map((photo: any) => (
+                  <a
+                    key={photo.assetId}
+                    href={photo.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="relative block overflow-hidden rounded-2xl bg-slate-100"
+                  >
+                    <div className="aspect-square">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.url}
+                        alt={`${photo.side} foot ${photo.view}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <span className="absolute inset-x-0 bottom-0 bg-black/50 px-1.5 py-1 text-center text-[10px] font-semibold uppercase text-white">
+                      {photo.side} · {photo.view}
+                    </span>
+                  </a>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">Tap a photo to view it full-size.</p>
+            </section>
+          )}
           {(summary?.findings ?? []).map((finding: any, index: number) => (
             <section key={index} className="mt-4 rounded-2xl border border-slate-100 p-5">
               <h2 className="font-semibold">{finding.what_we_saw}</h2>
