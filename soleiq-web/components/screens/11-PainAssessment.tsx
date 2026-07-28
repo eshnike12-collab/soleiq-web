@@ -11,7 +11,10 @@ import { cn } from "@/lib/utils";
 export function PainAssessment() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
-  const [hasPain, setHasPain] = useState<boolean | null>(null);
+  const profile = useSoleiqStore((s) => s.profile);
+  const [hasPain, setHasPain] = useState<boolean | null>(
+    () => profile.painPresent ?? null
+  );
 
   return (
     <div className="flex h-full flex-col">

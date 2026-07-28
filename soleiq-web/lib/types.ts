@@ -170,6 +170,10 @@ export interface PatientProfile {
   footLengthMm: number;
   painPresent: boolean;
   painPoints: string[];
+  /** True once answers from a prior completed assessment are loaded (or one
+   *  was completed this session). Drives the "review what changed" screen
+   *  for returning patients. */
+  hasSavedIntake?: boolean;
 }
 
 // Compatibility contract for the separate localhost AI integration retained

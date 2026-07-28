@@ -3,6 +3,7 @@ import type { PatientProfile } from "./types";
 
 import { Welcome } from "@/components/screens/01-Welcome";
 import { Consent } from "@/components/screens/02-Consent";
+import { ReturningReview } from "@/components/screens/02b-ReturningReview";
 import { AboutYou } from "@/components/screens/03-AboutYou";
 import { Demographics } from "@/components/screens/04-Demographics";
 import { MedicalHistory } from "@/components/screens/05-MedicalHistory";
@@ -34,6 +35,13 @@ const hasDiabetes = (p: Partial<PatientProfile>) =>
 export const SCREEN_ORDER: ScreenDef[] = [
   { id: "welcome", component: Welcome },
   { id: "consent", component: Consent },
+  {
+    // Returning patients: saved answers are summarized here; they edit only
+    // what changed and jump straight to fresh photos.
+    id: "returning_review",
+    component: ReturningReview,
+    visibleIf: (p) => !!p.hasSavedIntake,
+  },
   { id: "about_you", component: AboutYou, showInProgress: true },
   { id: "demographics", component: Demographics, showInProgress: true },
   { id: "medical_history", component: MedicalHistory, showInProgress: true },

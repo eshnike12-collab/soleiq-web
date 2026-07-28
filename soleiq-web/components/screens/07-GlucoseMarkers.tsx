@@ -43,12 +43,21 @@ export function GlucoseMarkers() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
-  const [hba1c, setHba1c] = useState("");
-  const [glucoseCategory, setGlucoseCategory] = useState<GlucoseCategory | "">(
-    ""
+  const [hba1c, setHba1c] = useState(() =>
+    profile.diabetes?.hba1c != null ? String(profile.diabetes.hba1c) : ""
   );
-  const [vals, setVals] = useState<string[]>(Array(10).fill(""));
-  const [showGlucose, setShowGlucose] = useState(false);
+  const [glucoseCategory, setGlucoseCategory] = useState<GlucoseCategory | "">(
+    () => profile.diabetes?.glucoseCategory ?? ""
+  );
+  const [vals, setVals] = useState<string[]>(() => {
+    const saved = profile.diabetes?.glucose10d;
+    return Array.from({ length: 10 }, (_, i) =>
+      saved?.[i] != null ? String(saved[i]) : ""
+    );
+  });
+  const [showGlucose, setShowGlucose] = useState(
+    () => !!profile.diabetes?.glucose10d?.length
+  );
   const [showA1cHelp, setShowA1cHelp] = useState(false);
 
   const set = (i: number, v: string) => {

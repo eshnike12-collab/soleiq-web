@@ -33,12 +33,16 @@ export function VascularPAD() {
   const fromMedHistory = !!profile.conditions?.includes("peripheral artery disease");
 
   const [status, setStatus] = useState<Status | undefined>(
-    fromMedHistory ? "diagnosed" : undefined
+    () => profile.pad?.status ?? (fromMedHistory ? "diagnosed" : undefined)
   );
-  const [claudication, setClaudication] = useState(false);
-  const [restPain, setRestPain] = useState(false);
-  const [signs, setSigns] = useState<string[]>([]);
-  const [abi, setAbi] = useState("");
+  const [claudication, setClaudication] = useState(
+    () => profile.pad?.claudication ?? false
+  );
+  const [restPain, setRestPain] = useState(() => profile.pad?.restPain ?? false);
+  const [signs, setSigns] = useState<string[]>(() => profile.pad?.signs ?? []);
+  const [abi, setAbi] = useState(() =>
+    profile.pad?.abi != null ? String(profile.pad.abi) : ""
+  );
 
   const toggleSign = (s: string) => {
     const next = new Set(signs);

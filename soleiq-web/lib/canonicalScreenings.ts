@@ -16,6 +16,20 @@ export interface CanonicalCheck {
   riskLevel: ScreeningLevel;
   headline: string | null;
   hospitalName: string | null;
+  /** preliminary | clinician_reviewed | released — anything not released is
+   *  shown as "Pending review". */
+  status: string;
+  /** Structured findings from the stored patient summary — used by the
+   *  Comparison tab to diff checks without re-reading full reports. */
+  findings: {
+    foot: string;
+    surface: string;
+    what_we_saw: string;
+    location_plain?: string;
+    concern?: "low" | "medium" | "high";
+  }[];
+  looksGood: string[];
+  notes: string[];
   photos: CanonicalCheckPhoto[];
 }
 
@@ -35,9 +49,9 @@ export async function listMyCanonicalChecks(): Promise<CanonicalCheck[]> {
   const { data: reports, error } = await sb
     .from("reports")
     .select(
-      "id, screening_session_id, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at)"
+      "id, screening_session_id, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at)"
     )
-    .eq("status", "released")
+    .neq("status", "superseded")
     .order("created_at", { ascending: true })
     .limit(50);
   if (error || !reports || reports.length === 0) return [];
@@ -81,14 +95,27 @@ export async function listMyCanonicalChecks(): Promise<CanonicalCheck[]> {
         url: urlByPath.get(asset.storage_path) ?? "",
       }))
       .filter((photo: CanonicalCheckPhoto) => photo.url);
+    const summary = (report.patient_summary as any) ?? {};
     return {
       reportId: report.id,
       startedAt: session?.started_at
         ? Date.parse(session.started_at)
         : Date.parse(report.created_at),
       riskLevel: report.risk_level as ScreeningLevel,
-      headline: (report.patient_summary as any)?.overall?.headline ?? null,
+      headline: summary?.overall?.headline ?? null,
       hospitalName: report.hospital_name_snapshot ?? null,
+      status: report.status ?? "preliminary",
+      findings: Array.isArray(summary?.findings)
+        ? summary.findings.map((finding: any) => ({
+            foot: finding.foot,
+            surface: finding.surface,
+            what_we_saw: finding.what_we_saw ?? "",
+            location_plain: finding.location_plain,
+            concern: finding.concern,
+          }))
+        : [],
+      looksGood: Array.isArray(summary?.looks_good) ? summary.looks_good : [],
+      notes: Array.isArray(summary?.personal_notes) ? summary.personal_notes : [],
       photos,
     };
   });

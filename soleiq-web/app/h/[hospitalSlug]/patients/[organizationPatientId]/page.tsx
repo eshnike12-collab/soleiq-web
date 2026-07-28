@@ -34,7 +34,17 @@ export default async function PatientClinicalPage({
         description={`${facility?.name || "No facility"} · Hospital ID ${data.enrollment.mrn || "not recorded"}. Timeline links preserve the exact report version.`}
       />
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 className="font-semibold">Longitudinal report timeline</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-semibold">Longitudinal report timeline</h3>
+          {data.reports.length >= 2 && (
+            <Link
+              href={`/h/${data.hospital.slug}/patients/${data.enrollment.id}/compare`}
+              className="text-sm font-semibold text-brand"
+            >
+              Compare checks →
+            </Link>
+          )}
+        </div>
         {data.reports.length === 0 ? (
           <div className="mt-4"><EmptyState>No authorized reports yet.</EmptyState></div>
         ) : (

@@ -80,7 +80,7 @@ export function NextSteps() {
         </h1>
         <p className="mt-1 max-w-[260px] text-sm text-warmGray-600">
           {save === "saved"
-            ? "Your hospital screening is queued for analysis and clinician review."
+            ? "Your results and photos are available to you and your care team right away; a clinician will also review them."
             : "This account is not linked to one hospital patient record, so no hospital record was created."}{" "}
           Taking you to your dashboard…
         </p>

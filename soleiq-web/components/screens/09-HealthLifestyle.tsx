@@ -18,9 +18,12 @@ const NUMBNESS: { value: Numbness; label: string }[] = [
 export function HealthLifestyle() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
-  const [numbness, setNumbness] = useState<Numbness | undefined>();
-  const [alcohol, setAlcohol] = useState(false);
-  const [smoking, setSmoking] = useState(false);
+  const profile = useSoleiqStore((s) => s.profile);
+  const [numbness, setNumbness] = useState<Numbness | undefined>(
+    () => profile.numbness
+  );
+  const [alcohol, setAlcohol] = useState(() => profile.alcohol ?? false);
+  const [smoking, setSmoking] = useState(() => profile.smoking ?? false);
 
   const ready = !!numbness;
 

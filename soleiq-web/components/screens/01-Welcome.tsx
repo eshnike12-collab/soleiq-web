@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FolderOpen, LogOut, ShieldCheck, Stethoscope } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
+import { loadSavedIntake } from "@/lib/intake";
 import { signOut, useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +14,28 @@ export function Welcome() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const { profile, memberships } = useAuth();
   const router = useRouter();
+
+  // Returning patient in a fresh session: pull the answers saved with their
+  // last completed assessment so the questionnaire starts prefilled and the
+  // review screen activates. Session answers (mid-flow) are never clobbered.
+  useEffect(() => {
+    const state = useSoleiqStore.getState();
+    const sessionProfile = state.profile;
+    const hasSessionAnswers =
+      sessionProfile.hasSavedIntake ||
+      sessionProfile.fullName ||
+      sessionProfile.age != null ||
+      (sessionProfile.conditions?.length ?? 0) > 0;
+    if (hasSessionAnswers) return;
+    let cancelled = false;
+    void loadSavedIntake().then((saved) => {
+      if (cancelled || !saved) return;
+      useSoleiqStore.getState().updateProfile({ ...saved, hasSavedIntake: true });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const adminMembership = memberships.find(
     (membership) => membership.status === "active" && membership.role === "admin"
   );

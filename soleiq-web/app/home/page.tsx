@@ -68,14 +68,21 @@ export default async function PatientHomePage() {
         <section className="rounded-3xl border border-slate-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest released result</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest result</p>
               <h2 className="mt-1 text-xl font-semibold text-slate-950">
-                {latest ? latest.hospital_name_snapshot : "No released hospital report yet"}
+                {latest ? latest.hospital_name_snapshot : "No hospital report yet"}
               </h2>
             </div>
             {latest && (
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${riskStyle[latest.risk_level]}`}>
-                {latest.risk_level.replaceAll("_", " ")}
+              <span className="flex shrink-0 items-center gap-1.5">
+                {latest.status !== "released" && (
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                    Pending review
+                  </span>
+                )}
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${riskStyle[latest.risk_level]}`}>
+                  {latest.risk_level.replaceAll("_", " ")}
+                </span>
               </span>
             )}
           </div>
@@ -113,18 +120,28 @@ export default async function PatientHomePage() {
             </>
           ) : (
             <p className="mt-4 text-sm text-slate-500">
-              Preliminary screening support is not shown here until a clinician releases the patient-facing report.
+              Your results and photos appear here as soon as a check finishes
+              analyzing. Reports marked &ldquo;Pending review&rdquo; are visible
+              to you and your care team but haven&apos;t been checked by a
+              clinician yet.
             </p>
           )}
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6">
-          <h2 className="flex items-center gap-2 font-semibold text-slate-950">
-            <FileClock className="h-4 w-4 text-brand" /> Released report history
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 font-semibold text-slate-950">
+              <FileClock className="h-4 w-4 text-brand" /> Report history
+            </h2>
+            {data.reports.length >= 2 && (
+              <Link href="/compare" className="text-xs font-semibold text-brand">
+                Compare over time →
+              </Link>
+            )}
+          </div>
           <div className="mt-3 divide-y divide-slate-100">
             {data.reports.length === 0 ? (
-              <p className="py-5 text-sm text-slate-500">No released reports.</p>
+              <p className="py-5 text-sm text-slate-500">No reports yet.</p>
             ) : data.reports.map((report: any) => (
               <Link key={report.id} href={`/records/${report.id}`} className="flex items-center justify-between gap-4 py-4">
                 <div className="flex min-w-0 items-center gap-3">
@@ -152,7 +169,14 @@ export default async function PatientHomePage() {
                     </p>
                   </div>
                 </div>
-                <span className="shrink-0 text-xs font-semibold capitalize text-brand">{report.risk_level.replaceAll("_", " ")} →</span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {report.status !== "released" && (
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                      Pending review
+                    </span>
+                  )}
+                  <span className="text-xs font-semibold capitalize text-brand">{report.risk_level.replaceAll("_", " ")} →</span>
+                </span>
               </Link>
             ))}
           </div>

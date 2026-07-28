@@ -96,6 +96,87 @@ export async function getPatientClinicalRecord(
   return { hospital, enrollment, reports: reports ?? [] };
 }
 
+/**
+ * Doctor comparison view: every non-superseded report for one enrollment
+ * with its clinical summary and signed photos, oldest first — the data the
+ * shared ComparisonView diffs. Access identical to the clinical record
+ * (doctor/admin membership + RLS), and the view is audited.
+ */
+export async function getPatientComparisonData(
+  hospitalSlug: string,
+  organizationPatientId: string,
+  requestId: string
+) {
+  const hospital = await resolveHospital(hospitalSlug, ["doctor", "admin"]);
+  const { supabase } = await requireAuth();
+  const { data: enrollment, error } = await supabase
+    .from("organization_patients")
+    .select("id, organization_id, patient_id, mrn, patients(full_name)")
+    .eq("id", organizationPatientId)
+    .eq("organization_id", hospital.id)
+    .maybeSingle();
+  if (error || !enrollment) throw notFound("Patient not found.");
+
+  const { data: reports, error: reportsError } = await supabase
+    .from("reports")
+    .select(
+      "id, screening_session_id, version, status, risk_level, clinical_summary, created_at, screening_sessions(started_at)"
+    )
+    .eq("organization_patient_id", organizationPatientId)
+    .eq("organization_id", hospital.id)
+    .neq("status", "superseded")
+    .order("created_at", { ascending: true })
+    .limit(24);
+  if (reportsError) throw new Error(reportsError.message);
+
+  const photosBySession = await signSessionPhotos(
+    supabase,
+    (reports ?? []).slice(-12).map((report: any) => report.screening_session_id)
+  );
+
+  await writeAudit(supabase, {
+    organizationId: hospital.id,
+    action: "patient_record.compared",
+    resourceType: "organization_patient",
+    resourceId: enrollment.id,
+    patientId: enrollment.patient_id,
+    purpose: "treatment",
+    requestId,
+  });
+
+  const checks = (reports ?? []).map((report: any) => {
+    const session = Array.isArray(report.screening_sessions)
+      ? report.screening_sessions[0]
+      : report.screening_sessions;
+    const summary = (report.clinical_summary as any) ?? {};
+    return {
+      id: report.id as string,
+      date: session?.started_at
+        ? Date.parse(session.started_at)
+        : Date.parse(report.created_at),
+      riskLevel: report.risk_level as string,
+      status: report.status as string,
+      headline: summary?.overall?.headline ?? null,
+      findings: Array.isArray(summary?.findings)
+        ? summary.findings.map((finding: any) => ({
+            foot: finding.foot,
+            surface: finding.surface,
+            what_we_saw: finding.what_we_saw ?? "",
+            location_plain: finding.location_plain,
+            concern: finding.concern,
+          }))
+        : [],
+      looksGood: Array.isArray(summary?.looks_good) ? summary.looks_good : [],
+      notes: Array.isArray(summary?.personal_notes) ? summary.personal_notes : [],
+      photos: (photosBySession.get(report.screening_session_id) ?? []).map(
+        (photo) => ({ side: photo.side, view: photo.view, url: photo.url })
+      ),
+    };
+  });
+
+  return { hospital, enrollment, checks };
+}
+
 export async function getPatientReleasedReport(
   reportId: string,
   requestId: string
@@ -113,7 +194,9 @@ export async function getPatientReleasedReport(
       "id, organization_id, organization_patient_id, screening_session_id, version, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at, completed_at)"
     )
     .eq("id", reportId)
-    .eq("status", "released")
+    // Patients see their reports as soon as analysis completes; the UI
+    // labels anything not yet released as "Pending review".
+    .neq("status", "superseded")
     .maybeSingle();
   if (error || !report) throw notFound("Report not found.");
   const { data: enrollment } = await supabase
@@ -195,7 +278,7 @@ export async function getPatientDashboard() {
           "id, organization_patient_id, screening_session_id, version, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at)"
         )
         .in("organization_patient_id", enrollmentIds)
-        .eq("status", "released")
+        .neq("status", "superseded")
         .order("created_at", { ascending: false })
         .limit(100)
     : { data: [], error: null };

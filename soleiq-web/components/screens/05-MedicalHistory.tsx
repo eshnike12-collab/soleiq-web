@@ -26,7 +26,12 @@ const NONE = "None of the above";
 export function MedicalHistory() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
-  const [picked, setPicked] = useState<string[]>([]);
+  const profile = useSoleiqStore((s) => s.profile);
+  const [picked, setPicked] = useState<string[]>(() => {
+    if (profile.conditions?.length) return profile.conditions;
+    // Saved intake with an empty list means "None of the above" was chosen.
+    return profile.hasSavedIntake ? [NONE] : [];
+  });
 
   const toggle = (c: string) => {
     if (c === NONE) {

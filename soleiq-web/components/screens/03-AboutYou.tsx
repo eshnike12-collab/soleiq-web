@@ -18,10 +18,15 @@ const STATES = [
 export function AboutYou() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
-  const [first, setFirst] = useState("");
-  const [last, setLast] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+  const profile = useSoleiqStore((s) => s.profile);
+  const [first, setFirst] = useState(
+    () => profile.fullName?.trim().split(/\s+/)[0] ?? ""
+  );
+  const [last, setLast] = useState(
+    () => profile.fullName?.trim().split(/\s+/).slice(1).join(" ") ?? ""
+  );
+  const [city, setCity] = useState(() => profile.city ?? "");
+  const [state, setState] = useState(() => profile.state ?? "");
   const [resolving, setResolving] = useState(false);
 
   const useMyLocation = () => {

@@ -13,9 +13,12 @@ import type { Sex } from "@/lib/types";
 export function Demographics() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
-  const [age, setAge] = useState("");
-  const [sex, setSex] = useState<Sex | "">("");
-  const [ethnicity, setEthnicity] = useState("");
+  const profile = useSoleiqStore((s) => s.profile);
+  const [age, setAge] = useState(() =>
+    profile.age != null ? String(profile.age) : ""
+  );
+  const [sex, setSex] = useState<Sex | "">(() => profile.sex ?? "");
+  const [ethnicity, setEthnicity] = useState(() => profile.ethnicity ?? "");
 
   const ageNum = Number(age);
   const ageOk = !!age && Number.isFinite(ageNum) && ageNum >= 18 && ageNum <= 120;

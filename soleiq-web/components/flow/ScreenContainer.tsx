@@ -18,7 +18,7 @@ export function ScreenContainer({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -x, opacity: 0 }}
       transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-      className="relative flex h-full min-h-0 w-full flex-col px-6 pt-7"
+      className="relative flex h-full min-h-0 w-full flex-col px-5 pt-6 sm:px-8 sm:pt-8"
     >
       <div className="flex min-h-0 flex-1 flex-col [&>*]:min-h-0">
         {children}

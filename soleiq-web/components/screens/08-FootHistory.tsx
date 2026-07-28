@@ -85,13 +85,22 @@ const SidePicker = ({
 export function FootHistory() {
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
+  const profile = useSoleiqStore((s) => s.profile);
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 1979 }, (_, i) => currentYear - i);
 
-  const [hasEvents, setHasEvents] = useState<boolean | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [hasSurgery, setHasSurgery] = useState<boolean | null>(null);
-  const [procedures, setProcedures] = useState<string[]>([]);
+  const [hasEvents, setHasEvents] = useState<boolean | null>(() => {
+    if (profile.priorEvents?.length) return true;
+    // Saved intake with an empty list means "no prior events" was answered.
+    return profile.hasSavedIntake ? false : null;
+  });
+  const [events, setEvents] = useState<Event[]>(() => profile.priorEvents ?? []);
+  const [hasSurgery, setHasSurgery] = useState<boolean | null>(() =>
+    profile.recentSurgery ? profile.recentSurgery.flag : null
+  );
+  const [procedures, setProcedures] = useState<string[]>(
+    () => profile.recentSurgery?.procedures ?? []
+  );
 
   const addEvent = () =>
     setEvents([

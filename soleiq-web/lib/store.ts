@@ -30,6 +30,12 @@ interface SoleiqStore {
   profile: Partial<PatientProfile>;
   updateProfile: (patch: Partial<PatientProfile>) => void;
 
+  /** When the returning-patient review screen sends the user off to edit
+   *  one section, the edited screen's Next returns here instead of walking
+   *  the rest of the questionnaire. */
+  reviewReturnStep: number | null;
+  editFromReview: (targetStep: number, reviewStep: number) => void;
+
   currentVisit: Visit | null;
   startVisit: () => void;
   addImage: (img: CapturedImage) => void;
@@ -70,11 +76,24 @@ export const useSoleiqStore = create<SoleiqStore>()(
       direction: "forward",
       history: [],
       goNext: () =>
-        set((s) => ({
-          direction: "forward",
-          currentStep: s.currentStep + 1,
-          history: [...s.history, s.currentStep],
-        })),
+        set((s) => {
+          // Returning-patient edit: one edited section, then straight back
+          // to the review hub rather than re-walking the questionnaire.
+          if (s.reviewReturnStep != null && s.currentStep !== s.reviewReturnStep) {
+            return {
+              direction: "forward",
+              currentStep: s.reviewReturnStep,
+              reviewReturnStep: null,
+              history: [...s.history, s.currentStep],
+            };
+          }
+          return {
+            direction: "forward",
+            currentStep: s.currentStep + 1,
+            reviewReturnStep: null,
+            history: [...s.history, s.currentStep],
+          };
+        }),
       goBack: () =>
         set((s) => {
           // Pop from history if available — gives correct back behavior even
@@ -85,11 +104,13 @@ export const useSoleiqStore = create<SoleiqStore>()(
               direction: "back",
               currentStep: s.history[s.history.length - 1],
               history: s.history.slice(0, -1),
+              reviewReturnStep: null,
             };
           }
           return {
             direction: "back",
             currentStep: Math.max(0, s.currentStep - 1),
+            reviewReturnStep: null,
           };
         }),
       goTo: (step) =>
@@ -97,12 +118,22 @@ export const useSoleiqStore = create<SoleiqStore>()(
           currentStep: step,
           direction: "forward",
           history: [...s.history, s.currentStep],
+          reviewReturnStep: null,
         })),
       setStep: (step) => set({ currentStep: step }),
 
       profile: { conditions: [], priorEvents: [], painPoints: [] },
       updateProfile: (patch) =>
         set((s) => ({ profile: { ...s.profile, ...patch } })),
+
+      reviewReturnStep: null,
+      editFromReview: (targetStep, reviewStep) =>
+        set((s) => ({
+          direction: "forward",
+          currentStep: targetStep,
+          reviewReturnStep: reviewStep,
+          history: [...s.history, s.currentStep],
+        })),
 
       currentVisit: null,
       startVisit: () =>
@@ -178,6 +209,11 @@ export const useSoleiqStore = create<SoleiqStore>()(
         if (!isSupabaseConfigured()) return { status: "local" };
         try {
           const result = await saveCanonicalScreening(state.profile, completed);
+          // Either way the answers now exist for the next assessment — the
+          // returning-review screen activates from here on.
+          set((latest) => ({
+            profile: { ...latest.profile, hasSavedIntake: true },
+          }));
           if (!result.saved) {
             // Anonymous/unlinked patients keep the complete in-memory result;
             // no hospital record is invented and no default tenancy is used.
@@ -217,17 +253,19 @@ export const useSoleiqStore = create<SoleiqStore>()(
       setProcessing: (v) => set({ isProcessing: v }),
 
       reset: () =>
-        set({
+        set((s) => ({
           currentStep: 0,
           direction: "forward",
           history: [],
-          profile: { conditions: [], priorEvents: [], painPoints: [] },
+          // Answers survive into the next assessment — only the visit
+          // (photos, result) starts fresh. New photos are always required.
+          profile: s.profile,
           currentVisit: null,
-          priorVisits: MOCK_PRIOR_VISITS,
+          priorVisits: s.priorVisits,
           isProcessing: false,
           scanPath: pickScanPath(),
-          patientDbId: null,
-        }),
+          reviewReturnStep: null,
+        })),
     }),
     {
       name: "soleiq-session",

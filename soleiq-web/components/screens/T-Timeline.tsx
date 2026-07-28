@@ -32,6 +32,8 @@ interface TimelineCheck {
   id: string;
   startedAt: number;
   level: ScreeningLevel | null;
+  /** Canonical reports a clinician hasn't reviewed yet. */
+  pendingReview?: boolean;
   photos: { side: string; view: string; url: string }[];
   /** Only legacy rows can be deleted from here (canonical reports are
    *  clinical records managed by the hospital). */
@@ -61,6 +63,7 @@ export function Timeline() {
             id: check.reportId,
             startedAt: check.startedAt,
             level: check.riskLevel ?? null,
+            pendingReview: check.status !== "released",
             photos: check.photos.map((photo) => ({
               side: photo.side,
               view: photo.view,
@@ -155,6 +158,7 @@ export function Timeline() {
                 </p>
                 <p className="truncate text-xs text-warmGray-600">
                   {check.level ? STATUS[check.level] : "Older screening record"}
+                  {check.pendingReview ? " · pending clinician review" : ""}
                 </p>
               </div>
               {check.deletable && (
