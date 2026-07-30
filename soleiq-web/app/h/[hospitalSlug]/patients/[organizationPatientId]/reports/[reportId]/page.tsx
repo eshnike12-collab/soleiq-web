@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/hospital/Ui";
 import { ReportActions } from "@/components/hospital/ReportActions";
 import { ReportChat } from "@/components/hospital/ReportChat";
 import { ReportTabs } from "@/components/hospital/ReportTabs";
+import { RecommendationBlock } from "@/components/result/RecommendationBlock";
 import { getExactReport } from "@/server/reports";
 import { pageAccess } from "@/server/page-access";
 
@@ -53,19 +54,25 @@ export default async function ExactReportPage({
             regions, screening detail, capture quality, complete intake
             sheet, identifiers, review history) lives behind the Enhanced
             metrics tab. */}
-        <ReportTabs
-          clinical={clinical}
-          riskLevel={data.report.risk_level}
-          assets={(data as any).mediaAssets ?? []}
-          intake={(patient?.demographics as any) ?? null}
-          patient={patient ?? null}
-          mrn={(data.enrollment as any).mrn ?? null}
-          facilityName={facility?.name ?? null}
-          reviews={((data.report as any).report_reviews ?? []) as any}
-          hospitalSlug={data.hospital.slug}
-          analysisRunId={(data.report as any).analysis_run_id ?? null}
-          reportVersion={data.report.version}
-        />
+        <div>
+          <ReportTabs
+            clinical={clinical}
+            riskLevel={data.report.risk_level}
+            assets={(data as any).mediaAssets ?? []}
+            intake={(patient?.demographics as any) ?? null}
+            patient={patient ?? null}
+            mrn={(data.enrollment as any).mrn ?? null}
+            facilityName={facility?.name ?? null}
+            reviews={((data.report as any).report_reviews ?? []) as any}
+            hospitalSlug={data.hospital.slug}
+            analysisRunId={(data.report as any).analysis_run_id ?? null}
+            reportVersion={data.report.version}
+          />
+          <RecommendationBlock
+            recommendation={(data as any).recommendation ?? null}
+            audience="clinician"
+          />
+        </div>
         <div className="space-y-5">
           <ReportActions
             hospitalSlug={data.hospital.slug}

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { PhotoScreeningSchema, enforceScreeningSafety } from "@/lib/photoScreening";
+import { buildRecommendationRecord, CATALOG_VERSION } from "@/lib/productCatalog";
 import type { AnalysisProvider, AnalysisImage } from "@/server/providers/analysis";
 import { infrastructureClient } from "@/server/storage";
 
@@ -26,7 +27,7 @@ export async function processAnalysisEvent(
   const { data: session, error: sessionError } = await supabase
     .from("screening_sessions")
     .select(
-      "id, organization_patient_id, organization_patients(patient_id, patients(demographics))"
+      "id, organization_id, organization_patient_id, organization_patients(patient_id, patients(demographics))"
     )
     .eq("id", event.aggregate_id)
     .single();
@@ -78,6 +79,29 @@ export async function processAnalysisEvent(
       }
     );
     if (error) throw new Error(error.message);
+    // Freeze the product recommendation with the report so historical
+    // reports always show what was recommended at the time of that check.
+    // Best-effort: analysis success never hinges on this table existing.
+    if (reportId) {
+      try {
+        const demographics =
+          (session as any).organization_patients?.patients?.demographics ?? {};
+        const record = buildRecommendationRecord(safeOutput as any, demographics);
+        await supabase.from("report_recommendations").upsert(
+          {
+            organization_id: (session as any).organization_id,
+            report_id: reportId,
+            screening_session_id: session.id,
+            products: record.products,
+            signals: record.signals,
+            catalog_version: CATALOG_VERSION,
+          },
+          { onConflict: "report_id" }
+        );
+      } catch (recError) {
+        console.error("[soleiq] recommendation persist failed", recError);
+      }
+    }
     await supabase
       .from("outbox_events")
       .update({ processed_at: new Date().toISOString(), attempts: event.attempts + 1 })

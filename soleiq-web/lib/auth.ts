@@ -197,8 +197,11 @@ export async function signInAsGuest() {
 export async function requestPasswordReset(email: string) {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase not configured");
+  // Lands on the dedicated set-new-password page. NOTE: this origin must be
+  // allowed in Supabase → Authentication → URL Configuration, or Supabase
+  // silently rewrites the link to the project's Site URL instead.
   const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/login?recovery=1`,
+    redirectTo: `${window.location.origin}/reset-password`,
   });
   if (error) throw new Error(error.message);
 }

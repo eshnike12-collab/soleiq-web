@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPatientReleasedReport } from "@/server/patients";
 import { pageAccess } from "@/server/page-access";
+import { RecommendationBlock } from "@/components/result/RecommendationBlock";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,10 @@ export default async function PatientReportPage({
               {(summary?.what_to_do ?? []).map((item: string) => <li key={item}>{item}</li>)}
             </ul>
           </section>
+          <RecommendationBlock
+            recommendation={(report as any).recommendation ?? null}
+            audience="patient"
+          />
           <p className="mt-6 text-xs leading-relaxed text-slate-500">
             {summary?.limits || "Photos cannot show problems beneath the skin."} This is screening support, not a diagnosis.
           </p>

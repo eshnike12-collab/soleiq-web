@@ -191,3 +191,118 @@ export function suggestProducts(
 
   return [...suggestions.values()].slice(0, max);
 }
+
+// ---------------------------------------------------------------------------
+// Frozen recommendation records — persisted with each report so historical
+// reports show what was recommended THEN, not a re-computed value.
+// ---------------------------------------------------------------------------
+
+export const CATALOG_VERSION = "v1";
+
+export interface RecommendationRecord {
+  /** Flattened product cards, each carrying its own "reason" sentence. */
+  products: (CatalogProduct & { reason: string })[];
+  /** The specific signals that triggered the recommendation. `patient` is
+   *  plain language; `clinician` is the clinical detail. */
+  signals: { patient: string[]; clinician: string[] };
+  catalogVersion: string;
+}
+
+/**
+ * Build the recommendation + "why" signals for one completed screening.
+ * Pure and isomorphic: the server worker calls this once at analysis time
+ * and stores the result verbatim with the report.
+ */
+export function buildRecommendationRecord(
+  screening: PhotoScreeningResult | null | undefined,
+  profile: Partial<PatientProfile>
+): RecommendationRecord {
+  const suggestions = suggestProducts(screening, profile);
+
+  const patientSignals: string[] = [];
+  const clinicianSignals: string[] = [];
+  const pushUnique = (list: string[], value: string) => {
+    if (value && !list.includes(value)) list.push(value);
+  };
+
+  for (const finding of screening?.findings ?? []) {
+    if (finding.lighting_artifact_possible) continue;
+    pushUnique(
+      patientSignals,
+      `Your check found ${finding.what_we_saw
+        .toLowerCase()
+        .replace(/\.$/, "")} on your ${finding.foot} foot (${finding.location_plain.toLowerCase()}).`
+    );
+    pushUnique(
+      clinicianSignals,
+      `Finding (${finding.concern ?? "unspecified"} concern): ${finding.what_we_saw} — ${finding.foot} foot, ${finding.surface}; ${finding.location_plain}.`
+    );
+  }
+
+  const conditions = profile.conditions ?? [];
+  if (conditions.includes("diabetes") || profile.diabetes) {
+    pushUnique(patientSignals, "You told us you live with diabetes.");
+    const d = profile.diabetes;
+    pushUnique(
+      clinicianSignals,
+      d
+        ? `Intake: diabetes ${String(d.type ?? "").replace("_", " ")}${
+            d.yearDiagnosed ? `, diagnosed ${d.yearDiagnosed}` : ""
+          }${d.hba1c ? `, HbA1c ${d.hba1c}%` : ""}.`
+        : "Intake: diabetes reported (no detail provided)."
+    );
+  }
+  if (profile.numbness && profile.numbness !== "neither") {
+    const where =
+      profile.numbness === "both" ? "both feet" : `your ${profile.numbness} foot`;
+    pushUnique(patientSignals, `You reported numbness in ${where}.`);
+    pushUnique(
+      clinicianSignals,
+      `Intake: sensory symptoms (numbness) — ${profile.numbness}. Consider neuropathy context.`
+    );
+  }
+  if (profile.pad && profile.pad.status !== "none" && profile.pad.status !== "unknown") {
+    pushUnique(patientSignals, "You told us about circulation problems in your legs.");
+    pushUnique(
+      clinicianSignals,
+      `Intake: PAD ${profile.pad.status}${
+        profile.pad.abi ? `, ABI ${profile.pad.abi}` : ""
+      }${profile.pad.claudication ? ", claudication" : ""}${
+        profile.pad.restPain ? ", rest pain" : ""
+      }.`
+    );
+  }
+  for (const event of profile.priorEvents ?? []) {
+    pushUnique(
+      patientSignals,
+      `You had a prior ${event.type === "ulcer" ? "foot ulcer" : "amputation"}${
+        event.year ? ` in ${event.year}` : ""
+      }.`
+    );
+    pushUnique(
+      clinicianSignals,
+      `History: prior ${event.type}, ${event.side} ${String(event.region ?? "").replace(
+        /_/g,
+        " "
+      )}${event.year ? ` (${event.year})` : ""}. Elevated recurrence risk.`
+    );
+  }
+  if (screening?.overall?.level) {
+    pushUnique(
+      clinicianSignals,
+      `Screening level at analysis time: ${screening.overall.level.replace(/_/g, " ")}.`
+    );
+  }
+  if (patientSignals.length === 0) {
+    pushUnique(
+      patientSignals,
+      "No specific problem was flagged in this check — these support everyday foot care."
+    );
+  }
+
+  return {
+    products: suggestions.map(({ product, reason }) => ({ ...product, reason })),
+    signals: { patient: patientSignals, clinician: clinicianSignals },
+    catalogVersion: CATALOG_VERSION,
+  };
+}

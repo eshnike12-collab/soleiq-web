@@ -49,6 +49,9 @@ interface SoleiqStore {
   completeVisit: () => Promise<{
     status: "saved" | "local" | "failed";
     reason?: string;
+    /** The canonical report for this check, when analysis finished inline —
+     *  lets the UI link straight to "View my full report". */
+    reportId?: string | null;
   }>;
 
   priorVisits: Visit[];
@@ -230,7 +233,7 @@ export const useSoleiqStore = create<SoleiqStore>()(
                 : visit
             ),
           }));
-          return { status: "saved" };
+          return { status: "saved", reportId: result.reportId };
         } catch (error) {
           // Surface the real step + reason to the UI — a swallowed error here
           // is exactly how "check your connection" got blamed for a server

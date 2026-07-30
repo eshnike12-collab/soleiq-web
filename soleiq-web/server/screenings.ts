@@ -4,8 +4,100 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { DomainError, conflict, notFound } from "./errors";
 import { requireAuth } from "./auth";
+import { infrastructureClient } from "./storage";
 import { anthropicAnalysisProvider } from "./providers/anthropic-analysis";
 import { processAnalysisEvent } from "./workers/analysis-worker";
+
+type Provider = NonNullable<ReturnType<typeof anthropicAnalysisProvider>>;
+
+/** The report produced for a session, as visible to the CALLER (RLS applies —
+ *  patients see their own reports immediately once migration 0009 is live). */
+async function findSessionReportId(
+  supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
+  sessionId: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("reports")
+    .select("id")
+    .eq("screening_session_id", sessionId)
+    .neq("status", "superseded")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+/**
+ * Product decision (2026-07): results are available to the patient the
+ * moment analysis finishes, so freshly created reports are released
+ * immediately instead of waiting for a clinician to flip them. Clinician
+ * review still happens and is still recorded in report_reviews — it just
+ * no longer gates visibility. Best-effort: a failure here leaves the
+ * report preliminary, which doctors can still see.
+ */
+async function releaseSessionReport(sessionId: string): Promise<void> {
+  try {
+    const infra = infrastructureClient();
+    await infra
+      .from("reports")
+      .update({ status: "released", finalized_at: new Date().toISOString() })
+      .eq("screening_session_id", sessionId)
+      .eq("status", "preliminary");
+  } catch {
+    /* stays preliminary until a clinician releases it */
+  }
+}
+
+/** Process the un-processed analysis event for one session, if any. */
+async function processSessionAnalysis(
+  sessionId: string,
+  provider: Provider
+): Promise<boolean> {
+  const infra = infrastructureClient();
+  const { data: event } = await infra
+    .from("outbox_events")
+    .select("id")
+    .eq("event_type", "analysis_requested")
+    .eq("aggregate_id", sessionId)
+    .is("processed_at", null)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!event) return false;
+  await processAnalysisEvent(event.id, provider);
+  await releaseSessionReport(sessionId);
+  return true;
+}
+
+/**
+ * Self-healing: sessions stuck at "analyzing" (e.g. saved while the worker
+ * credentials were broken) leave an unprocessed outbox event behind. Each
+ * successful save opportunistically processes ONE of them, so a backlog
+ * drains without a queue runner. Best-effort by design.
+ */
+async function sweepOnePendingAnalysis(
+  provider: Provider,
+  excludeSessionId: string
+): Promise<void> {
+  try {
+    const infra = infrastructureClient();
+    const { data: event } = await infra
+      .from("outbox_events")
+      .select("id, aggregate_id")
+      .eq("event_type", "analysis_requested")
+      .is("processed_at", null)
+      .neq("aggregate_id", excludeSessionId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (event) {
+      await processAnalysisEvent(event.id, provider);
+      await releaseSessionReport(event.aggregate_id);
+    }
+  } catch {
+    /* backlog stays; the next save tries again */
+  }
+}
 
 const DataUrlSchema = z
   .string()
@@ -112,7 +204,31 @@ export async function createCanonicalScreening(
     .single();
   if (sessionError) throw new Error(sessionError.message);
   if (!["draft", "uploading", "failed"].includes(session.status)) {
-    return { sessionId: session.id, status: session.status, resumed: true };
+    // Resume: if this session is stuck mid-analysis, finish the analysis now
+    // so the patient's retry actually produces a report.
+    let resumedStatus = session.status;
+    const resumeProvider = anthropicAnalysisProvider();
+    if (session.status === "analyzing" && resumeProvider) {
+      try {
+        await processSessionAnalysis(session.id, resumeProvider);
+        resumedStatus = "released";
+      } catch (resumeError) {
+        console.error(
+          JSON.stringify({
+            level: "error",
+            event: "analysis.resume_failed",
+            requestId,
+            sessionId: session.id,
+          })
+        );
+      }
+    }
+    return {
+      sessionId: session.id,
+      status: resumedStatus,
+      reportId: await findSessionReportId(supabase, session.id),
+      resumed: true,
+    };
   }
 
   // Uploads run under the CALLER'S session (storage RLS policy
@@ -185,7 +301,10 @@ export async function createCanonicalScreening(
     if (provider && eventId) {
       try {
         await processAnalysisEvent(eventId as string, provider);
-        status = "preliminary";
+        await releaseSessionReport(session.id);
+        status = "released";
+        // Drain one stuck session from the backlog while we're here.
+        await sweepOnePendingAnalysis(provider, session.id);
       } catch (analysisError) {
         // The worker already marked the session failed and kept the media
         // for retry; the saved session is still returned to the caller.
@@ -203,6 +322,7 @@ export async function createCanonicalScreening(
     return {
       sessionId: session.id,
       status,
+      reportId: await findSessionReportId(supabase, session.id),
       analysisEventId: eventId,
       resumed: false,
     };

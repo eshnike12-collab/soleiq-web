@@ -221,7 +221,36 @@ export async function getPatientReleasedReport(
   return {
     ...report,
     photos: photosBySession.get((report as any).screening_session_id) ?? [],
+    recommendation: await getStoredRecommendation(supabase, report.id),
   };
+}
+
+/**
+ * The product recommendation frozen with a report at analysis time. RLS
+ * mirrors report access exactly. Returns null when none was stored (older
+ * checks) or the table hasn't been migrated yet — callers render nothing.
+ */
+export async function getStoredRecommendation(
+  supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
+  reportId: string
+): Promise<{
+  products: any[];
+  signals: { patient?: string[]; clinician?: string[] };
+  created_at?: string;
+} | null> {
+  try {
+    const { data } = await supabase
+      .from("report_recommendations")
+      .select("products, signals, created_at")
+      .eq("report_id", reportId)
+      .maybeSingle();
+    if (!data || !Array.isArray(data.products) || data.products.length === 0) {
+      return null;
+    }
+    return data as any;
+  } catch {
+    return null;
+  }
 }
 
 export async function getPatientDashboard() {

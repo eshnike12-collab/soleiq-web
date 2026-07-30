@@ -31,6 +31,7 @@ export function NextSteps() {
   const [doctorOpen, setDoctorOpen] = useState(false);
   const [save, setSave] = useState<SaveState>("idle");
   const [failReason, setFailReason] = useState<string | null>(null);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   const saveAndContinue = async () => {
     if (save === "saving" || save === "saved") return;
@@ -39,8 +40,18 @@ export function NextSteps() {
     const outcome = await completeVisit();
     if (outcome.status === "saved" || outcome.status === "local") {
       setSave(outcome.status);
-      // Brief success beat so the user sees the confirmation, then home.
-      setTimeout(() => router.push("/home"), 1200);
+      setReportId(outcome.reportId ?? null);
+      // Straight to the finished report when analysis completed inline;
+      // otherwise a brief success beat, then home.
+      setTimeout(
+        () =>
+          router.push(
+            outcome.status === "saved" && outcome.reportId
+              ? `/records/${outcome.reportId}`
+              : "/home"
+          ),
+        1400
+      );
     } else {
       setSave("failed");
       setFailReason(outcome.reason ?? null);
@@ -86,10 +97,14 @@ export function NextSteps() {
         </p>
         <button
           type="button"
-          onClick={() => router.push("/home")}
+          onClick={() =>
+            router.push(
+              save === "saved" && reportId ? `/records/${reportId}` : "/home"
+            )
+          }
           className="mt-5 text-sm font-semibold text-brand"
         >
-          Go now
+          {save === "saved" && reportId ? "View my full report now" : "Go now"}
         </button>
       </div>
     );

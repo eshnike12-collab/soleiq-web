@@ -5,6 +5,7 @@ import { DomainError, notFound } from "./errors";
 import { requireAuth } from "./auth";
 import { resolveHospital } from "./tenancy";
 import { writeAudit } from "./audit";
+import { getStoredRecommendation } from "./patients";
 
 export const WorklistQuerySchema = z.object({
   search: z.string().trim().max(80).optional(),
@@ -83,7 +84,13 @@ export async function getExactReport(
     purpose: "treatment",
     requestId,
   });
-  return { hospital, report, enrollment, mediaAssets: mediaAssets ?? [] };
+  return {
+    hospital,
+    report,
+    enrollment,
+    mediaAssets: mediaAssets ?? [],
+    recommendation: await getStoredRecommendation(supabase, report.id),
+  };
 }
 
 export const ReportReviewSchema = z.object({

@@ -5,6 +5,7 @@ import { SignOutButton } from "@/components/auth/SignOutButton";
 import { AuthConfigurationError } from "@/components/auth/AuthConfigurationError";
 import { getPatientDashboard } from "@/server/patients";
 import { pageAccess } from "@/server/page-access";
+import { PatientNav } from "@/components/patient/PatientNav";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export default async function PatientHomePage() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl space-y-6 px-5 py-8">
+      <main className="mx-auto max-w-5xl space-y-6 px-5 py-8 pb-24">
         <section className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
           <div className="rounded-3xl bg-gradient-to-br from-brand to-blue-800 p-7 text-white">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">Guided four-photo check</p>
@@ -182,6 +183,7 @@ export default async function PatientHomePage() {
           </div>
         </section>
       </main>
+      <PatientNav active="home" />
     </div>
   );
 }

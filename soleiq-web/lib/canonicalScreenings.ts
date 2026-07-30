@@ -121,11 +121,67 @@ export async function listMyCanonicalChecks(): Promise<CanonicalCheck[]> {
   });
 }
 
+export interface MyRecommendation {
+  reportId: string;
+  createdAt: number;
+  riskLevel: string | null;
+  hospitalName: string | null;
+  products: {
+    id: string;
+    name: string;
+    helpsWith: string;
+    howItHelps: string;
+    url: string;
+    caution?: string;
+    reason: string;
+  }[];
+  patientSignals: string[];
+}
+
+/**
+ * Running list of every product recommendation the app has generated for
+ * the signed-in patient, newest first, each linked to the report it was
+ * frozen with. RLS mirrors report access. Empty on environments where the
+ * report_recommendations migration hasn't been applied.
+ */
+export async function listMyRecommendations(): Promise<MyRecommendation[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  try {
+    const { data, error } = await sb
+      .from("report_recommendations")
+      .select(
+        "report_id, products, signals, created_at, reports(risk_level, hospital_name_snapshot, status)"
+      )
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error || !data) return [];
+    return data
+      .filter((row: any) => {
+        const report = Array.isArray(row.reports) ? row.reports[0] : row.reports;
+        return report && report.status !== "superseded";
+      })
+      .map((row: any) => {
+        const report = Array.isArray(row.reports) ? row.reports[0] : row.reports;
+        return {
+          reportId: row.report_id,
+          createdAt: Date.parse(row.created_at),
+          riskLevel: report?.risk_level ?? null,
+          hospitalName: report?.hospital_name_snapshot ?? null,
+          products: Array.isArray(row.products) ? row.products : [],
+          patientSignals: Array.isArray(row.signals?.patient) ? row.signals.patient : [],
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
 export async function saveCanonicalScreening(
   profile: Partial<PatientProfile>,
   visit: Visit
 ): Promise<
-  | { saved: true; sessionId: string; status: string }
+  | { saved: true; sessionId: string; status: string; reportId: string | null }
   | { saved: false; localOnly: true; reason: string }
 > {
   const response = await fetch("/api/screenings", {
@@ -163,6 +219,7 @@ export async function saveCanonicalScreening(
     saved: true,
     sessionId: payload.data.sessionId,
     status: payload.data.status,
+    reportId: payload.data.reportId ?? null,
   };
 }
 
