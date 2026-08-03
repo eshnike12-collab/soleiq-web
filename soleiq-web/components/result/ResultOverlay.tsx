@@ -2,11 +2,13 @@
 
 import type { DetectionRegion } from "@/lib/types";
 
+// Muted, token-aligned detection colors: coral (urgent), honey amber (warn),
+// warm orange, warm neutral — never harsh saturated red.
 const STROKE: Record<DetectionRegion["type"], string> = {
-  wound: "#C00000",
-  redness: "#BF8F00",
-  dryness: "#854F0B",
-  callus: "#5F5E5A",
+  wound: "#A94F3F",
+  redness: "#BC8F26",
+  dryness: "#B06B2A",
+  callus: "#837B6C",
 };
 
 export function ResultOverlay({
@@ -17,7 +19,7 @@ export function ResultOverlay({
   detections: DetectionRegion[];
 }) {
   return (
-    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-warmGray-800">
+    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-slate-800">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageSrc}
@@ -44,7 +46,7 @@ export function ResultOverlay({
         {detections.map((d, i) => (
           <span
             key={i}
-            className="rounded-full bg-black/60 px-2 py-0.5 text-xs text-white"
+            className="rounded-full bg-slate-900/70 px-2 py-0.5 text-xs font-medium text-white"
           >
             {d.type} · {(d.confidence * 100).toFixed(0)}%
           </span>

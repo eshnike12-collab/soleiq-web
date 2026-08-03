@@ -24,7 +24,7 @@ const ZONES: Zone[] = [
   { min: 5.7, max: 6.5, label: "Prediabetes", tone: "bg-amber-200", text: "text-amber-900" },
   { min: 6.5, max: 7.0, label: "Diabetes — at target", tone: "bg-blue-200", text: "text-blue-900" },
   { min: 7.0, max: 9.0, label: "Above target", tone: "bg-orange-300", text: "text-orange-900" },
-  { min: 9.0, max: 14.0, label: "Severe", tone: "bg-risk-high/70", text: "text-white" },
+  { min: 9.0, max: 14.0, label: "Severe", tone: "bg-urgent", text: "text-white" },
 ];
 
 const ROWS: { a1c: string; mgdl: string; mmol: string; meaning: string }[] = [
@@ -81,19 +81,19 @@ export function A1cReferenceChart({
   const showHemoCaution = !ethnicity || HEMO_HIGH_RISK_ETHNICITIES.includes(ethnicity);
 
   return (
-    <div className="mt-3 space-y-3 rounded-2xl border border-warmGray-100 bg-white p-3 text-xs leading-snug text-warmGray-800">
+    <div className="mt-3 space-y-3 rounded-2xl border border-slate-100 bg-surface-raised p-3.5 text-[13px] leading-snug text-ink shadow-card">
       <p>
         A1C reflects average glucose over the past ~3 months. The estimated
         average glucose (eAG) makes that average concrete.
       </p>
-      <p className="font-mono text-[11px] text-warmGray-600">
+      <p className="font-mono text-[11px] text-ink-faint">
         eAG (mg/dL) = 28.7 × A1C − 46.7
       </p>
 
       <ZoneBar currentA1c={currentA1c} />
 
       {eagFromInput !== undefined && (
-        <div className="rounded-xl bg-blue-50 p-2 text-blue-900">
+        <div className="rounded-xl bg-primary-soft p-2.5 text-blue-900">
           <span className="font-semibold">At {currentA1c?.toFixed(1)}%, </span>
           eAG ≈ <span className="font-semibold">{Math.round(eagFromInput)} mg/dL</span>{" "}
           ({(eagFromInput / 18).toFixed(1)} mmol/L)
@@ -109,9 +109,9 @@ export function A1cReferenceChart({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-warmGray-100">
+      <div className="overflow-hidden rounded-xl border border-slate-100">
         <table className="w-full">
-          <thead className="bg-warmGray-50/80 text-[10px] uppercase tracking-wide text-warmGray-600">
+          <thead className="bg-surface-sunken text-[10px] uppercase tracking-wide text-ink-faint">
             <tr>
               <th className="px-2 py-1.5 text-left">A1C</th>
               <th className="px-2 py-1.5 text-left">eAG mg/dL</th>
@@ -129,8 +129,8 @@ export function A1cReferenceChart({
                 <tr
                   key={r.a1c}
                   className={cn(
-                    "border-t border-warmGray-100",
-                    highlight && "bg-blue-50 font-medium"
+                    "border-t border-slate-100",
+                    highlight && "bg-primary-soft font-semibold"
                   )}
                 >
                   <td className="px-2 py-1.5 font-mono">{r.a1c}</td>
@@ -145,7 +145,7 @@ export function A1cReferenceChart({
       </div>
 
       {offset && (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-2 text-amber-900">
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-warn-soft p-2.5 text-amber-900">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <p>
             <span className="font-semibold">Ethnic variation: </span>
@@ -157,7 +157,7 @@ export function A1cReferenceChart({
       )}
 
       {showHemoCaution && (
-        <div className="flex items-start gap-2 rounded-xl border border-risk-high/30 bg-risk-high/10 p-2 text-risk-high">
+        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-urgent-soft p-2.5 text-red-800">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <p>
             <span className="font-semibold">A1C unreliable in hemoglobinopathies. </span>
@@ -169,7 +169,7 @@ export function A1cReferenceChart({
         </div>
       )}
 
-      <p className="text-[10px] italic text-warmGray-600">
+      <p className="text-[10px] italic text-ink-faint">
         Source: ADA Standards of Care 2025/2026; Nathan et al. eAG-A1C
         relationship; DPP-A1C ethnic variation analysis.
       </p>
@@ -204,12 +204,12 @@ function ZoneBar({ currentA1c }: { currentA1c?: number }) {
         })}
         {markerPct != null && (
           <div
-            className="absolute top-0 h-full w-[3px] bg-warmGray-800"
+            className="absolute top-0 h-full w-[3px] bg-ink"
             style={{ left: `calc(${markerPct}% - 1.5px)` }}
           />
         )}
       </div>
-      <div className="mt-1 flex justify-between text-[9px] font-medium uppercase tracking-wide text-warmGray-600">
+      <div className="mt-1 flex justify-between text-[9px] font-semibold uppercase tracking-wide text-ink-faint">
         <span>4%</span>
         <span>5.7</span>
         <span>6.5</span>
@@ -218,7 +218,7 @@ function ZoneBar({ currentA1c }: { currentA1c?: number }) {
         <span>14%</span>
       </div>
       {clampedA1c != null && (
-        <p className="mt-1 text-[11px] font-medium text-warmGray-800">
+        <p className="mt-1 text-[11px] font-semibold text-ink">
           Marker at {clampedA1c.toFixed(1)}%
         </p>
       )}

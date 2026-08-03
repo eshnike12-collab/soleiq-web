@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, ImagePlus, RotateCcw } from "lucide-react";
+import { AlertTriangle, Camera, ImagePlus, RotateCcw } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
 import type { CaptureView, FootSide } from "@/lib/types";
 import {
@@ -535,22 +535,22 @@ export function CaptureFrame({ side, view, onCaptured, step }: Props) {
     <div className="flex h-full flex-col gap-3">
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
             {side === "right" ? "Right foot" : "Left foot"}
           </p>
-          <h1 className="mt-0.5 text-lg font-semibold text-warmGray-800">
+          <h1 className="mt-0.5 text-lg font-bold text-ink">
             {VIEW_LABEL[view]}
           </h1>
-          <p className="text-xs text-warmGray-600">{VIEW_HINT[view]}</p>
+          <p className="text-[15px] text-ink-soft">{VIEW_HINT[view]}</p>
         </div>
         {step && (
-          <div className="rounded-full bg-warmGray-50 px-2.5 py-1 text-[11px] font-medium text-warmGray-600">
+          <div className="rounded-full bg-surface-sunken px-2.5 py-1 text-[11px] font-semibold text-ink-soft">
             {step.current} / {step.total}
           </div>
         )}
       </header>
 
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-warmGray-800">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-slate-900">
         {isCaptured && capturedImage ? (
           // Captured (live or upload) — show the frozen frame INSTEAD of the
           // live video. This is the user-visible confirmation that the image
@@ -608,13 +608,13 @@ export function CaptureFrame({ side, view, onCaptured, step }: Props) {
             window so the user can react if they picked the wrong image. */}
         {isCaptured && (
           <>
-            <span className="absolute left-2 top-2 rounded-full bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow">
+            <span className="absolute left-2 top-2 rounded-full bg-secondary px-2.5 py-1 text-[11px] font-semibold text-white shadow">
               ✓ Saved for this step
             </span>
             <div className="absolute right-2 top-2 flex gap-1.5">
               <button
                 onClick={retakeUpload}
-                className="rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-warmGray-800 shadow hover:bg-white"
+                className="inline-flex min-h-[44px] items-center rounded-full bg-white/95 px-4 text-xs font-bold text-ink shadow hover:bg-white"
                 title="Pick a different image"
               >
                 Use a different image
@@ -634,17 +634,17 @@ export function CaptureFrame({ side, view, onCaptured, step }: Props) {
 
         {/* Retry overlay when timed out without ever detecting a foot */}
         {(timedOut || (fallback && !isCaptured)) && !isCaptured && (
-          <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-risk-high/90 p-3 text-white shadow-lg">
-            <p className="text-sm font-semibold">
+          <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-urgent/95 p-3 text-white shadow-lg">
+            <p className="text-sm font-bold">
               No foot detected
             </p>
-            <p className="mt-0.5 text-xs">
+            <p className="mt-0.5 text-xs leading-snug">
               Please retake the image with the full foot in frame.
               {failureMsg ? ` ${failureMsg}.` : ""}
             </p>
             <button
               onClick={restart}
-              className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-1 text-xs font-medium"
+              className="mt-1.5 inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-white/20 px-4 text-sm font-semibold"
             >
               <RotateCcw className="h-3 w-3" /> Reset detection
             </button>
@@ -665,28 +665,28 @@ export function CaptureFrame({ side, view, onCaptured, step }: Props) {
 
       {/* Primary hint — the ONE thing the patient should do right now. */}
       {!isCaptured && !timedOut && guide?.primaryHint && (
-        <p className="text-center text-xs font-medium text-warmGray-800">
+        <p className="text-center text-[15px] font-semibold text-ink">
           {guide.primaryHint}
         </p>
       )}
 
       {showRetryHelp && !timedOut && (
-        <p className="text-[11px] text-warmGray-600">
+        <p className="text-sm text-ink-soft">
           {failureMsg}.
         </p>
       )}
 
       {/* Error banner — only visible after a failed upload */}
       {captureState === "error" && captureError && (
-        <div className="flex items-start gap-2 rounded-2xl bg-risk-high/10 px-3 py-2 text-xs text-risk-high">
-          <span aria-hidden>⚠️</span>
+        <div className="flex items-start gap-2 rounded-2xl border border-red-200 bg-urgent-soft px-3 py-2.5 text-sm text-urgent">
+          <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1">
-            <p className="font-semibold">Couldn't use that image</p>
-            <p className="opacity-80">{captureError}</p>
+            <p className="font-bold">Couldn't use that image</p>
+            <p className="mt-0.5 text-ink-soft">{captureError}</p>
           </div>
           <button
             onClick={cancelToLive}
-            className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-risk-high"
+            className="min-h-[44px] shrink-0 rounded-xl bg-surface-raised px-3 text-xs font-bold text-urgent shadow-sm"
           >
             Dismiss
           </button>
@@ -736,7 +736,7 @@ export function CaptureFrame({ side, view, onCaptured, step }: Props) {
 
 function cnPill(detected: boolean, conf: number): string {
   const base =
-    "absolute right-3 top-3 rounded-full px-2 py-1 text-[10px] font-medium backdrop-blur-sm";
+    "absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm";
   if (detected && conf >= DETECTION_THRESHOLD)
     return `${base} bg-teal-400/85 text-teal-950`;
   if (conf >= 0.3) return `${base} bg-amber-400/85 text-amber-950`;

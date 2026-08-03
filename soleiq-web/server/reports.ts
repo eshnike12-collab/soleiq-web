@@ -33,7 +33,16 @@ export async function getDoctorWorklist(
     page_size: query.limit,
   });
   if (error) throw new Error(error.message);
-  return { hospital, rows: data ?? [] };
+  // The worklist is one row per patient ("latest check"), but a patient can
+  // satisfy more than one authorization path (assignment + consent), which
+  // duplicates their row. Keep the newest row per enrollment.
+  const seen = new Set<string>();
+  const rows = (data ?? []).filter((row: any) => {
+    if (seen.has(row.organization_patient_id)) return false;
+    seen.add(row.organization_patient_id);
+    return true;
+  });
+  return { hospital, rows };
 }
 
 export async function getExactReport(

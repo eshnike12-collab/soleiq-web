@@ -43,10 +43,10 @@ export function HealthLifestyle() {
                 key={n.value}
                 onClick={() => setNumbness(n.value)}
                 className={cn(
-                  "h-14 rounded-2xl border text-sm font-medium transition-colors",
+                  "h-14 rounded-2xl border text-[15px] transition-all duration-150 active:scale-[0.98]",
                   numbness === n.value
-                    ? "border-brand bg-blue-50 text-brand"
-                    : "border-warmGray-100 bg-white text-warmGray-800"
+                    ? "border-primary bg-primary-soft font-bold text-primary"
+                    : "border-slate-200 bg-surface-raised font-medium text-ink hover:border-slate-300"
                 )}
               >
                 {n.label}

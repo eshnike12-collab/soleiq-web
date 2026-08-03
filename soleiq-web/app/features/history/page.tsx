@@ -7,7 +7,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarSearch, History } from "lucide-react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { PatientNav } from "@/components/patient/PatientNav";
 import {
@@ -18,7 +18,7 @@ import {
 const riskChip: Record<string, string> = {
   clear: "bg-teal-100 text-teal-900",
   watch: "bg-amber-100 text-amber-900",
-  see_someone_soon: "bg-red-100 text-red-900",
+  see_someone_soon: "bg-orange-100 text-orange-900",
   urgent: "bg-red-200 text-red-950",
 };
 
@@ -55,42 +55,42 @@ function HistoryContent() {
   }, [checks, from, to]);
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] px-5 py-8 pb-24">
+    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
         <Link
           href="/features"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
+          className="inline-flex min-h-[44px] items-center gap-1 py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep"
         >
           <ArrowLeft className="h-4 w-4" /> Features
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-950">History</h1>
+        <h1 className="mt-2 text-2xl font-bold text-ink">History</h1>
 
-        <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+        <div className="mt-4 rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
             Filter by date
           </p>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="text-xs font-semibold text-slate-500">
+            <label className="text-xs font-semibold text-ink-soft">
               From
               <input
                 type="date"
                 value={from}
                 onChange={(event) => setFrom(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
               />
             </label>
-            <label className="text-xs font-semibold text-slate-500">
+            <label className="text-xs font-semibold text-ink-soft">
               To
               <input
                 type="date"
                 value={to}
                 onChange={(event) => setTo(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand focus:outline-none"
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
               />
             </label>
           </div>
           {checks !== null && (
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-3 text-xs text-ink-faint">
               Showing {filtered.length} of {checks.length} checks
             </p>
           )}
@@ -98,17 +98,27 @@ function HistoryContent() {
 
         {checks === null ? (
           <div className="mt-4 space-y-3">
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-white" />
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-white" />
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-white" />
+            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
+            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
+            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
           </div>
         ) : checks.length === 0 ? (
-          <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-            No checks yet. Your completed foot checks will appear here.
+          <div className="mt-4 flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
+              <History className="h-6 w-6 text-primary" />
+            </span>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              No checks yet — your completed foot checks will appear here.
+            </p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-            No checks in this date range. Try widening the filter.
+          <div className="mt-4 flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-warn-soft">
+              <CalendarSearch className="h-6 w-6 text-warn" />
+            </span>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              No checks in this date range. Try widening the filter.
+            </p>
           </div>
         ) : (
           <div className="mt-4 space-y-3">
@@ -116,25 +126,25 @@ function HistoryContent() {
               <Link
                 key={check.reportId}
                 href={`/records/${check.reportId}`}
-                className="block rounded-3xl border border-slate-200 bg-white p-6"
+                className="block rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card transition duration-150 hover:shadow-lifted active:scale-[0.99]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-faint">
                       {new Date(check.startedAt).toLocaleString()}
                     </p>
-                    <p className="mt-1 font-semibold text-slate-950">
+                    <p className="mt-1 font-bold text-ink">
                       {check.headline ?? "Screening summary"}
                     </p>
                     {check.hospitalName && (
-                      <p className="mt-0.5 truncate text-xs text-slate-500">
+                      <p className="mt-0.5 truncate text-xs text-ink-faint">
                         {check.hospitalName}
                       </p>
                     )}
                   </div>
                   <span className="flex shrink-0 items-center gap-1.5">
                     {check.status !== "released" && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                      <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[11px] font-semibold text-warn">
                         Pending review
                       </span>
                     )}
@@ -152,7 +162,7 @@ function HistoryContent() {
                     {check.photos.slice(0, 4).map((photo) => (
                       <span
                         key={photo.assetId}
-                        className="block h-10 w-10 overflow-hidden rounded-lg border-2 border-white bg-slate-100"
+                        className="block h-10 w-10 overflow-hidden rounded-xl border-2 border-white bg-surface-sunken"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img

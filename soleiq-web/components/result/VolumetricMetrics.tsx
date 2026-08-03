@@ -15,15 +15,15 @@ export function VolumetricMetrics({ m }: { m: M }) {
     rows.splice(1, 0, { label: "Wound depth", value: `${m.woundDepthMm.toFixed(1)} mm` });
 
   return (
-    <div className="rounded-2xl border border-warmGray-100 bg-white p-4">
-      <h3 className="mb-2 text-sm font-semibold text-warmGray-800">
+    <div className="rounded-3xl border border-slate-100 bg-surface-raised p-4 shadow-card">
+      <h3 className="mb-3 text-[15px] font-bold text-ink">
         Volumetric metrics
       </h3>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         {rows.map((r) => (
           <div key={r.label}>
-            <dt className="text-warmGray-600">{r.label}</dt>
-            <dd className="font-medium text-warmGray-800">{r.value}</dd>
+            <dt className="text-xs text-ink-faint">{r.label}</dt>
+            <dd className="mt-0.5 text-[15px] font-semibold text-ink">{r.value}</dd>
           </div>
         ))}
       </dl>

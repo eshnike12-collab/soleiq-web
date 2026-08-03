@@ -2,7 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Semantic color variables (R G B triplets consumed by tailwind.config.ts).
+   A future dark theme overrides these on [data-theme="dark"] — components
+   never hardcode hex. */
 :root {
+  --c-primary: 31 78 121; /* deep navy — the brand */
+  --c-primary-soft: 237 243 249;
+  --c-primary-deep: 23 60 93;
+  --c-secondary: 51 122 98; /* sage teal — health/positive */
+  --c-secondary-soft: 236 245 240;
+  --c-surface: 247 244 236; /* warm cream page */
+  --c-surface-raised: 255 255 255; /* cards */
+  --c-surface-sunken: 241 237 227;
+  --c-ink: 38 36 32; /* warm near-black */
+  --c-ink-soft: 99 93 81;
+  --c-ink-faint: 131 123 108;
+  --c-success: 51 122 98;
+  --c-success-soft: 236 245 240;
+  --c-warn: 150 112 26; /* honey amber */
+  --c-warn-soft: 251 244 227;
+  --c-urgent: 169 79 63; /* muted coral — never harsh red */
+  --c-urgent-soft: 250 238 234;
+
   --phone-w: 390px;
   --phone-h: 844px;
 }
@@ -10,20 +31,41 @@
 html,
 body {
   height: 100%;
-  background: linear-gradient(180deg, #f6f4ec 0%, #f1efe8 100%);
-  color: #2c2c2a;
+  background: linear-gradient(180deg, #f9f6ee 0%, #f3efe4 100%);
+  color: rgb(var(--c-ink));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+/* Older readers on phones: comfortable base size and line height. Elements
+   with explicit text-* utilities are unaffected. */
+body {
+  font-size: 1.0625rem; /* 17px */
+  line-height: 1.55;
+}
+
+/* One visible, consistent focus treatment everywhere. */
+@layer base {
+  *:focus-visible {
+    outline: 2px solid rgb(var(--c-primary));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none; /* these carry their own focus ring styles */
+  }
+}
+
 @layer components {
   .screen-h1 {
-    @apply text-[22px] font-semibold leading-tight text-warmGray-800;
+    @apply text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-ink;
   }
   .screen-sub {
-    @apply mt-1 text-sm leading-snug text-warmGray-600;
+    @apply mt-1.5 text-[15px] leading-relaxed text-ink-soft;
   }
   .field-label {
-    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-warmGray-600;
+    @apply mb-1.5 block text-[13px] font-semibold text-ink-soft;
   }
 }

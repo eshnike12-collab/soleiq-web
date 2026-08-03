@@ -5,9 +5,9 @@ import type { RiskLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const COLORS: Record<RiskLevel, string> = {
-  low: "bg-risk-low",
-  medium: "bg-risk-medium",
-  high: "bg-risk-high",
+  low: "bg-success-soft text-success",
+  medium: "bg-warn-soft text-warn",
+  high: "bg-urgent-soft text-urgent",
 };
 const LABELS: Record<RiskLevel, string> = {
   low: "Low risk",
@@ -18,15 +18,15 @@ const LABELS: Record<RiskLevel, string> = {
 export function RiskBadge({ risk }: { risk: RiskLevel }) {
   return (
     <motion.div
-      initial={{ scale: 0.8, opacity: 0 }}
+      initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", duration: 0.4 }}
+      transition={{ type: "spring", duration: 0.3 }}
       className={cn(
-        "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold text-white",
+        "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-bold",
         COLORS[risk]
       )}
     >
-      <span className="h-2 w-2 rounded-full bg-white" />
+      <span className="h-2 w-2 rounded-full bg-current" />
       {LABELS[risk]}
     </motion.div>
   );

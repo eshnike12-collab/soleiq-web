@@ -95,18 +95,18 @@ function ResearchContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] px-5 py-8">
+    <div className="min-h-screen bg-surface px-5 py-8">
       <main className="mx-auto max-w-3xl">
-        <Link href="/features" className="text-sm font-semibold text-brand">
+        <Link href="/features" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">
           ← Features
         </Link>
 
-        <h1 className="mt-4 text-2xl font-semibold text-slate-950">Research</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="mt-4 text-2xl font-bold text-ink">Research</h1>
+        <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
           Learn about your condition from published medical research.
         </p>
 
-        <div className="mt-4 flex items-start gap-3 rounded-2xl bg-amber-50 p-4 text-sm leading-relaxed text-amber-800">
+        <div className="mt-4 flex items-start gap-3 rounded-2xl bg-warn-soft p-4 text-sm leading-relaxed text-amber-800">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
             <span className="font-semibold">
@@ -123,12 +123,12 @@ function ResearchContent() {
             onChange={(event) => setInput(event.target.value)}
             placeholder="Search a condition, e.g. diabetic foot ulcer"
             maxLength={120}
-            className="w-full rounded-full border border-slate-200 bg-white px-5 py-3 text-sm text-slate-950 placeholder:text-slate-400 outline-none focus:border-brand"
+            className="w-full rounded-full border border-slate-200 bg-surface-raised px-5 py-3 text-[15px] text-ink shadow-card placeholder:text-ink-faint outline-none focus:border-primary focus:ring-4 focus:ring-primary-soft"
           />
           <button
             type="submit"
             disabled={status === "loading"}
-            className="inline-flex shrink-0 items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+            className="inline-flex min-h-[44px] shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-60"
           >
             <Search className="h-4 w-4" /> Search
           </button>
@@ -140,7 +140,7 @@ function ResearchContent() {
               key={topic}
               type="button"
               onClick={() => void runSearch(topic)}
-              className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-700 hover:border-brand hover:text-brand"
+              className="min-h-[44px] rounded-full border border-slate-200 bg-surface-raised px-4 py-2.5 text-[13px] font-semibold text-ink-soft transition-colors hover:border-primary hover:text-primary"
             >
               {topic}
             </button>
@@ -152,7 +152,7 @@ function ResearchContent() {
             {[0, 1, 2].map((index) => (
               <div
                 key={index}
-                className="animate-pulse rounded-3xl border border-slate-200 bg-white p-6"
+                className="animate-pulse rounded-3xl border border-slate-200 bg-surface-raised p-6"
               >
                 <div className="h-4 w-3/4 rounded bg-slate-200" />
                 <div className="mt-3 h-3 w-1/3 rounded bg-slate-100" />
@@ -164,13 +164,13 @@ function ResearchContent() {
         )}
 
         {status === "error" && (
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
-            <p className="font-semibold text-slate-950">Something went wrong</p>
-            <p className="mt-1 text-sm text-slate-500">{error}</p>
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
+            <p className="font-bold text-ink">Something went wrong</p>
+            <p className="mt-1 text-[15px] text-ink-soft">{error}</p>
             <button
               type="button"
               onClick={() => void runSearch(lastQuery)}
-              className="mt-4 rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white"
+              className="mt-4 min-h-[44px] rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
             >
               Try again
             </button>
@@ -178,9 +178,12 @@ function ResearchContent() {
         )}
 
         {status === "done" && items.length === 0 && (
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-6">
-            <p className="font-semibold text-slate-950">No results found</p>
-            <p className="mt-1 text-sm text-slate-500">
+          <div className="mt-6 flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
+              <Search className="h-6 w-6 text-primary" />
+            </span>
+            <p className="mt-3 font-bold text-ink">No results found</p>
+            <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
               We couldn&apos;t find research for &ldquo;{lastQuery}&rdquo;. Try a
               simpler phrase or one of the topics above.
             </p>
@@ -192,35 +195,35 @@ function ResearchContent() {
             {items.map((item) => (
               <article
                 key={item.pmid}
-                className="rounded-3xl border border-slate-200 bg-white p-6"
+                className="rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card"
               >
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-semibold text-slate-950 hover:text-brand"
+                  className="font-bold text-ink transition-colors hover:text-primary"
                 >
                   {item.title}
                 </a>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-faint">
                   <span>
                     {item.source}
                     {item.year ? ` · ${item.year}` : ""}
                   </span>
                   {item.freeFullText && (
-                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700">
+                    <span className="rounded-full bg-secondary-soft px-2 py-0.5 text-[10px] font-semibold text-green-700">
                       Free full text
                     </span>
                   )}
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                <p className="mt-3 text-[15px] leading-relaxed text-ink">
                   {item.summary}
                 </p>
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 inline-block text-sm font-semibold text-brand"
+                  className="mt-2 inline-flex min-h-[44px] items-center py-2 text-sm font-bold text-primary transition-colors hover:text-primary-deep"
                 >
                   Read the full article →
                 </a>
@@ -229,7 +232,7 @@ function ResearchContent() {
           </div>
         )}
 
-        <p className="mt-8 text-xs text-slate-500">
+        <p className="mt-8 text-xs text-ink-faint">
           Results from PubMed / PubMed Central, provided by the U.S. National
           Library of Medicine.
         </p>

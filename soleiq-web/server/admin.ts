@@ -153,7 +153,18 @@ export async function updateMembership(
     if (body.permissions.platform_admin) {
       throw forbidden("Platform administration cannot be granted here.");
     }
-    patch.permissions = body.permissions;
+    // MERGE with the stored permissions — replacing wholesale would silently
+    // strip flags the caller didn't mention (e.g. platform_admin).
+    const { data: existing } = await supabase
+      .from("organization_memberships")
+      .select("permissions")
+      .eq("id", membershipId)
+      .eq("organization_id", hospital.id)
+      .maybeSingle();
+    patch.permissions = {
+      ...((existing?.permissions as Record<string, boolean>) ?? {}),
+      ...body.permissions,
+    };
   }
   const { data, error } = await supabase
     .from("organization_memberships")

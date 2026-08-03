@@ -41,27 +41,27 @@ const BADGE: Record<
 > = {
   ulcer_likely: {
     text: "Likely ulcer",
-    cls: "bg-risk-high text-white",
+    cls: "bg-urgent-soft text-urgent",
     Icon: AlertTriangle,
   },
   ulcer_possible: {
     text: "Possible ulcer — clinician review",
-    cls: "bg-amber-400 text-amber-950",
+    cls: "bg-warn-soft text-warn",
     Icon: AlertTriangle,
   },
   uncertain: {
     text: "Uncertain — recapture or in-person review",
-    cls: "bg-amber-200 text-amber-950",
+    cls: "bg-slate-100 text-ink-soft",
     Icon: Info,
   },
   non_diagnostic: {
     text: "Image not diagnostic",
-    cls: "bg-warmGray-100 text-warmGray-800",
+    cls: "bg-slate-100 text-ink-faint",
     Icon: Info,
   },
   no_ulcer: {
     text: "No ulcer detected",
-    cls: "bg-teal-600 text-white",
+    cls: "bg-success-soft text-success",
     Icon: CheckCircle2,
   },
 };
@@ -77,8 +77,8 @@ export function AiReadingCard({ side, images }: Props) {
   // "analyzing" note; the rest of the Results screen still renders.
   if (readings.length === 0) {
     return (
-      <div className="rounded-2xl border border-warmGray-100 bg-warmGray-50 p-3 text-xs text-warmGray-600">
-        <span className="font-semibold text-warmGray-800">AI reading</span>{" "}
+      <div className="rounded-2xl border border-slate-100 bg-surface-sunken p-3.5 text-sm leading-relaxed text-ink-faint">
+        <span className="font-semibold text-ink-soft">AI reading</span>{" "}
         — no per-image analysis has landed yet for the {side} foot.
       </div>
     );
@@ -100,13 +100,13 @@ export function AiReadingCard({ side, images }: Props) {
   );
 
   return (
-    <div className="rounded-2xl border border-warmGray-100 bg-white p-3">
+    <div className="rounded-2xl border border-slate-200 bg-surface-raised p-4">
       <div className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-brand">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">
           AI reading — {side} foot
         </span>
         {worst.r.confidence && (
-          <span className="rounded-full bg-warmGray-50 px-1.5 py-0.5 text-[9px] font-medium uppercase text-warmGray-600">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase text-ink-faint">
             {worst.r.confidence} confidence
           </span>
         )}
@@ -114,23 +114,23 @@ export function AiReadingCard({ side, images }: Props) {
 
       <div
         className={cn(
-          "mt-1.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold",
+          "mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
           badge.cls,
         )}
       >
-        <Icon className="h-3 w-3" /> {badge.text}
+        <Icon className="h-3.5 w-3.5" /> {badge.text}
       </div>
 
       {worst.r.summary && (
-        <p className="mt-2 text-[12px] leading-snug text-warmGray-800">
+        <p className="mt-2.5 text-sm leading-relaxed text-ink-soft">
           {worst.r.summary}
         </p>
       )}
 
       {urgentFlags.length > 0 && (
-        <div className="mt-2 rounded-xl border border-risk-high/25 bg-risk-high/5 p-2 text-[11px] text-risk-high">
-          <p className="font-semibold">Urgent flags</p>
-          <ul className="mt-0.5 list-disc space-y-0.5 pl-4">
+        <div className="mt-2.5 rounded-xl border border-urgent/25 bg-urgent-soft p-3 text-sm">
+          <p className="font-bold text-urgent">Urgent flags</p>
+          <ul className="mt-1 list-disc space-y-1 pl-4 leading-relaxed text-ink">
             {urgentFlags.slice(0, 4).map((f, i) => (
               <li key={i}>{f}</li>
             ))}
@@ -138,7 +138,7 @@ export function AiReadingCard({ side, images }: Props) {
         </div>
       )}
 
-      <p className="mt-2 text-[10px] italic text-warmGray-600">
+      <p className="mt-2.5 text-xs text-ink-faint">
         Highest-severity view: {worst.img.view.replace("_", " ")} · based on {readings.length}/
         {images.length} views analyzed
       </p>

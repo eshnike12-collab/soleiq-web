@@ -24,10 +24,11 @@ export function ToastHost() {
     <AnimatePresence>
       {message && (
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
+          initial={{ y: 24, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 30, opacity: 0 }}
-          className="absolute bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-warmGray-800 px-4 py-2 text-sm text-white shadow-lg"
+          exit={{ y: 24, opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="absolute bottom-16 left-1/2 z-50 -translate-x-1/2 rounded-2xl bg-ink px-4 py-2.5 text-sm font-semibold text-surface shadow-lifted"
         >
           {message}
         </motion.div>

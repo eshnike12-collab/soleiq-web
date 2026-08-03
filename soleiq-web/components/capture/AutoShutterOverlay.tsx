@@ -26,7 +26,7 @@ export function AutoShutterOverlay({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="absolute right-3 top-3 h-16 w-16 rounded-lg border-2 border-white object-cover shadow-lg"
+              className="absolute right-3 top-3 h-16 w-16 rounded-xl border-2 border-white object-cover shadow-lifted"
               alt="Captured"
             />
           )}

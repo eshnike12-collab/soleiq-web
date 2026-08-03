@@ -37,8 +37,8 @@ const titleCase = (value: string) =>
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-warmGray-100 bg-white p-4">
-      <h2 className="mb-3 border-b border-warmGray-50 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
+    <section className="rounded-2xl border border-slate-100 bg-surface-raised p-4">
+      <h2 className="mb-3 border-b border-slate-100 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-600">
         {title}
       </h2>
       {children}
@@ -53,11 +53,11 @@ function Field({ label, value }: { label: string; value?: React.ReactNode }) {
     (typeof value === "string" && value.trim().length === 0);
   return (
     <div className="flex items-baseline justify-between gap-3 py-1">
-      <span className="shrink-0 text-xs text-warmGray-600">{label}</span>
+      <span className="shrink-0 text-xs text-ink-faint">{label}</span>
       <span
         className={cn(
           "text-right text-sm",
-          empty ? "italic text-warmGray-600/70" : "font-medium text-warmGray-800"
+          empty ? "italic text-ink-faint/80" : "font-medium text-ink"
         )}
       >
         {empty ? NOT_PROVIDED : value}
@@ -67,9 +67,9 @@ function Field({ label, value }: { label: string; value?: React.ReactNode }) {
 }
 
 const CONCERN_BADGE: Record<PhotoScreeningFinding["concern"], string> = {
-  low: "bg-amber-50 text-amber-800",
+  low: "bg-warn-soft text-amber-800",
   medium: "bg-orange-100 text-orange-900",
-  high: "bg-risk-high text-white",
+  high: "bg-urgent-soft text-urgent",
 };
 
 export function ClinicalReport({
@@ -98,19 +98,19 @@ export function ClinicalReport({
 
   return (
     <div className="space-y-3">
-      <header className="rounded-2xl border border-warmGray-100 bg-white p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
+      <header className="rounded-2xl border border-slate-100 bg-surface-raised p-4">
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-indigo-600">
           Clinical report — full record
         </p>
-        <h1 className="mt-1 text-xl font-semibold text-warmGray-800">
+        <h1 className="mt-1 text-xl font-bold text-ink">
           {intake?.full_name || patientEmail || "Patient"}
         </h1>
-        <p className="mt-0.5 text-xs text-warmGray-600">
+        <p className="mt-0.5 text-xs text-ink-faint">
           {visits.length} saved check{visits.length === 1 ? "" : "s"}
           {latest ? ` · latest ${fmtDate(latest.startedAt)}` : ""} · intake updated{" "}
           {fmtDate(intake?.updated_at ?? null)}
         </p>
-        <p className="mt-2 text-[11px] leading-snug text-warmGray-600">
+        <p className="mt-2 text-[11px] leading-snug text-ink-faint">
           Photo-based screening data — surface findings only; not a diagnosis and
           not a substitute for in-person examination.
         </p>
@@ -201,7 +201,7 @@ export function ClinicalReport({
 
       <Section title="Foot history">
         {intake?.prior_events && intake.prior_events.length > 0 ? (
-          <ul className="list-disc space-y-1 pl-4 text-sm text-warmGray-800">
+          <ul className="list-disc space-y-1 pl-4 text-sm text-ink">
             {intake.prior_events.map((event, i) => (
               <li key={i}>
                 {titleCase(event.type ?? "event")} — {titleCase(event.side ?? "?")} foot,{" "}
@@ -227,8 +227,8 @@ export function ClinicalReport({
         />
         {painLabels.length > 0 ? (
           <div className="pt-1">
-            <p className="text-xs text-warmGray-600">Pain map locations</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-warmGray-800">
+            <p className="text-xs text-ink-faint">Pain map locations</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm text-ink">
               {painLabels.map((label) => (
                 <li key={label}>{label}</li>
               ))}
@@ -250,7 +250,7 @@ export function ClinicalReport({
       {/* ---- AI screening, full detail --------------------------------- */}
       <Section title="AI photo screening — latest check">
         {!screening || !latest ? (
-          <p className="text-sm italic text-warmGray-600/70">
+          <p className="text-sm italic text-ink-faint/80">
             No saved photo screening on record.
           </p>
         ) : (
@@ -261,12 +261,12 @@ export function ClinicalReport({
               label="Risk mapping"
               value={latest.result?.riskLevel ? titleCase(latest.result.riskLevel) : null}
             />
-            <p className="rounded-xl bg-warmGray-50 p-2.5 text-sm text-warmGray-800">
+            <p className="rounded-xl bg-surface-sunken p-2.5 text-sm text-ink">
               {screening.overall.headline}
             </p>
 
             <div>
-              <p className="mb-1 text-xs font-semibold text-warmGray-600">
+              <p className="mb-1 text-xs font-semibold text-ink-faint">
                 Capture quality
               </p>
               <Field
@@ -274,7 +274,7 @@ export function ClinicalReport({
                 value={screening.capture_quality.usable ? "Yes" : "No"}
               />
               {screening.capture_quality.retake.length > 0 && (
-                <ul className="mt-1 list-disc pl-4 text-xs text-warmGray-800">
+                <ul className="mt-1 list-disc pl-4 text-xs text-ink">
                   {screening.capture_quality.retake.map((item, i) => (
                     <li key={i}>
                       {item.image}: {item.reason}
@@ -283,7 +283,7 @@ export function ClinicalReport({
                 </ul>
               )}
               {latest.images.length > 0 && (
-                <ul className="mt-1 space-y-0.5 text-xs text-warmGray-600">
+                <ul className="mt-1 space-y-0.5 text-xs text-ink-faint">
                   {latest.images.map((image, i) => (
                     <li key={i}>
                       {titleCase(image.side)} {titleCase(image.view)}:{" "}
@@ -297,24 +297,24 @@ export function ClinicalReport({
             </div>
 
             <div>
-              <p className="mb-1 text-xs font-semibold text-warmGray-600">
+              <p className="mb-1 text-xs font-semibold text-ink-faint">
                 Findings ({screening.findings.length})
               </p>
               {screening.findings.length === 0 ? (
-                <p className="text-sm text-warmGray-800">
+                <p className="text-sm text-ink">
                   No visible surface concerns flagged.
                 </p>
               ) : (
                 <div className="space-y-2">
                   {screening.findings.map((finding, i) => (
-                    <div key={i} className="rounded-xl border border-warmGray-100 p-2.5">
+                    <div key={i} className="rounded-xl border border-slate-100 p-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-warmGray-800">
+                        <p className="text-sm font-semibold text-ink">
                           {titleCase(finding.foot)} foot — {titleCase(finding.surface)}
                         </p>
                         <span className="flex shrink-0 items-center gap-1">
                           {finding.lighting_artifact_possible && (
-                            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                            <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                               lighting artifact?
                             </span>
                           )}
@@ -328,16 +328,16 @@ export function ClinicalReport({
                           </span>
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-warmGray-800">{finding.what_we_saw}</p>
-                      <p className="text-xs text-warmGray-600">
+                      <p className="mt-1 text-sm text-ink">{finding.what_we_saw}</p>
+                      <p className="text-xs text-ink-faint">
                         Location: {finding.location_plain}
                         {finding.region
                           ? ` · marked region x ${finding.region.x.toFixed(2)}, y ${finding.region.y.toFixed(2)}, ${(finding.region.w * 100).toFixed(0)}×${(finding.region.h * 100).toFixed(0)}% of frame`
                           : " · no region marked"}
                       </p>
-                      <p className="mt-1 text-xs text-warmGray-800">{finding.why_it_matters}</p>
+                      <p className="mt-1 text-xs text-ink">{finding.why_it_matters}</p>
                       {finding.deeper_explanation && (
-                        <p className="mt-1 text-xs text-warmGray-600">
+                        <p className="mt-1 text-xs text-ink-faint">
                           {finding.deeper_explanation}
                         </p>
                       )}
@@ -349,10 +349,10 @@ export function ClinicalReport({
 
             {(screening.looks_good?.length ?? 0) > 0 && (
               <div>
-                <p className="mb-1 text-xs font-semibold text-warmGray-600">
+                <p className="mb-1 text-xs font-semibold text-ink-faint">
                   Negative findings (looked healthy)
                 </p>
-                <ul className="list-disc space-y-0.5 pl-4 text-sm text-warmGray-800">
+                <ul className="list-disc space-y-0.5 pl-4 text-sm text-ink">
                   {screening.looks_good.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
@@ -362,10 +362,10 @@ export function ClinicalReport({
 
             {(screening.personal_notes?.length ?? 0) > 0 && (
               <div>
-                <p className="mb-1 text-xs font-semibold text-warmGray-600">
+                <p className="mb-1 text-xs font-semibold text-ink-faint">
                   Risk-context notes (from intake correlation)
                 </p>
-                <ul className="list-disc space-y-0.5 pl-4 text-sm text-warmGray-800">
+                <ul className="list-disc space-y-0.5 pl-4 text-sm text-ink">
                   {screening.personal_notes.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
@@ -374,20 +374,20 @@ export function ClinicalReport({
             )}
 
             <div>
-              <p className="mb-1 text-xs font-semibold text-warmGray-600">
+              <p className="mb-1 text-xs font-semibold text-ink-faint">
                 Guidance issued to patient
               </p>
-              <ul className="list-disc space-y-0.5 pl-4 text-xs text-warmGray-800">
+              <ul className="list-disc space-y-0.5 pl-4 text-xs text-ink">
                 {screening.what_to_do.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
-              <p className="mt-1 text-xs text-warmGray-600">
+              <p className="mt-1 text-xs text-ink-faint">
                 Escalation triggers: {screening.when_to_get_help.join(" · ")}
               </p>
             </div>
 
-            <p className="text-[11px] text-warmGray-600">
+            <p className="text-[11px] text-ink-faint">
               Stated limits: {screening.limits}
             </p>
 
@@ -395,7 +395,7 @@ export function ClinicalReport({
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {latest.images.map((image, i) => (
                   <figure key={i}>
-                    <div className="aspect-square overflow-hidden rounded-xl bg-warmGray-50">
+                    <div className="aspect-square overflow-hidden rounded-xl bg-surface-sunken">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={image.dataUrl}
@@ -403,7 +403,7 @@ export function ClinicalReport({
                         className="h-full w-full object-cover"
                       />
                     </div>
-                    <figcaption className="mt-0.5 text-center text-[10px] text-warmGray-600">
+                    <figcaption className="mt-0.5 text-center text-[10px] text-ink-faint">
                       {titleCase(image.side)} {titleCase(image.view)}
                     </figcaption>
                   </figure>
@@ -416,15 +416,15 @@ export function ClinicalReport({
 
       <Section title="Visit history">
         {visits.length === 0 ? (
-          <p className="text-sm italic text-warmGray-600/70">No saved visits.</p>
+          <p className="text-sm italic text-ink-faint/80">No saved visits.</p>
         ) : (
-          <div className="divide-y divide-warmGray-50">
+          <div className="divide-y divide-slate-100">
             {visits.map((visit) => {
               const s = visit.result?.screening;
               return (
                 <div key={visit.id} className="flex items-center justify-between gap-2 py-1.5">
-                  <span className="text-sm text-warmGray-800">{fmtDate(visit.startedAt)}</span>
-                  <span className="text-xs text-warmGray-600">
+                  <span className="text-sm text-ink">{fmtDate(visit.startedAt)}</span>
+                  <span className="text-xs text-ink-faint">
                     {visit.images.length} photos
                     {s
                       ? ` · ${titleCase(s.overall.level)} · ${s.findings.length} finding${s.findings.length === 1 ? "" : "s"}`

@@ -160,17 +160,17 @@ export function ReturningReview() {
           .map((section) => {
             const target = stepIndex(section.screenId);
             return (
-              <Card key={section.screenId} className="flex items-center gap-3">
+              <Card key={section.screenId} className="flex items-center gap-3 p-3.5">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-warmGray-800">{section.label}</p>
-                  <p className="truncate text-xs text-warmGray-600">{section.summary}</p>
+                  <p className="text-[15px] font-bold text-ink">{section.label}</p>
+                  <p className="truncate text-[13px] text-ink-soft">{section.summary}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => target >= 0 && editFromReview(target, ownIndex)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-warmGray-100 bg-white px-2.5 py-1.5 text-xs font-semibold text-brand"
+                  className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-surface-raised px-3.5 text-[13px] font-bold text-primary transition-all duration-150 hover:border-slate-300 active:scale-[0.97]"
                 >
-                  <Pencil className="h-3 w-3" /> Edit
+                  <Pencil className="h-3.5 w-3.5" /> Edit
                 </button>
               </Card>
             );
@@ -191,7 +191,7 @@ export function ReturningReview() {
         <button
           type="button"
           onClick={goNext}
-          className="w-full text-center text-xs font-medium text-warmGray-600"
+          className="min-h-[44px] w-full text-center text-[13px] font-semibold text-ink-soft transition-colors hover:text-ink"
         >
           Walk through every question again instead
         </button>

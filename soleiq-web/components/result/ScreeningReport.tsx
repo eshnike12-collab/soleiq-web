@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import {
+  AlertCircle,
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
@@ -29,11 +30,38 @@ export interface ScreeningImage {
   dataUrl: string;
 }
 
-const STATUS: Record<ScreeningLevel, { label: string; className: string }> = {
-  clear: { label: "Looks clear", className: "bg-teal-50 text-teal-800" },
-  watch: { label: "Watch this", className: "bg-amber-50 text-amber-800" },
-  see_someone_soon: { label: "See someone soon", className: "bg-orange-100 text-orange-900" },
-  urgent: { label: "Urgent, get care now", className: "bg-risk-high text-white" },
+const STATUS: Record<
+  ScreeningLevel,
+  { label: string; banner: string; iconWrap: string; labelColor: string; Icon: typeof CheckCircle2 }
+> = {
+  clear: {
+    label: "Looks clear",
+    banner: "bg-success-soft",
+    iconWrap: "bg-surface-raised text-success",
+    labelColor: "text-success",
+    Icon: CheckCircle2,
+  },
+  watch: {
+    label: "Watch this",
+    banner: "bg-warn-soft",
+    iconWrap: "bg-surface-raised text-warn",
+    labelColor: "text-warn",
+    Icon: Eye,
+  },
+  see_someone_soon: {
+    label: "See someone soon",
+    banner: "bg-urgent-soft",
+    iconWrap: "bg-surface-raised text-urgent",
+    labelColor: "text-urgent",
+    Icon: Stethoscope,
+  },
+  urgent: {
+    label: "Urgent, get care now",
+    banner: "bg-urgent-soft",
+    iconWrap: "bg-surface-raised text-urgent",
+    labelColor: "text-urgent",
+    Icon: AlertTriangle,
+  },
 };
 
 export function ScreeningReport({
@@ -46,30 +74,45 @@ export function ScreeningReport({
   eyebrow?: string;
 }) {
   const status = STATUS[screening.overall.level];
+  const StatusIcon = status.Icon;
   return (
     <>
-      <header className="mb-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand">{eyebrow}</p>
-        <span className={cn("mt-2 inline-flex rounded-full px-3 py-1.5 text-sm font-semibold", status.className)}>
-          {status.label}
-        </span>
-        <h1 className="mt-3 text-xl font-semibold leading-snug text-warmGray-800">
-          {screening.overall.headline}
-        </h1>
+      <header className="mb-4">
+        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">{eyebrow}</p>
+        <div className={cn("mt-3 rounded-3xl p-5", status.banner)}>
+          <div className="flex items-start gap-4">
+            <span
+              className={cn(
+                "flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-card",
+                status.iconWrap
+              )}
+            >
+              <StatusIcon className="h-6 w-6" />
+            </span>
+            <div className="min-w-0">
+              <p className={cn("text-sm font-bold", status.labelColor)}>{status.label}</p>
+              <h1 className="mt-1 text-xl font-bold leading-snug text-ink">
+                {screening.overall.headline}
+              </h1>
+            </div>
+          </div>
+        </div>
       </header>
 
       {screening.overall.level === "urgent" && (
-        <div className="mb-3 rounded-2xl bg-risk-high p-4 text-white">
-          <p className="flex items-center gap-2 font-semibold"><AlertTriangle className="h-5 w-5" /> Get prompt professional care</p>
-          <p className="mt-1 text-sm text-white/90">Do not wait for another photo check if you see spreading redness, drainage or pus, red streaks, dark tissue, or a deep/open wound.</p>
+        <div className="mb-4 rounded-3xl border border-urgent/25 bg-urgent-soft p-4">
+          <p className="flex items-center gap-2 font-bold text-urgent"><AlertTriangle className="h-5 w-5 shrink-0" /> Get prompt professional care</p>
+          <p className="mt-1.5 text-[15px] leading-relaxed text-ink">Do not wait for another photo check if you see spreading redness, drainage or pus, red streaks, dark tissue, or a deep/open wound.</p>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {screening.findings.length === 0 ? (
           <Card className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
-            <p className="text-sm text-warmGray-800">No visible surface concern was flagged in these photos. A photo cannot rule out every foot problem.</p>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success-soft">
+              <CheckCircle2 className="h-5 w-5 text-success" />
+            </span>
+            <p className="text-[15px] leading-relaxed text-ink">No visible surface concern was flagged in these photos. A photo cannot rule out every foot problem.</p>
           </Card>
         ) : (
           screening.findings.map((finding, index) => (
@@ -85,24 +128,29 @@ export function ScreeningReport({
 
         {(screening.looks_good?.length ?? 0) > 0 && (
           <Card>
-            <p className="flex items-center gap-2 text-sm font-semibold text-teal-800">
-              <CheckCircle2 className="h-4 w-4 text-teal-600" /> What looked healthy
+            <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
+              <CheckCircle2 className="h-5 w-5 text-success" /> What looked healthy
             </p>
-            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-warmGray-800">
-              {screening.looks_good.map((item) => <li key={item}>{item}</li>)}
+            <ul className="mt-3 space-y-2">
+              {screening.looks_good.map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-[15px] leading-relaxed text-ink-soft">
+                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-success" />
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
-            <p className="mt-2 text-xs text-warmGray-600">
+            <p className="mt-3 text-sm leading-relaxed text-ink-faint">
               Good signs — but keep up your daily checks; photos cannot see everything.
             </p>
           </Card>
         )}
 
         {(screening.personal_notes?.length ?? 0) > 0 && (
-          <Card className="border-blue-100 bg-blue-50">
-            <p className="flex items-center gap-2 text-sm font-semibold text-blue-800">
-              <ClipboardList className="h-4 w-4" /> Based on your answers
+          <Card className="border-blue-100 bg-primary-soft shadow-none">
+            <p className="flex items-center gap-2 text-[15px] font-bold text-primary">
+              <ClipboardList className="h-5 w-5" /> Based on your answers
             </p>
-            <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-blue-800">
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-ink">
               {screening.personal_notes.map((item) => <li key={item}>{item}</li>)}
             </ul>
           </Card>
@@ -111,13 +159,13 @@ export function ScreeningReport({
         <ListCard icon={CheckCircle2} title="What to do next" items={screening.what_to_do} />
         <ListCard icon={Stethoscope} title="When to get help" items={screening.when_to_get_help} />
 
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-800">
-          <p className="flex items-start gap-2 font-semibold"><Eye className="mt-0.5 h-4 w-4 shrink-0" /> What photos cannot show</p>
-          <p className="mt-1">{screening.limits}</p>
+        <div className="rounded-3xl border border-blue-100 bg-primary-soft p-4">
+          <p className="flex items-start gap-2 text-sm font-bold text-primary"><Eye className="mt-0.5 h-4 w-4 shrink-0" /> What photos cannot show</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{screening.limits}</p>
         </div>
-        <div className="rounded-2xl border border-warmGray-100 p-3 text-xs text-warmGray-600">
-          <p className="font-semibold text-warmGray-800">This is not a diagnosis.</p>
-          <p className="mt-1">If you are worried, symptoms are changing, or your care team gave you different instructions, contact a medical professional.</p>
+        <div className="rounded-3xl border border-slate-200 bg-surface-raised p-4">
+          <p className="text-sm font-bold text-ink">This is not a diagnosis.</p>
+          <p className="mt-1 text-sm leading-relaxed text-ink-faint">If you are worried, symptoms are changing, or your care team gave you different instructions, contact a medical professional.</p>
         </div>
       </div>
     </>
@@ -125,9 +173,18 @@ export function ScreeningReport({
 }
 
 const CONCERN_RING: Record<PhotoScreeningFinding["concern"], string> = {
-  low: "border-amber-600 bg-amber-600/15",
+  low: "border-amber-500 bg-amber-500/15",
   medium: "border-orange-600 bg-orange-600/15",
-  high: "border-risk-high bg-risk-high/20",
+  high: "border-urgent bg-urgent/20",
+};
+
+const CONCERN_TONE: Record<
+  PhotoScreeningFinding["concern"],
+  { chip: string; Icon: typeof AlertCircle }
+> = {
+  low: { chip: "bg-warn-soft text-warn", Icon: Eye },
+  medium: { chip: "bg-orange-100 text-orange-700", Icon: AlertCircle },
+  high: { chip: "bg-urgent-soft text-urgent", Icon: AlertTriangle },
 };
 
 function FindingCard({
@@ -140,6 +197,8 @@ function FindingCard({
   const [open, setOpen] = useState(false);
   const hasDetail = Boolean(finding.deeper_explanation);
   const toggle = () => hasDetail && setOpen((value) => !value);
+  const tone = CONCERN_TONE[finding.concern];
+  const ToneIcon = tone.Icon;
 
   return (
     <Card>
@@ -147,7 +206,7 @@ function FindingCard({
         // The wrapper takes the image's own aspect ratio (w-full h-auto), so
         // the marker's fractional coordinates line up with the photo exactly —
         // a fixed-aspect box with object-contain would letterbox and drift.
-        <div className="relative mb-3 overflow-hidden rounded-xl bg-warmGray-50">
+        <div className="relative mb-3 overflow-hidden rounded-2xl bg-slate-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={image.dataUrl} alt={`${finding.foot} foot ${finding.surface}`} className="h-auto w-full" />
           {finding.region && (
@@ -180,36 +239,44 @@ function FindingCard({
       <button
         type="button"
         onClick={toggle}
-        className="flex w-full items-start justify-between gap-2 text-left"
+        className="flex w-full items-start gap-3 text-left"
         aria-expanded={open}
       >
-        <span>
-          <span className="block text-sm font-semibold text-warmGray-800">{finding.what_we_saw}</span>
-          <span className="mt-1 block text-xs text-warmGray-600">{finding.location_plain}</span>
+        <span
+          className={cn(
+            "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+            tone.chip
+          )}
+        >
+          <ToneIcon className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[15px] font-bold leading-snug text-ink">{finding.what_we_saw}</span>
+          <span className="mt-0.5 block text-xs text-ink-faint">{finding.location_plain}</span>
         </span>
         {hasDetail && (
           <ChevronDown
             className={cn(
-              "mt-0.5 h-4 w-4 shrink-0 text-warmGray-600 transition-transform",
+              "mt-1 h-5 w-5 shrink-0 text-ink-faint transition-transform duration-200",
               open && "rotate-180"
             )}
           />
         )}
       </button>
-      <p className="mt-2 text-xs leading-relaxed text-warmGray-800">{finding.why_it_matters}</p>
+      <p className="mt-2.5 text-[15px] leading-relaxed text-ink-soft">{finding.why_it_matters}</p>
       {finding.lighting_artifact_possible && (
-        <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-amber-800">
+        <p className="mt-2.5 rounded-xl bg-warn-soft px-3 py-2 text-sm leading-relaxed text-amber-800">
           This darker area may just be a shadow or uneven lighting. Retake this
           photo in bright, even light to confirm before worrying.
         </p>
       )}
       {hasDetail && !open && (
-        <p className="mt-2 text-[11px] font-medium text-brand">
+        <p className="mt-2.5 text-sm font-semibold text-primary">
           {finding.region ? "Tap the marked spot for what this means" : "Tap for what this means"}
         </p>
       )}
       {open && (
-        <div className="mt-2 rounded-xl bg-warmGray-50 p-3 text-xs leading-relaxed text-warmGray-800">
+        <div className="mt-2.5 rounded-2xl bg-surface-sunken p-3.5 text-[15px] leading-relaxed text-ink-soft">
           {finding.deeper_explanation}
         </div>
       )}
@@ -220,8 +287,13 @@ function FindingCard({
 function ListCard({ icon: Icon, title, items }: { icon: typeof CheckCircle2; title: string; items: string[] }) {
   return (
     <Card>
-      <p className="flex items-center gap-2 text-sm font-semibold text-warmGray-800"><Icon className="h-4 w-4 text-brand" /> {title}</p>
-      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-warmGray-800">
+      <p className="flex items-center gap-2.5 text-[15px] font-bold text-ink">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft">
+          <Icon className="h-4 w-4 text-primary" />
+        </span>
+        {title}
+      </p>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-ink-soft">
         {items.map((item) => <li key={item}>{item}</li>)}
       </ul>
     </Card>

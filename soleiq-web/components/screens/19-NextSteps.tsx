@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronRight,
   FileDown,
   Loader2,
   Share2,
@@ -83,13 +84,13 @@ export function NextSteps() {
   if (save === "saved" || save === "local") {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
-        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-50">
-          <CheckCircle2 className="h-9 w-9 text-teal-600" />
+        <span className="flex h-16 w-16 items-center justify-center rounded-full bg-success-soft">
+          <CheckCircle2 className="h-9 w-9 text-success" />
         </span>
-        <h1 className="mt-4 text-2xl font-semibold text-warmGray-800">
+        <h1 className="mt-4 text-2xl font-bold text-ink">
           {save === "saved" ? "Submitted securely" : "Kept on this device"}
         </h1>
-        <p className="mt-1 max-w-[260px] text-sm text-warmGray-600">
+        <p className="mt-2 max-w-[280px] text-[15px] leading-relaxed text-ink-soft">
           {save === "saved"
             ? "Your results and photos are available to you and your care team right away; a clinician will also review them."
             : "This account is not linked to one hospital patient record, so no hospital record was created."}{" "}
@@ -102,7 +103,7 @@ export function NextSteps() {
               save === "saved" && reportId ? `/records/${reportId}` : "/home"
             )
           }
-          className="mt-5 text-sm font-semibold text-brand"
+          className="mt-4 inline-flex min-h-[44px] items-center rounded-xl px-4 text-[15px] font-bold text-primary"
         >
           {save === "saved" && reportId ? "View my full report now" : "Go now"}
         </button>
@@ -119,8 +120,8 @@ export function NextSteps() {
       />
 
       {save === "failed" && (
-        <div className="mb-3 rounded-2xl border border-risk-high/30 bg-risk-high/5 p-3 text-xs text-warmGray-800">
-          <p className="flex items-center gap-1.5 font-semibold text-risk-high">
+        <div className="mb-3 rounded-2xl border border-urgent/25 bg-urgent-soft p-3.5 text-sm leading-relaxed text-ink">
+          <p className="flex items-center gap-1.5 font-bold text-urgent">
             <AlertTriangle className="h-4 w-4" /> Couldn&apos;t save to your account
           </p>
           <p className="mt-1">
@@ -148,52 +149,54 @@ export function NextSteps() {
         <button
           type="button"
           onClick={() => router.push("/home")}
-          className="mt-2 text-center text-xs font-medium text-warmGray-600"
+          className="mt-1 min-h-[44px] text-center text-sm font-semibold text-ink-soft"
         >
           Continue to dashboard without saving
         </button>
       )}
-      <p className="mt-2 text-center text-[11px] text-warmGray-600">
+      <p className="mt-2 text-center text-xs text-ink-faint">
         Saves your four photos and the result to your account.
       </p>
 
       {/* Secondary actions */}
       <div className="mt-6">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-warmGray-600">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
           More options
         </p>
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <button
             type="button"
             onClick={() => setShareOpen(true)}
-            className="flex w-full items-center gap-3 rounded-2xl border border-warmGray-100 bg-white p-3 text-left"
+            className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 text-left shadow-card transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99]"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-brand">
-              <Share2 className="h-4 w-4" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+              <Share2 className="h-5 w-5" />
             </span>
-            <span className="flex-1">
-              <span className="block text-sm font-semibold text-warmGray-800">Share or refer</span>
-              <span className="block text-xs text-warmGray-600">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold text-ink">Share or refer</span>
+              <span className="mt-0.5 block text-sm text-ink-faint">
                 Manage hospital access or download your personal summary.
               </span>
             </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-faint" />
           </button>
           <button
             type="button"
             onClick={goNext}
-            className="flex w-full items-center gap-3 rounded-2xl border border-warmGray-100 bg-white p-3 text-left"
+            className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 text-left shadow-card transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99]"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-brand">
-              <ShoppingBag className="h-4 w-4" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+              <ShoppingBag className="h-5 w-5" />
             </span>
-            <span className="flex-1">
-              <span className="block text-sm font-semibold text-warmGray-800">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold text-ink">
                 Review foot-care options
               </span>
-              <span className="block text-xs text-warmGray-600">
+              <span className="mt-0.5 block text-sm text-ink-faint">
                 General options only; follow your care team&apos;s advice.
               </span>
             </span>
+            <ChevronRight className="h-5 w-5 shrink-0 text-ink-faint" />
           </button>
         </div>
       </div>
@@ -213,7 +216,7 @@ export function NextSteps() {
             <FileDown className="mr-2 h-4 w-4" /> Download PDF
           </Button>
         </div>
-        <p className="mt-3 text-[10px] italic text-warmGray-600">
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
           SoleIQ sharing uses hospital-scoped assignments or expiring,
           patient-controlled consent. It never places clinical data in a URL.
         </p>

@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShoppingBag } from "lucide-react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { PatientNav } from "@/components/patient/PatientNav";
 import {
@@ -19,7 +19,7 @@ import {
 const riskChip: Record<string, string> = {
   clear: "bg-teal-100 text-teal-900",
   watch: "bg-amber-100 text-amber-900",
-  see_someone_soon: "bg-red-100 text-red-900",
+  see_someone_soon: "bg-orange-100 text-orange-900",
   urgent: "bg-red-200 text-red-950",
 };
 
@@ -43,43 +43,49 @@ function RecommendationsContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] px-5 py-8 pb-24">
+    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
         <Link
           href="/features"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
+          className="inline-flex min-h-[44px] items-center gap-1 py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep"
         >
           <ArrowLeft className="h-4 w-4" /> Features
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-950">
+        <h1 className="mt-2 text-2xl font-bold text-ink">
           Product Recommendations
         </h1>
 
         {recommendations === null ? (
           <div className="mt-4 space-y-3">
-            <div className="h-40 animate-pulse rounded-3xl border border-slate-200 bg-white" />
-            <div className="h-40 animate-pulse rounded-3xl border border-slate-200 bg-white" />
+            <div className="h-40 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
+            <div className="h-40 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
           </div>
         ) : recommendations.length === 0 ? (
-          <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-            Recommendations appear here after your next check.
+          <div className="mt-4 flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
+              <ShoppingBag className="h-6 w-6 text-primary" />
+            </span>
+            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+              No recommendations yet — suggestions appear here after your next
+              foot check.
+            </p>
           </div>
         ) : (
           <div className="mt-4 space-y-4">
             {recommendations.map((entry) => (
               <section
                 key={entry.reportId}
-                className="rounded-3xl border border-slate-200 bg-white p-6"
+                className="rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-faint">
                       {new Date(entry.createdAt).toLocaleDateString()}
                       {entry.hospitalName ? ` · ${entry.hospitalName}` : ""}
                     </p>
                     <Link
                       href={`/records/${entry.reportId}`}
-                      className="mt-1 inline-block text-sm font-semibold text-brand"
+                      className="mt-1 inline-flex min-h-[44px] items-center py-1 text-sm font-bold text-primary transition-colors hover:text-primary-deep"
                     >
                       From this report →
                     </Link>
@@ -99,24 +105,24 @@ function RecommendationsContent() {
                   {entry.products.map((product) => (
                     <div
                       key={product.id}
-                      className="rounded-2xl border border-slate-100 p-4"
+                      className="rounded-2xl border border-slate-100 bg-surface-raised p-4"
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-950">
+                        <p className="font-bold text-ink">
                           {product.name}
                         </p>
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-brand">
+                        <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-primary">
                           {product.helpsWith}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                      <p className="mt-2 text-[15px] leading-relaxed text-ink">
                         {product.howItHelps}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-ink-faint">
                         {product.reason}
                       </p>
                       {product.caution && (
-                        <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                        <p className="mt-2 rounded-xl bg-warn-soft px-3 py-2 text-xs leading-relaxed text-amber-900">
                           {product.caution}
                         </p>
                       )}
@@ -124,7 +130,7 @@ function RecommendationsContent() {
                         href={product.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-brand"
+                        className="mt-1 inline-flex min-h-[44px] items-center gap-1 py-2 text-[13px] font-bold text-primary transition-colors hover:text-primary-deep"
                       >
                         Where to find it <ExternalLink className="h-3 w-3" />
                       </a>
@@ -133,11 +139,11 @@ function RecommendationsContent() {
                 </div>
 
                 {entry.patientSignals.length > 0 && (
-                  <details className="mt-4 rounded-2xl bg-slate-50 px-4 py-3">
-                    <summary className="cursor-pointer text-xs font-semibold text-slate-600">
+                  <details className="mt-4 rounded-2xl bg-surface-sunken px-4 py-3">
+                    <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
                       Why this was recommended
                     </summary>
-                    <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-slate-600">
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-ink-soft">
                       {entry.patientSignals.map((signal) => (
                         <li key={signal}>{signal}</li>
                       ))}
@@ -149,7 +155,7 @@ function RecommendationsContent() {
           </div>
         )}
 
-        <p className="mt-6 text-xs leading-relaxed text-slate-500">
+        <p className="mt-6 text-xs leading-relaxed text-ink-faint">
           These are over-the-counter suggestions generated from your screening
           results. They are not medical advice — talk to your care team before
           changing how you care for your feet.

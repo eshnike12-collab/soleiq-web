@@ -31,7 +31,7 @@ export function Demographics() {
         title="Patient demographics"
         subtitle="Used to personalize population priors and audit model fairness."
       />
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
           <label className="field-label">Age</label>
           <Input
@@ -41,7 +41,7 @@ export function Demographics() {
             placeholder="e.g. 54"
           />
           {!ageOk && age.length > 0 && (
-            <p className="mt-1 text-xs text-risk-medium">
+            <p className="mt-1 text-[13px] font-medium text-urgent">
               Enter an age between 18 and 120.
             </p>
           )}
@@ -55,13 +55,12 @@ export function Demographics() {
                 key={s}
                 onClick={() => setSex(s)}
                 className={cn(
-                  "h-14 rounded-2xl border text-sm font-medium capitalize transition-colors",
+                  "h-14 rounded-2xl border text-[15px] capitalize transition-all duration-150 active:scale-[0.98]",
                   sex === s
-                    ? "border-brand bg-blue-50 text-brand"
-                    : "border-warmGray-100 bg-white text-warmGray-800"
+                    ? "border-primary bg-primary-soft font-bold text-primary"
+                    : "border-slate-200 bg-surface-raised font-medium text-ink hover:border-slate-300"
                 )}
               >
-                <span className="mr-1.5">{s === "male" ? "♂" : "♀"}</span>
                 {s}
               </button>
             ))}

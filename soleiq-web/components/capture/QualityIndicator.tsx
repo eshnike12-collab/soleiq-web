@@ -13,14 +13,14 @@ export function QualityIndicator({
   return (
     <div
       className={cn(
-        "flex items-center gap-1.5 rounded-full px-2 py-1 text-xs transition-colors duration-200",
-        passed ? "bg-teal-50 text-teal-800" : "bg-warmGray-100 text-warmGray-600"
+        "flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-medium transition-colors duration-200",
+        passed ? "bg-secondary-soft text-teal-800" : "bg-surface-sunken text-ink-soft"
       )}
     >
       <span
         className={cn(
           "inline-flex h-3.5 w-3.5 items-center justify-center rounded-full transition-colors duration-200",
-          passed ? "bg-teal-600 text-white" : "bg-warmGray-100"
+          passed ? "bg-secondary text-white" : "bg-slate-200"
         )}
       >
         {passed ? <Check className="h-2.5 w-2.5" strokeWidth={3} /> : null}

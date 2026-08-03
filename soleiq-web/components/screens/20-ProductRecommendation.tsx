@@ -55,15 +55,15 @@ const EVIDENCE_BADGE: Record<
 > = {
   established: {
     label: "Established evidence",
-    className: "bg-teal-50 text-teal-800",
+    className: "bg-success-soft text-teal-800",
   },
   emerging: {
     label: "Emerging evidence",
-    className: "bg-amber-50 text-amber-800",
+    className: "bg-warn-soft text-amber-800",
   },
   investigational: {
     label: "Investigational — limited evidence",
-    className: "bg-warmGray-100 text-warmGray-800",
+    className: "bg-slate-100 text-ink-soft",
   },
 };
 
@@ -102,10 +102,10 @@ export function ProductRecommendation() {
       />
 
       {padPresent && (
-        <div className="mb-4 flex items-start gap-2 rounded-2xl border border-amber-100 bg-amber-50 p-3 text-[12px] leading-snug text-amber-800">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+        <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-warn/25 bg-warn-soft p-3.5 text-sm leading-relaxed text-amber-900">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warn" />
           <div>
-            <p className="font-semibold">PAD caution</p>
+            <p className="font-bold text-warn">PAD caution</p>
             <p className="mt-0.5">
               Patient has {profile.pad?.status === "diagnosed" ? "diagnosed" : "suspected"} peripheral artery disease
               {padCritical ? " with critical features" : ""}. Red light therapy
@@ -121,22 +121,22 @@ export function ProductRecommendation() {
       {/* OTC products matched to this patient's actual findings */}
       {suggestions.length > 0 && (
         <div className="mb-5">
-          <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-warmGray-600">
+          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
             <ShoppingBag className="h-3.5 w-3.5" /> Products that may help, based on your check
           </p>
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {suggestions.map(({ product, reason }) => (
               <Card key={product.id}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-warmGray-800">{product.name}</p>
-                  <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-brand">
+                  <p className="text-[15px] font-bold text-ink">{product.name}</p>
+                  <span className="shrink-0 rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold uppercase text-primary">
                     {product.helpsWith}
                   </span>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-warmGray-800">{reason}</p>
-                <p className="mt-1 text-xs leading-relaxed text-warmGray-600">{product.howItHelps}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink">{reason}</p>
+                <p className="mt-1 text-sm leading-relaxed text-ink-faint">{product.howItHelps}</p>
                 {product.caution && (
-                  <p className="mt-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-amber-800">
+                  <p className="mt-2 rounded-xl bg-warn-soft px-3 py-2 text-sm leading-relaxed text-amber-800">
                     {product.caution}
                   </p>
                 )}
@@ -144,14 +144,14 @@ export function ProductRecommendation() {
                   href={product.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-flex items-center text-xs font-semibold text-brand"
+                  className="mt-1 inline-flex min-h-[44px] items-center text-sm font-bold text-primary underline decoration-primary/30 underline-offset-4"
                 >
-                  View product <ExternalLink className="ml-1 h-3 w-3" />
+                  View product <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                 </a>
               </Card>
             ))}
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-warmGray-600">
+          <p className="mt-2.5 text-xs leading-relaxed text-ink-faint">
             These are general over-the-counter suggestions, not medical advice
             and not endorsements. With diabetes, always check with your
             clinician before starting a new foot product — and never use
@@ -160,10 +160,10 @@ export function ProductRecommendation() {
         </div>
       )}
 
-      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-warmGray-600">
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
         SoleIQ therapy devices
       </p>
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {PRODUCTS.map((p) => {
           const recommended = allowed.has(p.key);
           const blockedByPad = padPresent && p.padCaution;
@@ -175,40 +175,40 @@ export function ProductRecommendation() {
                 blockedByPad
                   ? "opacity-70"
                   : recommended
-                  ? "border-brand/40 ring-2 ring-blue-50"
+                  ? "border-primary/30 ring-2 ring-primary-soft"
                   : ""
               }
             >
               <div className="flex items-start gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-teal-50 font-semibold text-teal-800">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-secondary-soft text-lg font-bold text-teal-800">
                   {p.name.split(" ")[1][0]}
                 </div>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <p className="text-sm font-semibold text-warmGray-800">
+                    <p className="text-[15px] font-bold text-ink">
                       {p.name}
                     </p>
                     {blockedByPad ? (
-                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-800">
+                      <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800">
                         not advised · PAD
                       </span>
                     ) : recommended ? (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-brand">
+                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
                         recommended
                       </span>
                     ) : (
-                      <span className="rounded-full bg-warmGray-50 px-2 py-0.5 text-[10px] uppercase text-warmGray-600">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase text-ink-faint">
                         informational
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-warmGray-600">{p.blurb}</p>
-                  <p className="mt-1 text-[11px] text-warmGray-600">
+                  <p className="mt-1 text-sm leading-relaxed text-ink-soft">{p.blurb}</p>
+                  <p className="mt-1 text-xs text-ink-faint">
                     <span className="font-medium">Mechanism:</span>{" "}
                     {p.mechanism}
                   </p>
                   <span
-                    className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.className}`}
+                    className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.className}`}
                   >
                     <Info className="h-3 w-3" /> {badge.label}
                   </span>
@@ -216,9 +216,9 @@ export function ProductRecommendation() {
                     href={p.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="ml-2 mt-2 inline-flex items-center text-xs font-medium text-brand"
+                    className="ml-3 mt-1 inline-flex min-h-[44px] items-center text-sm font-bold text-primary underline decoration-primary/30 underline-offset-4"
                   >
-                    Learn more <ExternalLink className="ml-1 h-3 w-3" />
+                    Learn more <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                   </a>
                 </div>
               </div>

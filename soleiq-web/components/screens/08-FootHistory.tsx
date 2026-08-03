@@ -40,10 +40,10 @@ const YesNo = ({
           key={opt}
           onClick={() => onChange(v)}
           className={cn(
-            "h-12 rounded-2xl border text-sm font-medium capitalize transition-colors",
+            "h-12 rounded-2xl border text-[15px] capitalize transition-all duration-150 active:scale-[0.98]",
             active
-              ? "border-brand bg-blue-50 text-brand"
-              : "border-warmGray-100 bg-white text-warmGray-800"
+              ? "border-primary bg-primary-soft font-bold text-primary"
+              : "border-slate-200 bg-surface-raised font-medium text-ink hover:border-slate-300"
           )}
         >
           {opt}
@@ -69,10 +69,10 @@ const SidePicker = ({
           type="button"
           onClick={() => onChange(s)}
           className={cn(
-            "h-10 rounded-xl border text-sm font-medium capitalize transition-colors",
+            "min-h-[44px] rounded-xl border text-sm capitalize transition-all duration-150 active:scale-[0.98]",
             active
-              ? "border-brand bg-blue-50 text-brand"
-              : "border-warmGray-100 bg-white text-warmGray-800"
+              ? "border-primary bg-primary-soft font-bold text-primary"
+              : "border-slate-200 bg-surface-raised font-medium text-ink hover:border-slate-300"
           )}
         >
           {s}
@@ -139,15 +139,15 @@ export function FootHistory() {
               {events.map((e, i) => (
                 <div
                   key={i}
-                  className="space-y-2 rounded-2xl border border-warmGray-100 bg-white p-3"
+                  className="space-y-2 rounded-2xl border border-slate-100 bg-surface-raised p-3.5 shadow-card"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] uppercase tracking-wide text-warmGray-600">
+                    <span className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">
                       Event #{i + 1}
                     </span>
                     <button
                       onClick={() => remove(i)}
-                      className="text-warmGray-600"
+                      className="-my-2 -mr-2 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-ink-faint transition-colors hover:text-urgent active:text-urgent"
                       aria-label="Remove event"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -155,7 +155,7 @@ export function FootHistory() {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-[11px] text-warmGray-600">Type</p>
+                    <p className="mb-1 text-xs font-semibold text-ink-faint">Type</p>
                     <Select
                       value={e.type}
                       onChange={(ev) =>
@@ -168,7 +168,7 @@ export function FootHistory() {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-[11px] text-warmGray-600">Side</p>
+                    <p className="mb-1 text-xs font-semibold text-ink-faint">Side</p>
                     <SidePicker
                       value={e.side}
                       onChange={(s) => patch(i, { side: s })}
@@ -176,7 +176,7 @@ export function FootHistory() {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-[11px] text-warmGray-600">Region</p>
+                    <p className="mb-1 text-xs font-semibold text-ink-faint">Region</p>
                     <Select
                       value={e.region}
                       onChange={(ev) =>
@@ -192,7 +192,7 @@ export function FootHistory() {
                   </div>
 
                   <div>
-                    <p className="mb-1 text-[11px] text-warmGray-600">Year</p>
+                    <p className="mb-1 text-xs font-semibold text-ink-faint">Year</p>
                     <Select
                       value={e.year}
                       onChange={(ev) =>
@@ -222,7 +222,7 @@ export function FootHistory() {
           <YesNo value={hasSurgery} onChange={setHasSurgery} />
           {hasSurgery && (
             <div className="mt-2.5 space-y-2">
-              <p className="text-xs text-warmGray-600">
+              <p className="text-[13px] text-ink-faint">
                 Select all procedures that apply.
               </p>
               {FOOT_PROCEDURES.map((p) => (

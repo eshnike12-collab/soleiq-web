@@ -35,10 +35,10 @@ export function PainAssessment() {
                 key={o.label}
                 onClick={() => setHasPain(o.v)}
                 className={cn(
-                  "h-14 rounded-2xl border text-sm font-medium transition-colors",
+                  "h-14 rounded-2xl border text-[15px] transition-all duration-150 active:scale-[0.98]",
                   active
-                    ? "border-brand bg-blue-50 text-brand"
-                    : "border-warmGray-100 bg-white text-warmGray-800"
+                    ? "border-primary bg-primary-soft font-bold text-primary"
+                    : "border-slate-200 bg-surface-raised font-medium text-ink hover:border-slate-300"
                 )}
               >
                 {o.label}
@@ -56,7 +56,7 @@ export function PainAssessment() {
               transition={{ duration: 0.3 }}
               className="overflow-hidden"
             >
-              <p className="mb-2 text-xs text-warmGray-600">
+              <p className="mb-2 text-[13px] text-ink-soft">
                 Tap each green point where you feel pain. They'll turn red.
               </p>
               <PainMap />

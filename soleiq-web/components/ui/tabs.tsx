@@ -15,16 +15,16 @@ export function Tabs<T extends string>({
   const [active, setActive] = useState<T>(initial);
   return (
     <div>
-      <div className="mb-3 flex gap-1 rounded-xl bg-warmGray-50 p-1">
+      <div className="mb-3 flex gap-1 rounded-2xl bg-slate-100 p-1">
         {tabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setActive(t.id)}
             className={cn(
-              "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
+              "min-h-[44px] flex-1 rounded-xl py-2 text-sm font-bold transition-all duration-150",
               active === t.id
-                ? "bg-white text-brand shadow-sm"
-                : "text-warmGray-600"
+                ? "bg-surface-raised text-primary shadow-card"
+                : "text-ink-soft hover:text-ink"
             )}
           >
             {t.label}

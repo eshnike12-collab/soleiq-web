@@ -37,7 +37,7 @@ export function DiabetesDetails() {
         title="Diabetes details"
         subtitle="Type and year of diagnosis."
       />
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
           <label className="field-label">Type</label>
           <div className="grid grid-cols-2 gap-2.5">
@@ -46,10 +46,10 @@ export function DiabetesDetails() {
                 key={t.value}
                 onClick={() => setType(t.value)}
                 className={cn(
-                  "h-14 rounded-2xl border text-sm font-medium transition-colors",
+                  "h-14 rounded-2xl border text-[15px] transition-all duration-150 active:scale-[0.98]",
                   type === t.value
-                    ? "border-brand bg-blue-50 text-brand"
-                    : "border-warmGray-100 bg-white text-warmGray-800"
+                    ? "border-primary bg-primary-soft font-bold text-primary"
+                    : "border-slate-200 bg-surface-raised font-medium text-ink hover:border-slate-300"
                 )}
               >
                 {t.label}

@@ -13,9 +13,11 @@ export function Results() {
   if (!visit || !screening) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
-        <Info className="h-10 w-10 text-warmGray-100" />
-        <h1 className="mt-3 text-xl font-semibold">No photo result available</h1>
-        <p className="mt-1 text-sm text-warmGray-600">Return to capture and submit all four photos.</p>
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-soft">
+          <Info className="h-7 w-7 text-primary" />
+        </span>
+        <h1 className="mt-4 text-xl font-bold text-ink">No photo result available</h1>
+        <p className="mt-2 max-w-[280px] text-[15px] leading-relaxed text-ink-soft">Return to capture and submit all four photos.</p>
       </div>
     );
   }

@@ -8,7 +8,14 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronDown,
+  Loader2,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { PatientNav } from "@/components/patient/PatientNav";
 import {
@@ -21,9 +28,9 @@ import {
 } from "@/lib/careVisits";
 
 const statusChip: Record<VisitStatus, string> = {
-  scheduled: "bg-blue-50 text-blue-800",
-  completed: "bg-emerald-50 text-emerald-800",
-  cancelled: "bg-slate-100 text-slate-500",
+  scheduled: "bg-primary-soft text-primary",
+  completed: "bg-secondary-soft text-teal-800",
+  cancelled: "bg-slate-100 text-slate-600",
 };
 
 function VisitCard({
@@ -38,11 +45,11 @@ function VisitCard({
   busy: boolean;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6">
+    <div className="rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold text-slate-950">{visit.title}</p>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="font-bold text-ink">{visit.title}</p>
+          <p className="mt-0.5 text-xs text-ink-faint">
             {new Date(visit.scheduledAt).toLocaleString()}
             {visit.location ? ` · ${visit.location}` : ""}
           </p>
@@ -54,7 +61,7 @@ function VisitCard({
         </span>
       </div>
       {visit.notes && (
-        <p className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-700">
+        <p className="mt-3 rounded-2xl bg-surface-sunken px-4 py-3 text-[15px] leading-relaxed text-ink">
           {visit.notes}
         </p>
       )}
@@ -65,7 +72,7 @@ function VisitCard({
               type="button"
               disabled={busy}
               onClick={() => onStatus(visit.id, "completed")}
-              className="rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+              className="min-h-[44px] rounded-full bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
             >
               Mark completed
             </button>
@@ -73,7 +80,7 @@ function VisitCard({
               type="button"
               disabled={busy}
               onClick={() => onStatus(visit.id, "cancelled")}
-              className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-50"
+              className="min-h-[44px] rounded-full border border-slate-200 bg-surface-raised px-4 py-2.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-slate-50 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -83,7 +90,7 @@ function VisitCard({
           type="button"
           disabled={busy}
           onClick={() => onDelete(visit.id)}
-          className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-xs font-semibold text-slate-400 hover:text-red-600 disabled:opacity-50"
+          className="ml-auto inline-flex min-h-[44px] items-center gap-1 rounded-full px-3 py-2.5 text-xs font-semibold text-ink-faint transition-colors hover:text-urgent disabled:opacity-50"
           aria-label="Delete visit"
         >
           <Trash2 className="h-3.5 w-3.5" /> Delete
@@ -185,79 +192,79 @@ function VisitsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] px-5 py-8 pb-24">
+    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
         <Link
           href="/features"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-brand"
+          className="inline-flex min-h-[44px] items-center gap-1 py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep"
         >
           <ArrowLeft className="h-4 w-4" /> Features
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-950">Visits</h1>
+        <h1 className="mt-2 text-2xl font-bold text-ink">Visits</h1>
 
-        <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6">
+        <div className="mt-4 rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
           <button
             type="button"
             onClick={() => setFormOpen((open) => !open)}
-            className="flex w-full items-center justify-between text-left"
+            className="flex min-h-[44px] w-full items-center justify-between text-left"
           >
-            <span className="inline-flex items-center gap-2 font-semibold text-slate-950">
-              <Plus className="h-4 w-4 text-brand" /> Add a visit
+            <span className="inline-flex items-center gap-2 font-bold text-ink">
+              <Plus className="h-4 w-4 text-primary" /> Add a visit
             </span>
             <ChevronDown
-              className={`h-4 w-4 text-slate-400 transition-transform ${formOpen ? "rotate-180" : ""}`}
+              className={`h-4 w-4 text-ink-faint transition-transform ${formOpen ? "rotate-180" : ""}`}
             />
           </button>
           {formOpen && (
             <form onSubmit={handleAdd} className="mt-4 space-y-3">
-              <label className="block text-xs font-semibold text-slate-500">
-                Title <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-ink-soft">
+                Title <span className="text-urgent">*</span>
                 <input
                   required
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
                   placeholder="e.g. Podiatrist follow-up"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
                 />
               </label>
-              <label className="block text-xs font-semibold text-slate-500">
-                Date &amp; time <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-ink-soft">
+                Date &amp; time <span className="text-urgent">*</span>
                 <input
                   required
                   type="datetime-local"
                   value={when}
                   onChange={(event) => setWhen(event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
                 />
               </label>
-              <label className="block text-xs font-semibold text-slate-500">
+              <label className="block text-xs font-semibold text-ink-soft">
                 Location
                 <input
                   value={location}
                   onChange={(event) => setLocation(event.target.value)}
                   placeholder="Clinic or hospital name"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
                 />
               </label>
-              <label className="block text-xs font-semibold text-slate-500">
+              <label className="block text-xs font-semibold text-ink-soft">
                 Notes
                 <textarea
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   rows={3}
                   placeholder="Anything to remember for this visit"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 focus:border-brand focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
                 />
               </label>
               {formError && (
-                <p className="rounded-2xl bg-red-50 px-4 py-3 text-xs leading-relaxed text-red-800">
+                <p className="rounded-2xl bg-urgent-soft px-4 py-3 text-[13px] leading-relaxed text-red-800">
                   {formError}
                 </p>
               )}
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 Save visit
@@ -268,23 +275,28 @@ function VisitsContent() {
 
         {visits === null ? (
           <div className="mt-4 space-y-3">
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-white" />
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-white" />
+            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
+            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
           </div>
         ) : loadFailed ? (
-          <p className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+          <p className="mt-4 rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center text-[15px] text-ink-soft shadow-card">
             Visits will appear here once your database is up to date.
           </p>
         ) : (
           <>
             <section className="mt-6">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+              <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
                 Upcoming
               </h2>
               {upcoming.length === 0 ? (
-                <p className="mt-2 rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
-                  No upcoming visits scheduled.
-                </p>
+                <div className="mt-2 flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
+                    <CalendarDays className="h-6 w-6 text-primary" />
+                  </span>
+                  <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+                    No visits yet — appointments you add will show up here.
+                  </p>
+                </div>
               ) : (
                 <div className="mt-2 space-y-3">
                   {upcoming.map((visit) => (
@@ -300,11 +312,11 @@ function VisitsContent() {
               )}
             </section>
             <section className="mt-6">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+              <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
                 Past &amp; other
               </h2>
               {past.length === 0 ? (
-                <p className="mt-2 rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+                <p className="mt-2 rounded-3xl border border-slate-200 bg-surface-raised p-6 text-[15px] text-ink-soft shadow-card">
                   Past and cancelled visits will appear here.
                 </p>
               ) : (

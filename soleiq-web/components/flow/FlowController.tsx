@@ -12,7 +12,6 @@ import {
 } from "@/lib/flow-config";
 import { ScreenContainer } from "./ScreenContainer";
 import { ProgressDots } from "./ProgressDots";
-import { ResetButton } from "./ResetButton";
 import { BackButton } from "./BackButton";
 import { ToastHost } from "@/components/ui/toast";
 
@@ -104,15 +103,18 @@ export function FlowController() {
 
   return (
     <div className="relative h-full w-full">
-      <BackButton />
-      <ResetButton />
       <AnimatePresence mode="wait" initial={false}>
         <ScreenContainer key={currentStep} direction={direction}>
-          {progress && (
-            <div className="-mt-2 mb-2">
-              <ProgressDots total={progress.total} current={progress.current} />
-            </div>
-          )}
+          {/* Header row: inline Back + progress. In normal flow, so it can
+              never overlap the Continue button at the bottom. */}
+          <div className="-mt-2 mb-2 flex items-start gap-3">
+            <BackButton />
+            {progress && (
+              <div className="min-w-0 flex-1">
+                <ProgressDots total={progress.total} current={progress.current} />
+              </div>
+            )}
+          </div>
           <div className="flex min-h-0 flex-1 flex-col">
             {Screen ? <Screen /> : <FallbackEnd />}
           </div>

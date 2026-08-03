@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FolderOpen, LogOut, ShieldCheck, Stethoscope } from "lucide-react";
+import { BrandLogo } from "@/components/brand/Logo";
 import { useSoleiqStore } from "@/lib/store";
 import { loadSavedIntake } from "@/lib/intake";
 import { signOut, useAuth } from "@/lib/auth";
@@ -49,12 +50,12 @@ export function Welcome() {
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", duration: 0.6 }}
-        className="mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-brand to-blue-800 text-3xl font-bold text-white shadow-[0_20px_40px_-15px_rgba(31,78,121,0.6)]"
+        className="mb-8"
       >
-        SQ
+        <BrandLogo size={104} className="rounded-3xl shadow-lifted" />
       </motion.div>
-      <h1 className="text-3xl font-semibold text-warmGray-800">SoleIQ</h1>
-      <p className="mt-2 max-w-[280px] text-sm leading-snug text-warmGray-600">
+      <h1 className="text-3xl font-bold tracking-[-0.01em] text-ink">SoleIQ</h1>
+      <p className="mt-2 max-w-[290px] text-[15px] leading-relaxed text-ink-soft">
         AI-assisted diabetic foot screening — clinician decision support for
         primary care and podiatry visits.
       </p>
@@ -64,11 +65,11 @@ export function Welcome() {
         </Button>
         <Link
           href="/home"
-          className="mt-2 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl border border-warmGray-100 bg-white text-sm font-semibold text-brand"
+          className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-surface-raised text-sm font-bold text-primary transition-all duration-150 hover:border-slate-300 active:scale-[0.98]"
         >
           <FolderOpen className="h-4 w-4" /> My dashboard
         </Link>
-        <p className="mt-3 text-[11px] text-warmGray-600">
+        <p className="mt-3 text-xs text-ink-faint">
           ~4 minutes per patient. For clinical use.
         </p>
 
@@ -80,7 +81,7 @@ export function Welcome() {
             {adminMembership?.organizations?.slug && (
               <Link
                 href={`/h/${adminMembership.organizations.slug}/admin`}
-                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl bg-warmGray-800 text-xs font-semibold text-white"
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-ink text-xs font-semibold text-white transition-all duration-150 active:scale-[0.98]"
               >
                 <ShieldCheck className="h-3.5 w-3.5" /> Admin console
               </Link>
@@ -88,7 +89,7 @@ export function Welcome() {
             {doctorMembership?.organizations?.slug && (
               <Link
                 href={`/h/${doctorMembership.organizations.slug}/doctor`}
-                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-2xl border border-warmGray-100 bg-white text-xs font-semibold text-warmGray-800"
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-surface-raised text-xs font-semibold text-ink transition-all duration-150 hover:border-slate-300 active:scale-[0.98]"
               >
                 <Stethoscope className="h-3.5 w-3.5" /> Doctor dashboard
               </Link>
@@ -98,10 +99,10 @@ export function Welcome() {
       </div>
 
       {profile && (
-        <div className="mt-8 flex items-center gap-2 text-[11px] text-warmGray-600">
+        <div className="mt-8 flex items-center gap-2 text-xs text-ink-faint">
           <span>
             Signed in as{" "}
-            <span className="font-medium text-warmGray-800">
+            <span className="font-semibold text-ink-soft">
               {profile.email ?? "your account"}
             </span>{" "}
             {memberships.length > 0
@@ -113,7 +114,7 @@ export function Welcome() {
             onClick={() => {
               void signOut().then(() => router.replace("/login"));
             }}
-            className="inline-flex items-center gap-1 font-medium text-brand"
+            className="inline-flex min-h-[44px] items-center gap-1 font-semibold text-primary"
           >
             <LogOut className="h-3 w-3" /> Sign out
           </button>

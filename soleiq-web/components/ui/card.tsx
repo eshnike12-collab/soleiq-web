@@ -7,7 +7,7 @@ export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-3xl border border-warmGray-50 bg-white p-4 shadow-[0_1px_2px_rgba(28,28,28,0.04)]",
+        "rounded-3xl border border-slate-100 bg-surface-raised p-4 shadow-card",
         className
       )}
       {...rest}
@@ -25,7 +25,7 @@ export function Section({
   return (
     <section className="space-y-2">
       {title && (
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-warmGray-600">
+        <h2 className="text-[13px] font-bold text-ink-soft">
           {title}
         </h2>
       )}

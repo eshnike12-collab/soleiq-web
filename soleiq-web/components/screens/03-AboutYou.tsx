@@ -46,7 +46,7 @@ export function AboutYou() {
         title="Patient name"
         subtitle="And the patient's home location for referral recommendations."
       />
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="grid grid-cols-2 gap-2.5">
           <div>
             <label className="field-label">First name</label>
@@ -73,7 +73,7 @@ export function AboutYou() {
         <button
           onClick={useMyLocation}
           disabled={resolving}
-          className="inline-flex items-center text-sm font-medium text-brand"
+          className="inline-flex min-h-[44px] items-center rounded-xl text-[15px] font-semibold text-primary transition-opacity active:opacity-70 disabled:opacity-60"
         >
           <MapPin className="mr-1.5 h-4 w-4" />
           {resolving ? "Locating…" : "Use my location"}

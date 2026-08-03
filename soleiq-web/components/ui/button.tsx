@@ -14,15 +14,16 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-brand text-white shadow-[0_8px_24px_-8px_rgba(31,78,121,0.6)] hover:bg-blue-800 disabled:bg-warmGray-100 disabled:text-warmGray-600 disabled:shadow-none",
-  ghost: "bg-transparent text-brand hover:bg-blue-50",
+    "bg-primary text-white shadow-button hover:bg-primary-deep disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none",
+  ghost: "bg-transparent text-primary hover:bg-primary-soft",
   outline:
-    "border border-warmGray-100 bg-white text-warmGray-800 hover:bg-warmGray-50",
-  subtle: "bg-warmGray-50 text-warmGray-800 hover:bg-warmGray-100",
+    "border border-slate-200 bg-surface-raised text-ink hover:border-slate-300 hover:bg-slate-50",
+  subtle: "bg-slate-100 text-ink hover:bg-slate-200",
 };
 
+// 44px minimum touch target on every size.
 const sizes: Record<Size, string> = {
-  sm: "h-9 px-3 text-sm",
+  sm: "h-11 px-4 text-sm",
   md: "h-12 px-5 text-base",
   lg: "h-14 px-6 text-base",
 };
@@ -32,8 +33,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center rounded-2xl font-semibold transition-all",
-        "active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-80",
+        "inline-flex items-center justify-center rounded-2xl font-bold transition-all duration-150",
+        "active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-90 disabled:active:scale-100",
         variants[variant],
         sizes[size],
         fullWidth && "w-full",

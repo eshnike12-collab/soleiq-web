@@ -41,19 +41,19 @@ export function CapturePrep() {
       <div className="space-y-2.5">
         {items.map(({ icon: Icon, title, body }) => (
           <Card key={title} className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-brand">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary-soft text-secondary">
               <Icon className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-sm font-semibold text-warmGray-800">{title}</p>
-              <p className="text-xs text-warmGray-600">{body}</p>
+              <p className="text-[15px] font-bold text-ink">{title}</p>
+              <p className="mt-0.5 text-[15px] leading-snug text-ink-soft">{body}</p>
             </div>
           </Card>
         ))}
       </div>
-      <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-3">
-        <div className="mb-2 flex items-start gap-2 text-xs text-warmGray-600">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+      <div className="mt-3 rounded-2xl border border-blue-100 bg-primary-soft p-3.5">
+        <div className="mb-2 flex items-start gap-2 text-sm leading-snug text-ink-soft">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p>
             Foot photos are sensitive health information. They are stored in a
             private Supabase bucket for your history and can be deleted from

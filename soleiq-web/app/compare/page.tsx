@@ -50,17 +50,17 @@ function CompareContent() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8]">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-surface">
+      <header className="border-b border-slate-200 bg-surface-raised">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
           <div>
             <Link
               href="/home"
-              className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-brand"
+              className="inline-flex min-h-[44px] items-center gap-1 py-1 text-[13px] font-semibold text-ink-soft transition-colors hover:text-primary"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> My dashboard
             </Link>
-            <h1 className="mt-0.5 text-lg font-semibold text-slate-950">
+            <h1 className="mt-0.5 text-lg font-bold text-ink">
               Compare your checks
             </h1>
           </div>
@@ -68,8 +68,8 @@ function CompareContent() {
       </header>
       <main className="mx-auto max-w-3xl px-5 py-6">
         {checks === null ? (
-          <div className="flex items-center justify-center gap-2 py-24 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading your checks…
+          <div className="flex items-center justify-center gap-2 py-24 text-[15px] text-ink-soft">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" /> Loading your checks…
           </div>
         ) : (
           <ComparisonView checks={checks} />

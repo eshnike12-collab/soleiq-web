@@ -36,13 +36,13 @@ export function RecommendationBlock({
       : recommendation.signals?.patient) ?? [];
 
   return (
-    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+    <section className="mt-6 rounded-3xl border border-slate-100 bg-surface-raised p-5 shadow-card">
+      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
         {audience === "clinician"
           ? "Products suggested to the patient"
           : "Products that may help"}
       </p>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">
         Recommended when this check was analyzed
         {recommendation.created_at
           ? ` (${new Date(recommendation.created_at).toLocaleDateString()})`
@@ -50,24 +50,24 @@ export function RecommendationBlock({
         . Over-the-counter options only — not a prescription.
       </p>
 
-      <div className="mt-3 space-y-3">
+      <div className="mt-4 space-y-3">
         {recommendation.products.map((product) => (
           <div
             key={product.id}
-            className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4"
+            className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-sm font-semibold text-slate-950">{product.name}</h3>
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-brand">
+              <h3 className="text-[15px] font-bold text-ink">{product.name}</h3>
+              <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-bold uppercase text-primary">
                 {product.helpsWith}
               </span>
             </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
+            <p className="mt-1.5 text-[15px] leading-relaxed text-ink-soft">
               {product.howItHelps}
             </p>
-            <p className="mt-1.5 text-xs text-slate-500">{product.reason}</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">{product.reason}</p>
             {product.caution && (
-              <p className="mt-1.5 text-xs font-medium text-amber-700">
+              <p className="mt-2 rounded-xl bg-warn-soft px-3 py-2 text-sm leading-relaxed text-amber-800">
                 {product.caution}
               </p>
             )}
@@ -75,7 +75,7 @@ export function RecommendationBlock({
               href={product.url}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-block text-xs font-semibold text-brand"
+              className="mt-1 inline-flex min-h-[44px] items-center text-sm font-bold text-primary underline decoration-primary/30 underline-offset-4"
             >
               Where to find it →
             </a>
@@ -84,11 +84,11 @@ export function RecommendationBlock({
       </div>
 
       {signals.length > 0 && (
-        <div className="mt-4 rounded-2xl bg-slate-100/80 p-4">
-          <h3 className="text-xs font-semibold text-slate-900">
+        <div className="mt-4 rounded-2xl bg-surface-sunken p-4">
+          <h3 className="text-sm font-bold text-ink">
             Why this was recommended
           </h3>
-          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-600">
+          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-sm leading-relaxed text-ink-soft">
             {signals.map((signal) => (
               <li key={signal}>{signal}</li>
             ))}
@@ -96,7 +96,7 @@ export function RecommendationBlock({
         </div>
       )}
       {audience === "patient" && (
-        <p className="mt-3 text-[11px] italic text-slate-500">
+        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
           General options only — follow your care team&apos;s advice before
           starting anything new.
         </p>

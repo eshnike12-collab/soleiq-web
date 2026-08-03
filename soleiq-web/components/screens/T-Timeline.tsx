@@ -19,6 +19,14 @@ const STATUS: Record<ScreeningLevel, string> = {
   urgent: "Urgent, get care now",
 };
 
+// Presentational tints for the status chip — soft fills only, never solid.
+const STATUS_TINT: Record<ScreeningLevel, string> = {
+  clear: "bg-success-soft text-success",
+  watch: "bg-warn-soft text-warn",
+  see_someone_soon: "bg-urgent-soft text-urgent",
+  urgent: "bg-urgent-soft text-urgent",
+};
+
 const VIEW_SHORT: Record<string, string> = {
   top: "top",
   sole: "sole",
@@ -132,8 +140,8 @@ export function Timeline() {
         <div className="mb-3">
           {changeText && (
             <Card className="mb-3">
-              <p className="text-sm font-semibold text-warmGray-800">Compared with last time</p>
-              <p className="mt-1 text-xs leading-relaxed text-warmGray-600">{changeText}</p>
+              <p className="text-[15px] font-bold text-ink">Compared with last time</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{changeText}</p>
             </Card>
           )}
           <BeforeAfterSlider
@@ -142,7 +150,7 @@ export function Timeline() {
             beforeLabel={new Date(previous.startedAt).toLocaleDateString()}
             afterLabel="Most recent"
           />
-          <p className="mt-2 text-[11px] leading-relaxed text-warmGray-600">
+          <p className="mt-2 text-xs leading-relaxed text-ink-faint">
             This is a visual comparison only. Lighting and camera angle can make areas look different; it does not measure clinical progression.
           </p>
         </div>
@@ -153,20 +161,34 @@ export function Timeline() {
           <Card key={check.id}>
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-warmGray-800">
+                <p className="text-[15px] font-bold text-ink">
                   {new Date(check.startedAt).toLocaleDateString()}
                 </p>
-                <p className="truncate text-xs text-warmGray-600">
-                  {check.level ? STATUS[check.level] : "Older screening record"}
-                  {check.pendingReview ? " · pending clinician review" : ""}
-                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {check.level ? (
+                    <span
+                      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_TINT[check.level]}`}
+                    >
+                      {STATUS[check.level]}
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-ink-faint">
+                      Older screening record
+                    </span>
+                  )}
+                  {check.pendingReview && (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-ink-faint">
+                      pending clinician review
+                    </span>
+                  )}
+                </div>
               </div>
               {check.deletable && (
                 <button
                   type="button"
                   disabled={deleting === check.id}
                   onClick={() => void remove(check.id)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-warmGray-600 hover:bg-warmGray-50 hover:text-risk-high"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-slate-50 hover:text-urgent"
                   aria-label="Delete this saved check"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -174,14 +196,14 @@ export function Timeline() {
               )}
             </div>
             {check.photos.length > 0 && (
-              <div className="mt-2 grid grid-cols-4 gap-1.5">
+              <div className="mt-3 grid grid-cols-4 gap-2">
                 {check.photos.slice(0, 4).map((photo, index) => (
                   <a
                     key={index}
                     href={photo.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="relative block overflow-hidden rounded-lg bg-warmGray-50"
+                    className="relative block overflow-hidden rounded-2xl bg-slate-50"
                   >
                     <div className="aspect-square">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -191,7 +213,7 @@ export function Timeline() {
                         className="h-full w-full object-cover"
                       />
                     </div>
-                    <span className="absolute inset-x-0 bottom-0 bg-black/45 px-1 py-0.5 text-center text-[9px] font-semibold uppercase text-white">
+                    <span className="absolute inset-x-0 bottom-0 bg-slate-900/60 px-1 py-0.5 text-center text-[10px] font-semibold uppercase text-white">
                       {photo.side === "left" ? "L" : "R"} {VIEW_SHORT[photo.view] ?? photo.view}
                     </span>
                   </a>

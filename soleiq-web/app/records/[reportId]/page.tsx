@@ -5,6 +5,14 @@ import { RecommendationBlock } from "@/components/result/RecommendationBlock";
 
 export const dynamic = "force-dynamic";
 
+// Soft-tinted summary panel per risk level (sage / honey / coral).
+const riskPanel: Record<string, string> = {
+  clear: "bg-secondary-soft text-teal-800",
+  watch: "bg-warn-soft text-warn",
+  see_someone_soon: "bg-orange-50 text-orange-700",
+  urgent: "bg-urgent-soft text-urgent",
+};
+
 export default async function PatientReportPage({
   params,
 }: {
@@ -16,39 +24,39 @@ export default async function PatientReportPage({
   );
   const summary = report.patient_summary as any;
   return (
-    <div className="min-h-screen bg-[#f4f6f8] px-5 py-8">
+    <div className="min-h-screen bg-surface px-5 py-8">
       <main className="mx-auto max-w-3xl">
-        <Link href="/home" className="text-sm font-semibold text-brand">← My results</Link>
-        <article className="mt-4 rounded-3xl border border-slate-200 bg-white p-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+        <Link href="/home" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">← My results</Link>
+        <article className="mt-4 rounded-3xl border border-slate-200 bg-surface-raised p-7 shadow-card">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
             {report.status === "released" ? "Released patient report" : "Patient report"} · version {report.version}
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-950">
+          <h1 className="mt-2 text-2xl font-bold text-ink">
             {report.hospital_name_snapshot}
           </h1>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ink-faint">
             {report.status === "released" ? "Released" : "Completed"}{" "}
             {new Date(report.finalized_at || report.created_at).toLocaleString()}
           </p>
           {report.status !== "released" && (
-            <p className="mt-3 rounded-2xl bg-slate-100 px-4 py-3 text-xs leading-relaxed text-slate-600">
-              <span className="font-semibold">Pending clinician review.</span>{" "}
+            <p className="mt-3 rounded-2xl bg-warn-soft px-4 py-3 text-[13px] leading-relaxed text-amber-800">
+              <span className="font-bold">Pending clinician review.</span>{" "}
               These results are available to you and your care team right away,
               but a clinician hasn&apos;t reviewed them yet — guidance may be
               updated after review.
             </p>
           )}
-          <div className="mt-6 rounded-2xl bg-blue-50 p-5">
-            <p className="text-xs font-semibold uppercase text-brand">
+          <div className={`mt-6 rounded-2xl p-5 ${riskPanel[report.risk_level] ?? "bg-primary-soft text-primary"}`}>
+            <p className="text-xs font-bold uppercase tracking-wide">
               {report.risk_level.replaceAll("_", " ")}
             </p>
-            <p className="mt-2 text-lg font-semibold text-slate-950">
+            <p className="mt-2 text-lg font-bold text-ink">
               {summary?.overall?.headline || "Your care team released this screening summary."}
             </p>
           </div>
           {((report as any).photos ?? []).length > 0 && (
             <section className="mt-6">
-              <h2 className="font-semibold">Your photos from this check</h2>
+              <h2 className="font-bold text-ink">Your photos from this check</h2>
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {((report as any).photos ?? []).map((photo: any) => (
                   <a
@@ -56,7 +64,7 @@ export default async function PatientReportPage({
                     href={photo.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="relative block overflow-hidden rounded-2xl bg-slate-100"
+                    className="relative block overflow-hidden rounded-2xl bg-surface-sunken"
                   >
                     <div className="aspect-square">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -72,19 +80,19 @@ export default async function PatientReportPage({
                   </a>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-slate-500">Tap a photo to view it full-size.</p>
+              <p className="mt-2 text-xs text-ink-faint">Tap a photo to view it full-size.</p>
             </section>
           )}
           {(summary?.findings ?? []).map((finding: any, index: number) => (
             <section key={index} className="mt-4 rounded-2xl border border-slate-100 p-5">
-              <h2 className="font-semibold">{finding.what_we_saw}</h2>
-              <p className="mt-1 text-xs text-slate-500">{finding.location_plain}</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">{finding.why_it_matters}</p>
+              <h2 className="font-bold text-ink">{finding.what_we_saw}</h2>
+              <p className="mt-1 text-xs text-ink-faint">{finding.location_plain}</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-ink">{finding.why_it_matters}</p>
             </section>
           ))}
           <section className="mt-6">
-            <h2 className="font-semibold">What to do next</h2>
-            <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-slate-700">
+            <h2 className="font-bold text-ink">What to do next</h2>
+            <ul className="mt-2 list-disc space-y-2 pl-5 text-[15px] text-ink">
               {(summary?.what_to_do ?? []).map((item: string) => <li key={item}>{item}</li>)}
             </ul>
           </section>
@@ -92,7 +100,7 @@ export default async function PatientReportPage({
             recommendation={(report as any).recommendation ?? null}
             audience="patient"
           />
-          <p className="mt-6 text-xs leading-relaxed text-slate-500">
+          <p className="mt-6 text-xs leading-relaxed text-ink-faint">
             {summary?.limits || "Photos cannot show problems beneath the skin."} This is screening support, not a diagnosis.
           </p>
         </article>

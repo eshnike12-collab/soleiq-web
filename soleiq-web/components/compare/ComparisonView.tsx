@@ -20,6 +20,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   CheckCircle2,
+  GitCompare,
   Minus,
   PlusCircle,
 } from "lucide-react";
@@ -61,10 +62,10 @@ const LEVEL_LABEL: Record<ScreeningLevel, string> = {
 };
 
 const LEVEL_CHIP: Record<ScreeningLevel, string> = {
-  clear: "bg-emerald-50 text-emerald-800",
-  watch: "bg-amber-50 text-amber-900",
+  clear: "bg-secondary-soft text-teal-800",
+  watch: "bg-warn-soft text-amber-800",
   see_someone_soon: "bg-orange-100 text-orange-900",
-  urgent: "bg-red-100 text-red-900",
+  urgent: "bg-urgent-soft text-red-800",
 };
 
 const CONCERN_RANK = { low: 0, medium: 1, high: 2 } as const;
@@ -150,9 +151,12 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
 
   if (ordered.length < 2) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-        <p className="font-semibold text-slate-900">Not enough checks to compare yet</p>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
+          <GitCompare className="h-6 w-6 text-primary" />
+        </span>
+        <p className="mt-3 font-bold text-ink">Not enough checks to compare yet</p>
+        <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
           A comparison needs at least two saved assessments. After the next
           check, the changes between dates will appear here automatically.
         </p>
@@ -180,12 +184,12 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
     value: string,
     onChange: (id: string) => void
   ) => (
-    <label className="flex-1 text-xs font-medium text-slate-600">
+    <label className="flex-1 text-xs font-semibold text-ink-soft">
       {label}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+        className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
       >
         {ordered.map((check) => (
           <option key={check.id} value={check.id}>
@@ -199,7 +203,7 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
   return (
     <div className="space-y-4">
       {/* Date pickers */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 shadow-card sm:flex-row">
         {selector("Earlier check", a.id, setEarlierId)}
         {selector("Later check", b.id, setLaterId)}
       </div>
@@ -209,10 +213,10 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
         className={cn(
           "flex items-start gap-3 rounded-2xl p-4",
           levelDelta > 0
-            ? "bg-red-50 text-red-900"
+            ? "bg-urgent-soft text-red-900"
             : levelDelta < 0
-              ? "bg-emerald-50 text-emerald-900"
-              : "bg-slate-100 text-slate-700"
+              ? "bg-secondary-soft text-emerald-900"
+              : "bg-surface-sunken text-ink-soft"
         )}
       >
         {levelDelta > 0 ? (
@@ -241,11 +245,11 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
       {/* Two-column check headers */}
       <div className="grid grid-cols-2 gap-3">
         {[a, b].map((check, index) => (
-          <div key={check.id} className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+          <div key={check.id} className="rounded-2xl border border-slate-200 bg-surface-raised p-4 shadow-card">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">
               {index === 0 ? "Earlier" : "Later"}
             </p>
-            <p className="mt-0.5 text-sm font-semibold text-slate-900">{fmtDate(check.date)}</p>
+            <p className="mt-0.5 text-sm font-bold text-ink">{fmtDate(check.date)}</p>
             <span
               className={cn(
                 "mt-1.5 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
@@ -255,31 +259,31 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
               {LEVEL_LABEL[check.riskLevel]}
             </span>
             {check.status && check.status !== "released" && (
-              <p className="mt-1 text-[10px] font-semibold text-slate-400">Pending review</p>
+              <p className="mt-1 text-[10px] font-semibold text-warn">Pending review</p>
             )}
             {check.headline && (
-              <p className="mt-2 text-xs leading-snug text-slate-600">{check.headline}</p>
+              <p className="mt-2 text-xs leading-snug text-ink-soft">{check.headline}</p>
             )}
           </div>
         ))}
       </div>
 
       {/* Findings diff */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h3 className="font-semibold text-slate-950">What changed</h3>
+      <section className="rounded-3xl border border-slate-200 bg-surface-raised p-4 shadow-card">
+        <h3 className="font-bold text-ink">What changed</h3>
         {diffs.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-[15px] text-ink-soft">
             Neither check recorded a visible finding — nothing to compare here.
           </p>
         ) : (
           <div className="mt-3 space-y-4">
             {newOnes.length > 0 && (
               <div>
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-red-900">
+                <p className="flex items-center gap-1.5 text-xs font-bold text-red-900">
                   <PlusCircle className="h-3.5 w-3.5" /> New since {fmtDate(a.date)}
                 </p>
                 {newOnes.map((diff) => (
-                  <p key={diff.key} className="mt-1.5 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-900">
+                  <p key={diff.key} className="mt-1.5 rounded-xl bg-urgent-soft px-3 py-2 text-sm text-red-900">
                     <span className="font-semibold">{diff.label}:</span>{" "}
                     {diff.later?.what_we_saw}
                     {diff.later?.concern ? ` (${diff.later.concern} concern)` : ""}
@@ -289,11 +293,11 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
             )}
             {resolved.length > 0 && (
               <div>
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-900">
+                <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
                   <CheckCircle2 className="h-3.5 w-3.5" /> No longer flagged
                 </p>
                 {resolved.map((diff) => (
-                  <p key={diff.key} className="mt-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                  <p key={diff.key} className="mt-1.5 rounded-xl bg-secondary-soft px-3 py-2 text-sm text-emerald-900">
                     <span className="font-semibold">{diff.label}:</span>{" "}
                     {diff.earlier?.what_we_saw} — not seen in the later photos.
                   </p>
@@ -302,19 +306,19 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
             )}
             {persisting.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-slate-600">Seen in both checks</p>
+                <p className="text-xs font-bold text-ink-soft">Seen in both checks</p>
                 {persisting.map((diff) => (
                   <div key={diff.key} className="mt-1.5 rounded-xl border border-slate-100 px-3 py-2">
-                    <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                    <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
                       {diff.trend === 1 ? (
                         <ArrowUpRight className="h-3.5 w-3.5 text-red-700" />
                       ) : diff.trend === -1 ? (
                         <ArrowDownRight className="h-3.5 w-3.5 text-emerald-700" />
                       ) : (
-                        <Minus className="h-3.5 w-3.5 text-slate-400" />
+                        <Minus className="h-3.5 w-3.5 text-ink-faint" />
                       )}
                       {diff.label}
-                      <span className="font-normal text-slate-500">
+                      <span className="font-normal text-ink-faint">
                         {diff.trend === 1
                           ? " — concern increased"
                           : diff.trend === -1
@@ -322,7 +326,7 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
                             : " — similar concern"}
                       </span>
                     </p>
-                    <div className="mt-1 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                    <div className="mt-1 grid grid-cols-2 gap-2 text-xs text-ink-soft">
                       <p>
                         <span className="font-semibold">{fmtDate(a.date)}:</span>{" "}
                         {diff.earlier?.what_we_saw}
@@ -343,9 +347,9 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
       </section>
 
       {/* Paired photos per view */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4">
-        <h3 className="font-semibold text-slate-950">Photos side by side</h3>
-        <p className="mt-0.5 text-xs text-slate-500">
+      <section className="rounded-3xl border border-slate-200 bg-surface-raised p-4 shadow-card">
+        <h3 className="font-bold text-ink">Photos side by side</h3>
+        <p className="mt-0.5 text-xs text-ink-faint">
           Earlier on the left, later on the right — tap any photo to open it full-size.
         </p>
         <div className="mt-3 space-y-4">
@@ -355,13 +359,13 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
             if (!left && !right) return null;
             return (
               <div key={`${side}-${view}`}>
-                <p className="mb-1 text-xs font-semibold text-slate-600">{label}</p>
+                <p className="mb-1 text-xs font-semibold text-ink-soft">{label}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { photo: left, date: a.date },
                     { photo: right, date: b.date },
                   ].map(({ photo, date }, index) => (
-                    <div key={index} className="relative overflow-hidden rounded-xl bg-slate-100">
+                    <div key={index} className="relative overflow-hidden rounded-2xl bg-surface-sunken">
                       {photo ? (
                         <a href={photo.url} target="_blank" rel="noreferrer" className="block">
                           <div className="aspect-square">
@@ -377,7 +381,7 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
                           </span>
                         </a>
                       ) : (
-                        <div className="flex aspect-square items-center justify-center text-xs italic text-slate-400">
+                        <div className="flex aspect-square items-center justify-center text-xs italic text-ink-faint">
                           No photo
                         </div>
                       )}
@@ -392,12 +396,12 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
 
       {/* Notes / positives side by side */}
       {(a.notes.length > 0 || b.notes.length > 0 || a.looksGood.length > 0 || b.looksGood.length > 0) && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4">
-          <h3 className="font-semibold text-slate-950">Notes from each check</h3>
+        <section className="rounded-3xl border border-slate-200 bg-surface-raised p-4 shadow-card">
+          <h3 className="font-bold text-ink">Notes from each check</h3>
           <div className="mt-3 grid grid-cols-2 gap-3">
             {[a, b].map((check) => (
               <div key={check.id} className="min-w-0">
-                <p className="text-xs font-semibold text-slate-600">{fmtDate(check.date)}</p>
+                <p className="text-xs font-semibold text-ink-soft">{fmtDate(check.date)}</p>
                 {check.looksGood.length > 0 && (
                   <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-emerald-900">
                     {check.looksGood.map((item) => (
@@ -406,14 +410,14 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
                   </ul>
                 )}
                 {check.notes.length > 0 && (
-                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-slate-600">
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-ink-soft">
                     {check.notes.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
                 )}
                 {check.looksGood.length === 0 && check.notes.length === 0 && (
-                  <p className="mt-1 text-xs italic text-slate-400">No notes recorded.</p>
+                  <p className="mt-1 text-xs italic text-ink-faint">No notes recorded.</p>
                 )}
               </div>
             ))}
@@ -421,7 +425,7 @@ export function ComparisonView({ checks }: { checks: ComparableCheck[] }) {
         </section>
       )}
 
-      <p className="text-center text-[11px] text-slate-500">
+      <p className="text-center text-xs text-ink-faint">
         This comparison reads the stored screening results. It is screening
         support, not a diagnosis, and does not measure clinical progression.
       </p>

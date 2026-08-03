@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Activity, Building2, ClipboardList, Settings, ShieldCheck, Users } from "lucide-react";
+import { BrandLogo } from "@/components/brand/Logo";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 
@@ -27,14 +28,17 @@ export function HospitalShell({
         ]
       : [{ href: base, label: "Worklist", icon: ClipboardList }];
   return (
-    <div className="min-h-screen bg-[#f4f6f8] text-slate-900">
+    <div className="min-h-screen bg-surface text-slate-900">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-              SoleIQ Clinical
-            </p>
-            <h1 className="text-lg font-semibold">{hospitalName}</h1>
+          <div className="flex items-center gap-3">
+            <BrandLogo size={40} />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
+                SoleIQ Clinical
+              </p>
+              <h1 className="text-lg font-semibold">{hospitalName}</h1>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <FeedbackButton compact />

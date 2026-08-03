@@ -10,15 +10,15 @@ import { cn } from "@/lib/utils";
 import { AlertTriangle, Calendar, Stethoscope, BookOpen, Activity } from "lucide-react";
 
 const SCORE_STYLE: Record<AxisScore, string> = {
-  low: "bg-teal-50 text-teal-800 border-teal-100",
-  medium: "bg-amber-50 text-amber-800 border-amber-100",
-  high: "bg-risk-high/10 text-risk-high border-risk-high/30",
+  low: "bg-success-soft text-teal-800 border-teal-100",
+  medium: "bg-warn-soft text-amber-800 border-amber-100",
+  high: "bg-urgent-soft text-urgent border-urgent/30",
 };
 
 const SCORE_PILL: Record<AxisScore, string> = {
   low: "bg-teal-100 text-teal-900",
   medium: "bg-amber-100 text-amber-900",
-  high: "bg-risk-high text-white",
+  high: "bg-red-100 text-red-700",
 };
 
 export function ClinicalDetail() {
@@ -28,7 +28,7 @@ export function ClinicalDetail() {
 
   if (!data) {
     return (
-      <div className="rounded-2xl border border-warmGray-100 bg-white p-4 text-sm text-warmGray-600">
+      <div className="rounded-2xl border border-slate-100 bg-surface-raised p-4 text-sm text-ink-faint">
         Clinical detail unavailable — analysis hasn't been scored yet.
       </div>
     );
@@ -38,30 +38,30 @@ export function ClinicalDetail() {
     <div className="space-y-4">
       {/* Capture-quality strip */}
       <Section icon={Activity} title="Capture quality">
-        <div className="rounded-2xl border border-warmGray-100 bg-white p-3 text-xs">
+        <div className="rounded-2xl border border-slate-100 bg-surface-raised p-3 text-xs">
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-semibold text-warmGray-800">
+            <span className="font-semibold text-ink">
               Overall detection confidence
             </span>
-            <span className="font-mono text-warmGray-800">
+            <span className="font-mono text-ink">
               {(data.captureQuality.overallConfidence * 100).toFixed(0)}%
             </span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-warmGray-100">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full bg-brand"
+              className="h-full rounded-full bg-indigo-600"
               style={{
                 width: `${data.captureQuality.overallConfidence * 100}%`,
               }}
             />
           </div>
           <details className="mt-3">
-            <summary className="cursor-pointer text-brand">
+            <summary className="cursor-pointer font-medium text-indigo-600">
               Per-capture confidence
             </summary>
-            <div className="mt-2 overflow-hidden rounded-lg border border-warmGray-100">
+            <div className="mt-2 overflow-hidden rounded-lg border border-slate-100">
               <table className="w-full text-[11px]">
-                <thead className="bg-warmGray-50 text-warmGray-600">
+                <thead className="bg-slate-50 text-ink-faint">
                   <tr>
                     <th className="px-2 py-1 text-left">Side</th>
                     <th className="px-2 py-1 text-left">View</th>
@@ -71,7 +71,7 @@ export function ClinicalDetail() {
                 </thead>
                 <tbody>
                   {data.captureQuality.images.map((i, idx) => (
-                    <tr key={`i-${idx}`} className="border-t border-warmGray-100">
+                    <tr key={`i-${idx}`} className="border-t border-slate-100">
                       <td className="px-2 py-1 capitalize">{i.side}</td>
                       <td className="px-2 py-1">{i.view}</td>
                       <td className="px-2 py-1 text-right font-mono">
@@ -146,17 +146,17 @@ export function ClinicalDetail() {
       {(data.mechanical.archProfileMm?.right ||
         data.mechanical.archProfileMm?.left) && (
         <Section icon={Activity} title="Mechanical / volumetric (per foot)">
-          <div className="overflow-hidden rounded-2xl border border-warmGray-100 bg-white">
+          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-surface-raised">
             <table className="w-full text-xs">
-              <thead className="bg-warmGray-50 text-[10px] uppercase tracking-wide text-warmGray-600">
+              <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-ink-faint">
                 <tr>
                   <th className="px-3 py-2 text-left">Metric</th>
                   <th className="px-3 py-2 text-right">Right</th>
                   <th className="px-3 py-2 text-right">Left</th>
                 </tr>
               </thead>
-              <tbody className="text-warmGray-800">
-                <tr className="border-t border-warmGray-100">
+              <tbody className="text-ink">
+                <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Foot length (mm)</td>
                   <td className="px-3 py-2 text-right font-mono">
                     {data.mechanical.footLengthMm?.right ?? "—"}
@@ -165,7 +165,7 @@ export function ClinicalDetail() {
                     {data.mechanical.footLengthMm?.left ?? "—"}
                   </td>
                 </tr>
-                <tr className="border-t border-warmGray-100">
+                <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Arch profile (mm)</td>
                   <td className="px-3 py-2 text-right font-mono">
                     {data.mechanical.archProfileMm?.right ?? "—"}
@@ -174,7 +174,7 @@ export function ClinicalDetail() {
                     {data.mechanical.archProfileMm?.left ?? "—"}
                   </td>
                 </tr>
-                <tr className="border-t border-warmGray-100">
+                <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Wound volume (mm³)</td>
                   <td className="px-3 py-2 text-right font-mono">
                     {data.mechanical.woundVolumeMm3?.right ?? "—"}
@@ -183,7 +183,7 @@ export function ClinicalDetail() {
                     {data.mechanical.woundVolumeMm3?.left ?? "—"}
                   </td>
                 </tr>
-                <tr className="border-t border-warmGray-100">
+                <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Bilateral asymmetry</td>
                   <td
                     className="px-3 py-2 text-right font-mono"
@@ -200,11 +200,11 @@ export function ClinicalDetail() {
 
       {/* Follow-up */}
       <Section icon={Calendar} title="Recommended follow-up">
-        <div className="rounded-2xl border border-brand/30 bg-blue-50 p-3">
-          <p className="text-sm font-semibold text-brand">
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
+          <p className="text-sm font-bold text-indigo-700">
             {data.followUp.cadence}
           </p>
-          <p className="mt-1 text-xs leading-snug text-warmGray-800">
+          <p className="mt-1 text-xs leading-relaxed text-ink-soft">
             {data.followUp.rationale}
           </p>
         </div>
@@ -212,10 +212,10 @@ export function ClinicalDetail() {
 
       {/* Differential */}
       <Section icon={AlertTriangle} title="Differential considerations">
-        <ul className="space-y-1.5 rounded-2xl border border-warmGray-100 bg-white p-3 text-sm text-warmGray-800">
+        <ul className="space-y-1.5 rounded-2xl border border-slate-100 bg-surface-raised p-3 text-sm text-ink">
           {data.differential.map((d) => (
             <li key={d} className="flex items-start gap-2">
-              <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-warmGray-600" />
+              <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600/60" />
               {d}
             </li>
           ))}
@@ -224,7 +224,7 @@ export function ClinicalDetail() {
 
       {/* Citations */}
       <Section icon={BookOpen} title="Clinical references">
-        <ul className="space-y-1.5 text-[11px] leading-snug text-warmGray-600">
+        <ul className="space-y-1.5 text-[11px] leading-snug text-ink-faint">
           {data.citations.map((c) => (
             <li key={c.label}>
               {c.url ? (
@@ -232,7 +232,7 @@ export function ClinicalDetail() {
                   href={c.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-brand hover:underline"
+                  className="text-indigo-600 hover:underline"
                 >
                   {c.label}
                 </a>
@@ -242,7 +242,7 @@ export function ClinicalDetail() {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-[10px] italic text-warmGray-600">
+        <p className="mt-3 text-[10px] italic text-ink-faint">
           Decision support. Not a diagnosis. Final clinical judgment rests with
           the treating provider.
         </p>
@@ -262,8 +262,8 @@ function Section({
 }) {
   return (
     <section>
-      <h3 className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-warmGray-600">
-        <Icon className="h-3.5 w-3.5 text-brand" />
+      <h3 className="mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-faint">
+        <Icon className="h-3.5 w-3.5 text-indigo-600" />
         {title}
       </h3>
       {children}
@@ -313,15 +313,15 @@ function SnapshotCard({
   rows: [string, string | undefined][];
 }) {
   return (
-    <div className="rounded-2xl border border-warmGray-100 bg-white p-3 text-xs">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-warmGray-600">
+    <div className="rounded-2xl border border-slate-100 bg-surface-raised p-3 text-xs">
+      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-ink-faint">
         {title}
       </p>
       <dl className="space-y-1">
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between">
-            <dt className="text-warmGray-600">{k}</dt>
-            <dd className="font-medium text-warmGray-800">{v ?? "—"}</dd>
+            <dt className="text-ink-faint">{k}</dt>
+            <dd className="font-medium text-ink">{v ?? "—"}</dd>
           </div>
         ))}
       </dl>

@@ -74,10 +74,25 @@ export function countCaregiverSlots(grants: CareGrant[]): number {
   ).length;
 }
 
+/** Best-effort invite email; access never depends on it. */
+async function notifyInvitee(email: string, role: CareRole): Promise<boolean> {
+  try {
+    const response = await fetch("/api/care-circle/notify", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, role }),
+    });
+    const payload = await response.json().catch(() => null);
+    return Boolean(payload?.data?.emailSent);
+  } catch {
+    return false;
+  }
+}
+
 export async function inviteToCareCircle(
   email: string,
   role: CareRole
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<{ ok: true; emailSent: boolean } | { ok: false; reason: string }> {
   const sb = getSupabase();
   const patientId = await myPatientId();
   if (!sb || !patientId) {
@@ -118,7 +133,8 @@ export async function inviteToCareCircle(
         updated_at: new Date().toISOString(),
       })
       .eq("id", previous.id);
-    return error ? { ok: false, reason: error.message } : { ok: true };
+    if (error) return { ok: false, reason: error.message };
+    return { ok: true, emailSent: await notifyInvitee(normalized, role) };
   }
 
   const { error } = await sb.from("patient_access_grants").insert({
@@ -127,7 +143,8 @@ export async function inviteToCareCircle(
     invitee_email: normalized,
     role,
   });
-  return error ? { ok: false, reason: error.message } : { ok: true };
+  if (error) return { ok: false, reason: error.message };
+  return { ok: true, emailSent: await notifyInvitee(normalized, role) };
 }
 
 export async function revokeCareGrant(grantId: string): Promise<boolean> {

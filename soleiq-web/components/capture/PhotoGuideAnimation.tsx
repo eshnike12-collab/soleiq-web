@@ -16,7 +16,7 @@ export function PhotoGuideAnimation({
   const sideLabel = side === "left" ? "LEFT" : "RIGHT";
 
   return (
-    <div className="relative h-full min-h-[260px] w-full overflow-hidden bg-gradient-to-b from-blue-50 to-white">
+    <div className="relative h-full min-h-[260px] w-full overflow-hidden bg-surface-sunken">
       <svg
         viewBox="0 0 300 390"
         className="h-full w-full"
@@ -134,7 +134,7 @@ export function PhotoGuideAnimation({
           x2="217"
           y1="100"
           y2="100"
-          stroke="#0F6E56"
+          stroke="#337A62"
           strokeWidth="3"
           strokeLinecap="round"
           opacity="0.55"
@@ -155,22 +155,22 @@ export function PhotoGuideAnimation({
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
             <rect x="0" y="0" width="54" height="40" rx="9" fill="#FFFFFF" stroke="#1F4E79" strokeWidth="2" />
-            <circle cx="27" cy="20" r="9" fill="#E6F1FB" stroke="#1F4E79" strokeWidth="2" />
-            <circle cx="45" cy="9" r="2.5" fill="#0F6E56" />
+            <circle cx="27" cy="20" r="9" fill="#EDF3F9" stroke="#1F4E79" strokeWidth="2" />
+            <circle cx="45" cy="9" r="2.5" fill="#337A62" />
           </motion.g>
         </g>
       </svg>
 
       <div className="pointer-events-none absolute inset-x-3 bottom-2 flex flex-col items-center gap-1.5">
-        <span className="rounded-full bg-brand px-3 py-1 text-[11px] font-semibold text-white shadow-sm">
+        <span className="rounded-full bg-primary px-3 py-1 text-[11px] font-bold text-white shadow-sm">
           {side === "left" ? "Left" : "Right"} foot — {view === "top"
             ? "TOP (toenails facing the camera)"
             : "SOLE (bottom of foot facing the camera)"}
         </span>
-        <div className="flex justify-center gap-1.5 text-[10px] font-medium text-warmGray-600">
-          <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">Whole foot</span>
-          <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">No flash</span>
-          <span className="rounded-full bg-white/90 px-2 py-1 shadow-sm">Coin/card optional</span>
+        <div className="flex justify-center gap-1.5 text-[11px] font-semibold text-ink-soft">
+          <span className="rounded-full bg-surface-raised/95 px-2 py-1 shadow-sm">Whole foot</span>
+          <span className="rounded-full bg-surface-raised/95 px-2 py-1 shadow-sm">No flash</span>
+          <span className="rounded-full bg-surface-raised/95 px-2 py-1 shadow-sm">Coin/card optional</span>
         </div>
       </div>
     </div>

@@ -314,12 +314,12 @@ export function LiveCamera({
       )}
 
       {captureError && (
-        <div className="absolute inset-x-3 top-14 rounded-2xl bg-black/70 p-3 text-center">
+        <div className="absolute inset-x-3 top-14 rounded-2xl bg-ink/80 p-3 text-center">
           <p className="text-xs font-semibold text-white">{captureError}</p>
           <button
             type="button"
             onClick={() => setCaptureError(null)}
-            className="mt-1.5 text-xs font-semibold text-white/80 underline"
+            className="mt-1 inline-flex min-h-[44px] items-center text-xs font-semibold text-white/80 underline"
           >
             Dismiss
           </button>
@@ -333,7 +333,7 @@ export function LiveCamera({
           onClose();
         }}
         aria-label="Close camera"
-        className="absolute left-3 top-3 rounded-full bg-black/50 p-2 text-white"
+        className="absolute left-3 top-3 rounded-full bg-ink/70 p-3 text-white"
       >
         <X className="h-5 w-5" />
       </button>
@@ -343,22 +343,22 @@ export function LiveCamera({
           type="button"
           onClick={() => setFacing((value) => (value === "environment" ? "user" : "environment"))}
           aria-label="Switch camera"
-          className="absolute right-3 top-3 rounded-full bg-black/50 p-2 text-white"
+          className="absolute right-3 top-3 rounded-full bg-ink/70 p-3 text-white"
         >
           <RefreshCcw className="h-5 w-5" />
         </button>
       )}
 
       {/* Phone (portrait) / Laptop (landscape) mode toggle */}
-      <div className="absolute left-1/2 top-3 flex -translate-x-1/2 overflow-hidden rounded-full bg-black/50 text-[11px] font-semibold text-white">
+      <div className="absolute left-1/2 top-3 flex -translate-x-1/2 overflow-hidden rounded-full bg-ink/70 text-[11px] font-semibold text-white">
         <button
           type="button"
           onClick={() => chooseOrientation("portrait")}
           aria-pressed={orientation === "portrait"}
           className={
             orientation === "portrait"
-              ? "flex items-center gap-1 bg-white/25 px-2.5 py-1.5"
-              : "flex items-center gap-1 px-2.5 py-1.5 opacity-70"
+              ? "flex min-h-[44px] items-center gap-1 bg-white/25 px-3"
+              : "flex min-h-[44px] items-center gap-1 px-3 opacity-70"
           }
         >
           <Smartphone className="h-3.5 w-3.5" /> Phone
@@ -369,8 +369,8 @@ export function LiveCamera({
           aria-pressed={orientation === "landscape"}
           className={
             orientation === "landscape"
-              ? "flex items-center gap-1 bg-white/25 px-2.5 py-1.5"
-              : "flex items-center gap-1 px-2.5 py-1.5 opacity-70"
+              ? "flex min-h-[44px] items-center gap-1 bg-white/25 px-3"
+              : "flex min-h-[44px] items-center gap-1 px-3 opacity-70"
           }
         >
           <Monitor className="h-3.5 w-3.5" /> Laptop
@@ -383,13 +383,13 @@ export function LiveCamera({
           onClick={shutter}
           disabled={!ready || capturing}
           aria-label="Take photo"
-          className="h-16 w-16 rounded-full border-4 border-white bg-white/30 transition active:scale-95 disabled:opacity-40"
+          className="h-[72px] w-[72px] rounded-full border-4 border-white bg-white/30 shadow-lifted transition active:scale-95 disabled:opacity-40"
         >
           <span
             className={
               capturing
-                ? "mx-auto block h-11 w-11 animate-pulse rounded-full bg-white/60"
-                : "mx-auto block h-11 w-11 rounded-full bg-white"
+                ? "mx-auto block h-14 w-14 animate-pulse rounded-full bg-white/60"
+                : "mx-auto block h-14 w-14 rounded-full bg-white"
             }
           />
         </button>

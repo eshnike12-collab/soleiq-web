@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, ChevronRight } from "lucide-react";
 import { HospitalShell } from "@/components/hospital/HospitalShell";
 import { EmptyState, PageHeader } from "@/components/hospital/Ui";
+import { SharedWithMeCard } from "@/components/patient/SharedWithMeCard";
 import { getDoctorWorklist } from "@/server/reports";
 import { pageAccess } from "@/server/page-access";
 
@@ -87,7 +88,10 @@ export default async function DoctorWorklistPage({
               </thead>
               <tbody>
                 {data.rows.map((row: any) => (
-                  <tr key={row.organization_patient_id} className="border-t border-slate-100">
+                  <tr
+                    key={`${row.organization_patient_id}-${row.latest_report_id ?? "none"}`}
+                    className="border-t border-slate-100"
+                  >
                     <td className="px-4 py-3">
                       <p className="flex items-center gap-2 font-semibold">
                         {row.urgent && <AlertTriangle className="h-4 w-4 text-red-600" />}
@@ -145,6 +149,11 @@ export default async function DoctorWorklistPage({
           </div>
         </section>
       )}
+      {/* Patients who shared their results directly with this signed-in
+          user via their care circle (separate from hospital assignments). */}
+      <div className="mt-6">
+        <SharedWithMeCard />
+      </div>
     </HospitalShell>
   );
 }

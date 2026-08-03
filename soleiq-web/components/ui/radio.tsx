@@ -21,21 +21,24 @@ export function RadioGroup<T extends string>({
             type="button"
             onClick={() => onChange(opt.value)}
             className={cn(
-              "flex w-full items-center gap-3 rounded-xl border bg-white p-3 text-left",
-              selected ? "border-brand bg-blue-50" : "border-warmGray-100"
+              "flex min-h-[48px] w-full items-center gap-3 rounded-2xl border bg-surface-raised p-3.5 text-left",
+              "transition-colors duration-150 active:scale-[0.99]",
+              selected
+                ? "border-primary bg-primary-soft"
+                : "border-slate-200 hover:border-slate-300"
             )}
           >
             <span
               className={cn(
-                "h-5 w-5 rounded-full border-2",
-                selected ? "border-brand" : "border-warmGray-100"
+                "h-6 w-6 shrink-0 rounded-full border-2 transition-colors",
+                selected ? "border-primary" : "border-slate-300"
               )}
             >
               {selected ? (
-                <span className="block h-full w-full rounded-full border-[5px] border-brand" />
+                <span className="block h-full w-full rounded-full border-[6px] border-primary" />
               ) : null}
             </span>
-            <span className="text-sm text-warmGray-800">{opt.label}</span>
+            <span className="text-[15px] leading-snug text-ink">{opt.label}</span>
           </button>
         );
       })}

@@ -42,9 +42,9 @@ const ROLE_META: Record<CareRole, { label: string; blurb: string; icon: typeof U
 };
 
 const STATUS_CHIP: Record<string, string> = {
-  invited: "bg-amber-50 text-amber-700",
-  active: "bg-teal-50 text-teal-700",
-  revoked: "bg-slate-100 text-slate-500",
+  invited: "bg-warn-soft text-warn",
+  active: "bg-secondary-soft text-teal-800",
+  revoked: "bg-slate-100 text-slate-600",
 };
 
 function CareTeamContent() {
@@ -81,7 +81,9 @@ function CareTeamContent() {
     const result = await inviteToCareCircle(email, role);
     if (result.ok) {
       setNotice(
-        `Invitation added for ${email.trim().toLowerCase()}. Access starts the first time they sign in to SoleIQ with that email.`
+        result.emailSent
+          ? `Invitation email sent to ${email.trim().toLowerCase()}. Their access connects the moment they sign in to SoleIQ with that email — it will appear right on their dashboard.`
+          : `Invitation added for ${email.trim().toLowerCase()}. When they sign in to SoleIQ with that email, their access connects automatically and appears on their dashboard.`
       );
       setEmail("");
       await reload();
@@ -109,13 +111,13 @@ function CareTeamContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8] px-5 py-8 pb-24">
+    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
-        <Link href="/features" className="text-sm font-semibold text-brand">
+        <Link href="/features" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">
           ← Features
         </Link>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-950">Care Team</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="mt-3 text-3xl font-bold text-ink">Care Team</h1>
+        <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
           Choose who can see your foot-check results. Access is enforced by the
           database itself — revoking someone cuts them off immediately.
         </p>
@@ -124,8 +126,8 @@ function CareTeamContent() {
           <div
             className={`mt-4 rounded-2xl border p-4 text-sm ${
               error
-                ? "border-red-200 bg-red-50 text-red-700"
-                : "border-teal-200 bg-teal-50 text-teal-800"
+                ? "border-red-200 bg-urgent-soft text-red-800"
+                : "border-teal-200 bg-secondary-soft text-teal-800"
             }`}
           >
             {error ?? notice}
@@ -133,27 +135,27 @@ function CareTeamContent() {
         )}
 
         {/* Invite */}
-        <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+        <section className="mt-5 rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
             Invite someone
           </p>
           <form onSubmit={invite} className="mt-3 space-y-3">
             <label className="block">
-              <span className="text-xs font-medium text-slate-600">Their email</span>
-              <div className="mt-1 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                <Mail className="h-4 w-4 shrink-0 text-slate-400" />
+              <span className="text-xs font-semibold text-ink-soft">Their email</span>
+              <div className="mt-1 flex min-h-[44px] items-center gap-2 rounded-2xl border border-slate-200 bg-surface-raised px-3 py-2.5 transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary-soft">
+                <Mail className="h-4 w-4 shrink-0 text-ink-faint" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                  className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-ink-faint"
                 />
               </div>
             </label>
             <div>
-              <span className="text-xs font-medium text-slate-600">Their role</span>
+              <span className="text-xs font-semibold text-ink-soft">Their role</span>
               <div className="mt-1 grid gap-2 sm:grid-cols-3">
                 {(Object.keys(ROLE_META) as CareRole[]).map((key) => {
                   const meta = ROLE_META[key];
@@ -164,19 +166,19 @@ function CareTeamContent() {
                       key={key}
                       type="button"
                       onClick={() => setRole(key)}
-                      className={`rounded-2xl border p-3 text-left transition ${
+                      className={`min-h-[44px] rounded-2xl border p-3 text-left transition duration-150 active:scale-[0.99] ${
                         selected
-                          ? "border-brand bg-blue-50"
-                          : "border-slate-200 bg-white"
+                          ? "border-primary bg-primary-soft shadow-card"
+                          : "border-slate-200 bg-surface-raised hover:border-primary/40"
                       }`}
                     >
                       <Icon
-                        className={`h-4 w-4 ${selected ? "text-brand" : "text-slate-400"}`}
+                        className={`h-4 w-4 ${selected ? "text-primary" : "text-ink-faint"}`}
                       />
-                      <span className="mt-1 block text-sm font-semibold text-slate-900">
+                      <span className="mt-1 block text-sm font-bold text-ink">
                         {meta.label}
                       </span>
-                      <span className="mt-0.5 block text-[11px] leading-snug text-slate-500">
+                      <span className="mt-0.5 block text-[11px] leading-snug text-ink-soft">
                         {meta.blurb}
                       </span>
                     </button>
@@ -186,7 +188,7 @@ function CareTeamContent() {
             </div>
 
             {role !== "clinician" && slotsFull && (
-              <p className="rounded-2xl bg-amber-50 p-3 text-xs text-amber-800">
+              <p className="rounded-2xl bg-warn-soft p-3 text-xs leading-relaxed text-amber-800">
                 Your {plan.name} plan includes {plan.maxCaregivers} caregiver slots and
                 both are in use. Remove someone below, or see{" "}
                 <Link href="/features/membership" className="font-semibold underline">
@@ -199,7 +201,7 @@ function CareTeamContent() {
             <button
               type="submit"
               disabled={busy || (role !== "clinician" && slotsFull)}
-              className="w-full rounded-2xl bg-brand px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="min-h-[44px] w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
             >
               {busy ? (
                 <span className="inline-flex items-center gap-2">
@@ -209,7 +211,7 @@ function CareTeamContent() {
                 "Send invite"
               )}
             </button>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-xs leading-relaxed text-ink-faint">
               Caregiver slots used: {Math.min(slotsUsed, plan.maxCaregivers)} of{" "}
               {plan.maxCaregivers} (doctors don&apos;t use a slot). The invited person
               simply signs in to SoleIQ with this email — access connects
@@ -219,31 +221,36 @@ function CareTeamContent() {
         </section>
 
         {/* My circle */}
-        <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+        <section className="mt-5 rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
             People with access
           </p>
           {grants === null ? (
-            <p className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+            <p className="mt-3 flex items-center gap-2 text-sm text-ink-soft">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </p>
           ) : activeGrants.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-500">
-              Nobody has access yet. Only you (and the hospital care team that runs
-              your screening program) can see your results.
-            </p>
+            <div className="mt-3 flex flex-col items-center py-3 text-center">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary-soft">
+                <Users className="h-6 w-6 text-secondary" />
+              </span>
+              <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink-soft">
+                Nobody has access yet. Only you (and the hospital care team that
+                runs your screening program) can see your results.
+              </p>
+            </div>
           ) : (
             <ul className="mt-3 space-y-2">
               {activeGrants.map((grant) => (
                 <li
                   key={grant.id}
-                  className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 p-3"
+                  className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-surface-raised p-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-bold text-ink">
                       {grant.email}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-ink-faint">
                       {ROLE_META[grant.role].label} · added{" "}
                       {new Date(grant.createdAt).toLocaleDateString()}
                     </p>
@@ -256,7 +263,7 @@ function CareTeamContent() {
                   <button
                     type="button"
                     onClick={() => revoke(grant)}
-                    className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600"
+                    className="min-h-[44px] rounded-xl border border-red-200 px-4 py-2.5 text-xs font-bold text-urgent transition-colors hover:bg-urgent-soft"
                   >
                     Revoke
                   </button>
@@ -266,12 +273,12 @@ function CareTeamContent() {
           )}
           {revokedGrants.length > 0 && (
             <details className="mt-3">
-              <summary className="cursor-pointer text-xs font-medium text-slate-500">
+              <summary className="cursor-pointer text-xs font-semibold text-ink-soft">
                 Revoked ({revokedGrants.length})
               </summary>
               <ul className="mt-2 space-y-1">
                 {revokedGrants.map((grant) => (
-                  <li key={grant.id} className="text-xs text-slate-500">
+                  <li key={grant.id} className="text-xs text-ink-faint">
                     {grant.email} — revoked{" "}
                     {grant.revokedAt
                       ? new Date(grant.revokedAt).toLocaleDateString()
@@ -285,11 +292,11 @@ function CareTeamContent() {
 
         {/* Shared with me */}
         {sharedWithMe.length > 0 && (
-          <section className="mt-5 rounded-3xl border border-slate-200 bg-white p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+          <section className="mt-5 rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
               Shared with me
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-ink-faint">
               These people added you to their care circle.
             </p>
             <ul className="mt-3 space-y-2">
@@ -297,20 +304,20 @@ function CareTeamContent() {
                 <li key={share.grantId}>
                   <Link
                     href={`/shared/${share.patientId}?role=${share.role}`}
-                    className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3"
+                    className="flex min-h-[44px] items-center gap-3 rounded-2xl border border-slate-100 bg-surface-raised p-3 transition duration-150 hover:border-primary/40 hover:shadow-card"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-brand">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-soft text-primary">
                       <ShieldCheck className="h-4 w-4" />
                     </span>
                     <span className="flex-1">
-                      <span className="block text-sm font-semibold text-slate-900">
+                      <span className="block text-sm font-bold text-ink">
                         {share.patientName}
                       </span>
-                      <span className="block text-xs text-slate-500">
+                      <span className="block text-xs text-ink-faint">
                         You have {ROLE_META[share.role].label.toLowerCase()} access
                       </span>
                     </span>
-                    <span className="text-sm font-semibold text-brand">View →</span>
+                    <span className="text-sm font-bold text-primary">View →</span>
                   </Link>
                 </li>
               ))}
@@ -318,7 +325,7 @@ function CareTeamContent() {
           </section>
         )}
 
-        <p className="mt-5 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-5 text-xs leading-relaxed text-ink-faint">
           Privacy note: sharing is patient-controlled and recorded. Family and
           caregivers see the same plain-language reports you do; doctors you invite
           see the clinical version. Nothing is ever shared without an invitation

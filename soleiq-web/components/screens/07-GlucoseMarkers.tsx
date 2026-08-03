@@ -20,19 +20,19 @@ const SEVERITY_STYLES: Record<
   { card: string; pill: string; iconCls: string; Icon: typeof AlertTriangle }
 > = {
   emergency: {
-    card: "border-risk-high/40 bg-risk-high/10 text-risk-high",
-    pill: "bg-risk-high text-white",
-    iconCls: "text-risk-high",
+    card: "border-red-200 bg-urgent-soft text-red-800",
+    pill: "bg-urgent text-white",
+    iconCls: "text-urgent",
     Icon: AlertTriangle,
   },
   warning: {
-    card: "border-amber-200 bg-amber-50 text-amber-900",
+    card: "border-amber-200 bg-warn-soft text-amber-900",
     pill: "bg-amber-100 text-amber-900",
     iconCls: "text-amber-700",
     Icon: AlertTriangle,
   },
   normal: {
-    card: "border-teal-100 bg-teal-50 text-teal-900",
+    card: "border-teal-100 bg-secondary-soft text-teal-900",
     pill: "bg-teal-100 text-teal-900",
     iconCls: "text-teal-700",
     Icon: Info,
@@ -110,14 +110,14 @@ export function GlucoseMarkers() {
             placeholder="e.g. 7.2"
           />
           {!hba1cOk && (
-            <p className="mt-1 text-xs text-risk-medium">
+            <p className="mt-1 text-[13px] font-medium text-urgent">
               Enter a value between 4.0 and 14.0.
             </p>
           )}
           <button
             type="button"
             onClick={() => setShowA1cHelp((v) => !v)}
-            className="mt-1.5 text-xs font-medium text-brand"
+            className="mt-0.5 inline-flex min-h-[44px] items-center text-[13px] font-semibold text-primary transition-opacity active:opacity-70"
           >
             {showA1cHelp ? "Hide" : "Help me choose"} — A1C ↔ average glucose
           </button>
@@ -149,7 +149,7 @@ export function GlucoseMarkers() {
 
         <button
           onClick={() => setShowGlucose((v) => !v)}
-          className="text-sm font-medium text-brand"
+          className="inline-flex min-h-[44px] items-center text-[15px] font-semibold text-primary transition-opacity active:opacity-70"
         >
           {showGlucose ? "Hide" : "Add"} last 10-day glucose readings
         </button>
@@ -158,7 +158,7 @@ export function GlucoseMarkers() {
           <div className="grid grid-cols-2 gap-2">
             {vals.map((v, i) => (
               <div key={i}>
-                <p className="mb-1 text-[11px] text-warmGray-600">Day {i + 1}</p>
+                <p className="mb-1 text-xs font-semibold text-ink-faint">Day {i + 1}</p>
                 <Input
                   value={v}
                   inputMode="decimal"
@@ -171,7 +171,7 @@ export function GlucoseMarkers() {
       </div>
       <div className="space-y-2 pt-3">
         {!canContinue && (hba1cEntered || categoryPicked) === false && (
-          <p className="text-center text-[11px] text-warmGray-600">
+          <p className="text-center text-[13px] text-ink-faint">
             Enter an HbA1c value or pick a glucose meter range — either one (or
             both) is required.
           </p>
@@ -217,8 +217,8 @@ function ClinicalCard({
             : "Normal"}
         </span>
       </div>
-      <p className="mt-1 text-[12px]">{range.meaning}</p>
-      <p className="mt-1 text-[11px] opacity-80">{range.range}</p>
+      <p className="mt-1 text-[13px]">{range.meaning}</p>
+      <p className="mt-1 text-xs opacity-80">{range.range}</p>
     </div>
   );
 }

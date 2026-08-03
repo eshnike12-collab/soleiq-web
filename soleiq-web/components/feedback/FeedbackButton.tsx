@@ -61,8 +61,8 @@ export function FeedbackButton({
         }}
         className={
           compact
-            ? "inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-brand"
-            : "inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:text-brand"
+            ? "inline-flex min-h-[44px] items-center gap-1.5 py-2 text-xs font-semibold text-ink-soft transition-colors hover:text-primary"
+            : "inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-slate-200 bg-surface-raised px-3.5 py-2.5 text-xs font-semibold text-ink-soft transition-colors hover:border-primary/40 hover:text-primary"
         }
       >
         <MessageSquarePlus className="h-4 w-4" /> Send feedback
@@ -77,21 +77,21 @@ export function FeedbackButton({
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-white p-5 shadow-xl"
+            className="w-full max-w-md rounded-3xl bg-surface-raised p-6 shadow-lifted"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-slate-950">Send feedback</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <h2 className="text-lg font-bold text-ink">Send feedback</h2>
+            <p className="mt-0.5 text-[13px] text-ink-soft">
               Goes straight to the SoleIQ care team.
             </p>
 
             {done ? (
               <div className="mt-4">
-                <p className="rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">{done}</p>
+                <p className="rounded-2xl bg-secondary-soft p-3 text-sm text-teal-800">{done}</p>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-semibold text-white"
+                  className="mt-3 min-h-[44px] w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
                 >
                   Close
                 </button>
@@ -99,11 +99,11 @@ export function FeedbackButton({
             ) : (
               <form onSubmit={submit} className="mt-4 space-y-3">
                 <div>
-                  <label className="text-xs font-medium text-slate-600">Category</label>
+                  <label className="text-xs font-semibold text-ink-soft">Category</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as Category)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
                   >
                     <option value="bug">Something is broken</option>
                     <option value="question">I have a question</option>
@@ -111,7 +111,7 @@ export function FeedbackButton({
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-600">Message</label>
+                  <label className="text-xs font-semibold text-ink-soft">Message</label>
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -120,33 +120,33 @@ export function FeedbackButton({
                     maxLength={4000}
                     rows={4}
                     placeholder="What happened, or what would make SoleIQ better?"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-600">
+                  <label className="text-xs font-semibold text-ink-soft">
                     Contact email (optional)
                   </label>
                   <input
                     type="email"
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
                   />
                 </div>
-                {error && <p className="text-xs text-red-700">{error}</p>}
+                {error && <p className="text-[13px] font-medium text-urgent">{error}</p>}
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700"
+                    className="min-h-[44px] flex-1 rounded-xl border border-slate-200 bg-surface-raised py-2.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-slate-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={busy}
-                    className="flex-1 rounded-xl bg-brand py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                    className="min-h-[44px] flex-1 rounded-xl bg-primary py-2.5 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-60"
                   >
                     {busy ? (
                       <span className="inline-flex items-center gap-1.5">

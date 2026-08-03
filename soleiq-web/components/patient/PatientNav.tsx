@@ -11,18 +11,18 @@ import { Camera, Home, LayoutGrid } from "lucide-react";
  */
 export function PatientNav({ active }: { active?: "home" | "features" }) {
   const itemClass = (isActive: boolean) =>
-    `flex flex-col items-center gap-1 px-4 py-1 text-[11px] font-semibold ${
-      isActive ? "text-brand" : "text-slate-500"
+    `flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl px-4 py-1.5 text-[11px] font-semibold transition-colors ${
+      isActive ? "text-primary" : "text-ink-faint"
     }`;
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-surface-raised pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex max-w-3xl items-center justify-around px-5 py-2">
         <Link href="/home" className={itemClass(active === "home")} aria-current={active === "home" ? "page" : undefined}>
           <Home className="h-5 w-5" />
           Home
         </Link>
-        <Link href="/" className="flex flex-col items-center gap-1 text-[11px] font-semibold text-slate-500">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-blue-900/20">
+        <Link href="/" className="group flex flex-col items-center gap-1 text-[11px] font-semibold text-ink-soft">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-button transition-transform duration-150 group-active:scale-95">
             <Camera className="h-5 w-5" />
           </span>
           New check

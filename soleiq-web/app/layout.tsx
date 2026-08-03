@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 
-const roboto = Roboto({
-  weight: ["400", "500", "700"],
+// Humanist sans: friendly for patients, crisp enough for clinicians.
+const nunitoSans = Nunito_Sans({
+  weight: ["400", "600", "700", "800"],
   subsets: ["latin"],
-  variable: "--font-roboto",
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -20,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={roboto.variable}>
+    <html lang="en" className={nunitoSans.variable}>
       <body className="font-sans">{children}</body>
     </html>
   );

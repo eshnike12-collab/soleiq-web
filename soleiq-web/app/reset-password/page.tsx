@@ -105,29 +105,29 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] px-5 py-10">
-      <main className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-brand">
+    <div className="flex min-h-screen items-center justify-center bg-surface px-5 py-10">
+      <main className="w-full max-w-md rounded-3xl border border-slate-200 bg-surface-raised p-7 shadow-card">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
           <KeyRound className="h-6 w-6" />
         </span>
-        <h1 className="mt-4 text-2xl font-semibold text-slate-950">
+        <h1 className="mt-4 text-2xl font-bold text-ink">
           Set a new password
         </h1>
 
         {stage === "verifying" && (
-          <p className="mt-4 flex items-center gap-2 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" /> Checking your reset link…
+          <p className="mt-4 flex items-center gap-2 text-[15px] text-ink-soft">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" /> Checking your reset link…
           </p>
         )}
 
         {stage === "invalid" && (
           <>
-            <p className="mt-3 rounded-2xl bg-red-50 p-4 text-sm leading-relaxed text-red-700">
+            <p className="mt-3 rounded-2xl bg-urgent-soft p-4 text-sm leading-relaxed text-red-800">
               {error}
             </p>
             <Link
               href="/login"
-              className="mt-4 inline-block w-full rounded-2xl bg-brand px-4 py-3 text-center text-sm font-semibold text-white"
+              className="mt-4 inline-block w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
             >
               Back to sign in
             </Link>
@@ -136,35 +136,35 @@ function ResetPasswordContent() {
 
         {(stage === "ready" || stage === "saving") && (
           <form onSubmit={submit} className="mt-4 space-y-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-[15px] text-ink-soft">
               Longer than 6 characters, with at least one number or symbol.
             </p>
             {error && (
-              <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</p>
+              <p className="rounded-2xl bg-urgent-soft p-3 text-sm text-red-800">{error}</p>
             )}
             <label className="block">
-              <span className="text-xs font-medium text-slate-600">New password</span>
-              <div className="mt-1 flex items-center gap-2 rounded-2xl border border-slate-200 px-3 py-2.5">
+              <span className="text-[13px] font-semibold text-ink-soft">New password</span>
+              <div className="mt-1 flex min-h-[48px] items-center gap-2 rounded-2xl border border-slate-200 bg-surface-raised px-3 py-2 transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary-soft">
                 <input
                   type={show ? "text" : "password"}
                   required
                   autoFocus
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent text-sm text-slate-900 outline-none"
+                  className="w-full bg-transparent text-base text-ink outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => setShow((s) => !s)}
                   aria-label={show ? "Hide password" : "Show password"}
-                  className="text-slate-400"
+                  className="-my-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-faint transition-colors hover:text-primary"
                 >
                   {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </label>
             <label className="block">
-              <span className="text-xs font-medium text-slate-600">
+              <span className="text-[13px] font-semibold text-ink-soft">
                 Confirm new password
               </span>
               <input
@@ -172,13 +172,13 @@ function ResetPasswordContent() {
                 required
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className="mt-1 w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none"
+                className="mt-1 min-h-[48px] w-full rounded-2xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-base text-ink outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary-soft"
               />
             </label>
             <button
               type="submit"
               disabled={stage === "saving"}
-              className="w-full rounded-2xl bg-brand px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="min-h-[48px] w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
             >
               {stage === "saving" ? (
                 <span className="inline-flex items-center gap-2">
@@ -193,13 +193,13 @@ function ResetPasswordContent() {
 
         {stage === "done" && (
           <>
-            <p className="mt-3 flex items-start gap-2 rounded-2xl bg-teal-50 p-4 text-sm leading-relaxed text-teal-800">
+            <p className="mt-3 flex items-start gap-2 rounded-2xl bg-secondary-soft p-4 text-sm leading-relaxed text-teal-800">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
               Your password was updated. Sign in with it now.
             </p>
             <Link
               href="/login"
-              className="mt-4 inline-block w-full rounded-2xl bg-brand px-4 py-3 text-center text-sm font-semibold text-white"
+              className="mt-4 inline-block w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
             >
               Sign in
             </Link>
@@ -214,8 +214,8 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#f4f6f8] text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
+        <div className="flex min-h-screen items-center justify-center bg-surface text-[15px] text-ink-soft">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </div>
       }
     >

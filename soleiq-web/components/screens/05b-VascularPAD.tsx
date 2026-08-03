@@ -72,10 +72,10 @@ export function VascularPAD() {
                   key={o.value}
                   onClick={() => setStatus(o.value)}
                   className={cn(
-                    "h-12 rounded-2xl border text-sm font-medium transition-colors",
+                    "min-h-[48px] rounded-2xl border px-2 text-sm transition-all duration-150 active:scale-[0.98]",
                     active
-                      ? "border-brand bg-blue-50 text-brand"
-                      : "border-warmGray-100 bg-white text-warmGray-800"
+                      ? "border-primary bg-primary-soft font-bold text-primary"
+                      : "border-slate-200 bg-surface-raised font-medium text-ink hover:border-slate-300"
                   )}
                 >
                   {o.label}
@@ -126,11 +126,11 @@ export function VascularPAD() {
             placeholder="e.g. 0.85"
           />
           {!abiOk && (
-            <p className="mt-1 text-xs text-risk-medium">
+            <p className="mt-1 text-[13px] font-medium text-urgent">
               Enter a value between 0.2 and 1.5.
             </p>
           )}
-          <p className="mt-1 text-[11px] text-warmGray-600">
+          <p className="mt-1 text-[13px] text-ink-faint">
             Optional. Leave blank if not measured.
           </p>
         </div>
