@@ -40,6 +40,19 @@ function ResetPasswordContent() {
     }
     (async () => {
       try {
+        // Links whose token expired arrive with an error in the URL hash —
+        // surface that cleanly instead of waiting for a session that will
+        // never appear.
+        if (
+          typeof window !== "undefined" &&
+          /error(_code|_description)?=/.test(window.location.hash)
+        ) {
+          setStage("invalid");
+          setError(
+            "This reset link has expired or was already used. Request a new one from the sign-in page."
+          );
+          return;
+        }
         const code = params?.get("code");
         const tokenHash = params?.get("token_hash");
         if (code) {
@@ -52,17 +65,22 @@ function ResetPasswordContent() {
           });
           if (otpError) throw otpError;
         }
-        // Implicit-flow links (#access_token) are picked up automatically by
-        // the client — either way a session must exist now.
-        const { data } = await sb.auth.getSession();
-        if (data.session) {
-          setStage("ready");
-        } else {
-          setStage("invalid");
-          setError(
-            "This reset link is invalid or has expired. Request a new one from the sign-in page — and open it on the same device you asked from."
-          );
+        // Fragment-based links (#access_token) — and recovery sessions
+        // established a beat earlier on another page — are processed by the
+        // auth client ASYNCHRONOUSLY. Checking once races that work and
+        // falsely reports a bad link, so poll briefly for the session.
+        for (let attempt = 0; attempt < 15; attempt++) {
+          const { data } = await sb.auth.getSession();
+          if (data.session) {
+            setStage("ready");
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 400));
         }
+        setStage("invalid");
+        setError(
+          "This reset link is invalid or has expired. Request a new one from the sign-in page."
+        );
       } catch (err) {
         setStage("invalid");
         setError(
