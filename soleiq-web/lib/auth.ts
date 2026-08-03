@@ -112,7 +112,19 @@ export function useAuth(): AuthState {
     };
 
     void refresh();
-    const { data: subscription } = sb.auth.onAuthStateChange(() => {
+    const { data: subscription } = sb.auth.onAuthStateChange((event) => {
+      // A password-recovery link can land on ANY page (e.g. when the email
+      // was requested without an explicit redirect and Supabase fell back
+      // to the Site URL). Always finish the story on the set-new-password
+      // screen instead of silently signing the user in wherever they landed.
+      if (
+        event === "PASSWORD_RECOVERY" &&
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/reset-password")
+      ) {
+        window.location.replace("/reset-password");
+        return;
+      }
       void refresh();
     });
     return () => {
