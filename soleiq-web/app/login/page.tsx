@@ -11,7 +11,7 @@ import {
   Loader2,
   Stethoscope,
 } from "lucide-react";
-import { BrandLogo } from "@/components/brand/Logo";
+import { BrandLockup } from "@/components/brand/Logo";
 import {
   homeForMemberships,
   requestPasswordReset,
@@ -25,6 +25,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthConfigurationError } from "@/components/auth/AuthConfigurationError";
 import { cn } from "@/lib/utils";
+
+
+/** Raw auth errors can be server JSON like "{}" — never show those. */
+function friendlyAuthError(err: unknown, fallback: string): string {
+  const raw =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "";
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed || /^[{[]/.test(trimmed) || /unexpected_failure/i.test(trimmed)) {
+    return fallback;
+  }
+  if (/error sending .*email/i.test(trimmed)) {
+    return "Our email service couldn't send the message just now — please try again in a few minutes.";
+  }
+  if (/rate limit/i.test(trimmed)) {
+    return "Too many emails were requested in a short time. Wait a bit and try again.";
+  }
+  return trimmed;
+}
 
 type Mode = "signin" | "signup";
 type Audience = "patient" | "doctor";
@@ -105,7 +123,7 @@ export default function LoginPage() {
         setMode("signin");
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Sign-in failed.";
+      const message = friendlyAuthError(err, "Sign-in failed.");
       if (/not confirmed/i.test(message)) {
         setNeedsConfirmation(true);
         setError(
@@ -131,7 +149,7 @@ export default function LoginPage() {
       setInfo("Confirmation email sent — check your inbox (and spam).");
       setNeedsConfirmation(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not resend the email.");
+      setError(friendlyAuthError(err, "Could not resend the email."));
     } finally {
       setBusy(false);
     }
@@ -165,10 +183,7 @@ export default function LoginPage() {
   if (!audience) {
     return (
       <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center bg-surface px-6 py-10">
-        <div className="mb-6 flex items-center gap-3">
-          <BrandLogo size={56} />
-          <span className="text-lg font-bold tracking-tight text-primary">SoleIQ</span>
-        </div>
+        <BrandLockup className="mb-6" />
         <h1 className="text-2xl font-bold text-ink">Welcome</h1>
         <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
           Tell us who you are so we can set up the right experience.
@@ -229,10 +244,7 @@ export default function LoginPage() {
       >
         <ArrowLeft className="h-4 w-4" /> Back
       </button>
-      <div className="mb-6 flex items-center gap-3">
-        <BrandLogo size={56} />
-        <span className="text-lg font-bold tracking-tight text-primary">SoleIQ</span>
-      </div>
+      <BrandLockup className="mb-6" />
       <h1 className="text-2xl font-bold text-ink">
         {audience === "doctor" ? "Doctor / caregiver sign in" : "Sign in to SoleIQ"}
       </h1>
@@ -353,9 +365,7 @@ export default function LoginPage() {
                 await requestPasswordReset(email.trim());
                 setInfo("Password recovery email requested.");
               } catch (err) {
-                setError(
-                  err instanceof Error ? err.message : "Recovery request failed."
-                );
+                setError(friendlyAuthError(err, "Recovery request failed."));
               } finally {
                 setBusy(false);
               }

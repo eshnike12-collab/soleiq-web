@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FolderOpen, LogOut, ShieldCheck, Stethoscope } from "lucide-react";
-import { BrandLogo } from "@/components/brand/Logo";
+import { BrandLockup } from "@/components/brand/Logo";
 import { useSoleiqStore } from "@/lib/store";
 import { loadSavedIntake } from "@/lib/intake";
 import { signOut, useAuth } from "@/lib/auth";
@@ -50,11 +50,10 @@ export function Welcome() {
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", duration: 0.6 }}
-        className="mb-8"
+        className="mb-6"
       >
-        <BrandLogo size={104} className="rounded-3xl shadow-lifted" />
+        <BrandLockup large />
       </motion.div>
-      <h1 className="text-3xl font-bold tracking-[-0.01em] text-ink">SoleIQ</h1>
       <p className="mt-2 max-w-[290px] text-[15px] leading-relaxed text-ink-soft">
         AI-assisted diabetic foot screening — clinician decision support for
         primary care and podiatry visits.
