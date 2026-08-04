@@ -31,7 +31,7 @@ export function Demographics() {
         title="Patient demographics"
         subtitle="Used to personalize population priors and audit model fairness."
       />
-      <div className="space-y-4">
+      <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div>
           <label className="field-label">Age</label>
           <Input
@@ -77,7 +77,7 @@ export function Demographics() {
           </Select>
         </div>
       </div>
-      <div className="mt-auto pt-4">
+      <div className="shrink-0 pt-3">
         <Button
           fullWidth
           disabled={!ready}

@@ -15,10 +15,27 @@ import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
+import type { EmailOtpType, SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { validatePassword } from "@/lib/auth";
 
 type Stage = "verifying" | "ready" | "saving" | "done" | "invalid";
+
+const EXPIRED_MESSAGE =
+  "This reset link has expired or was already used. Request a new one from the sign-in page.";
+const SAME_BROWSER_MESSAGE =
+  "This link has to be opened in the same browser that asked for it. Request a new reset email and open it on this device.";
+
+/** Poll for a session the auth client may still be establishing. */
+async function waitForSession(sb: SupabaseClient, timeoutMs: number) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const { data } = await sb.auth.getSession();
+    if (data.session) return data.session;
+    if (Date.now() >= deadline) return null;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+}
 
 function ResetPasswordContent() {
   const params = useSearchParams();
@@ -29,7 +46,31 @@ function ResetPasswordContent() {
   const [show, setShow] = useState(false);
   const ran = useRef(false);
 
+  // Only ever promotes out of "verifying", so a late event can't yank the
+  // form away from someone already typing their new password.
+  const succeed = () =>
+    setStage((current) => (current === "verifying" ? "ready" : current));
+  const fail = (message: string) => {
+    setStage((current) => (current === "verifying" ? "invalid" : current));
+    setError(message);
+  };
+
+  // The client establishes the recovery session itself for the link shapes it
+  // understands, and does it asynchronously — listening as well as polling
+  // means we react the moment it lands.
   useEffect(() => {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: listener } = sb.auth.onAuthStateChange((_event, session) => {
+      if (session) succeed();
+    });
+    return () => listener.subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // The tokens below are single-use: never process them twice (React
+    // StrictMode remounts effects in development).
     if (ran.current) return;
     ran.current = true;
     const sb = getSupabase();
@@ -38,58 +79,84 @@ function ResetPasswordContent() {
       setError("SoleIQ isn't configured for sign-in on this environment.");
       return;
     }
+
     (async () => {
       try {
-        // Links whose token expired arrive with an error in the URL hash —
-        // surface that cleanly instead of waiting for a session that will
-        // never appear.
-        if (
-          typeof window !== "undefined" &&
-          /error(_code|_description)?=/.test(window.location.hash)
-        ) {
-          setStage("invalid");
-          setError(
-            "This reset link has expired or was already used. Request a new one from the sign-in page."
-          );
+        const hash = new URLSearchParams(
+          typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : ""
+        );
+        // An expired or already-used token comes back as an error on the URL
+        // rather than as a session that never arrives.
+        if (hash.get("error") || hash.get("error_code") || params?.get("error")) {
+          fail(EXPIRED_MESSAGE);
           return;
         }
-        const code = params?.get("code");
-        const tokenHash = params?.get("token_hash");
-        if (code) {
-          const { error: exchangeError } = await sb.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
-        } else if (tokenHash) {
+
+        // Implicit link (#access_token=…): the browser client runs in PKCE
+        // mode and rejects these outright ("Not a valid PKCE flow url"), so
+        // adopt the tokens directly. Recovery emails sent from the Supabase
+        // dashboard or the admin API arrive in exactly this shape.
+        const accessToken = hash.get("access_token");
+        const refreshToken = hash.get("refresh_token");
+        if (accessToken && refreshToken) {
+          const { error: sessionError } = await sb.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (sessionError) throw sessionError;
+          window.history.replaceState(
+            window.history.state,
+            "",
+            window.location.pathname
+          );
+          succeed();
+          return;
+        }
+
+        // OTP link (?token_hash=…&type=recovery). Never auto-detected, and
+        // the only shape that survives being opened in another browser.
+        const tokenHash = params?.get("token_hash") ?? hash.get("token_hash");
+        if (tokenHash) {
+          const type = (params?.get("type") ?? "recovery") as EmailOtpType;
           const { error: otpError } = await sb.auth.verifyOtp({
-            type: "recovery",
+            type,
             token_hash: tokenHash,
           });
           if (otpError) throw otpError;
+          succeed();
+          return;
         }
-        // Fragment-based links (#access_token) — and recovery sessions
-        // established a beat earlier on another page — are processed by the
-        // auth client ASYNCHRONOUSLY. Checking once races that work and
-        // falsely reports a bad link, so poll briefly for the session.
-        for (let attempt = 0; attempt < 15; attempt++) {
-          const { data } = await sb.auth.getSession();
-          if (data.session) {
-            setStage("ready");
-            return;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 400));
+
+        // PKCE link (?code=…). The client exchanges this during its own
+        // initialisation and CONSUMES the single-use code verifier doing so.
+        // Exchanging it a second time here — which is what this page used to
+        // do — always failed with "code verifier could not be found", so a
+        // perfectly good link was reported as invalid. Wait for the client's
+        // exchange, and only do it by hand if that clearly didn't happen.
+        const code = params?.get("code");
+        if (await waitForSession(sb, code ? 6000 : 1500)) {
+          succeed();
+          return;
         }
-        setStage("invalid");
-        setError(
-          "This reset link is invalid or has expired. Request a new one from the sign-in page."
+        if (code) {
+          const { error: exchangeError } = await sb.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+          succeed();
+          return;
+        }
+        fail(
+          "Open the reset link from your email to set a new password, or request a new one from the sign-in page."
         );
       } catch (err) {
-        setStage("invalid");
-        setError(
-          err instanceof Error && /code verifier|both auth code/i.test(err.message)
-            ? "This link was opened in a different browser than the one that requested it. Request a new reset email from this device."
-            : "This reset link is invalid or has expired. Request a new one from the sign-in page."
+        const message = err instanceof Error ? err.message : "";
+        fail(
+          /code verifier|both auth code/i.test(message)
+            ? SAME_BROWSER_MESSAGE
+            : EXPIRED_MESSAGE
         );
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
   const submit = async (event: FormEvent) => {

@@ -38,7 +38,7 @@ export function CapturePrep() {
         title="Begin foot exam"
         subtitle="Take or upload four color photos: the top and sole of each foot. You can retake any photo before the check."
       />
-      <div className="space-y-2.5">
+      <div className="-mx-1 flex-1 space-y-2.5 overflow-y-auto px-1 pb-2">
         {items.map(({ icon: Icon, title, body }) => (
           <Card key={title} className="flex items-start gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary-soft text-secondary">
@@ -50,23 +50,24 @@ export function CapturePrep() {
             </div>
           </Card>
         ))}
-      </div>
-      <div className="mt-3 rounded-2xl border border-blue-100 bg-primary-soft p-3.5">
-        <div className="mb-2 flex items-start gap-2 text-sm leading-snug text-ink-soft">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <p>
-            Foot photos are sensitive health information. They are stored in a
-            private Supabase bucket for your history and can be deleted from
-            the timeline. Photos are sent only to the configured analysis API.
-          </p>
+        <div className="rounded-2xl border border-blue-100 bg-primary-soft p-3.5">
+          <div className="mb-2 flex items-start gap-2 text-sm leading-snug text-ink-soft">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p>
+              Foot photos are sensitive health information. They are stored in
+              a private Supabase bucket for your history and can be deleted
+              from the timeline. Photos are sent only to the configured
+              analysis API.
+            </p>
+          </div>
+          <Checkbox
+            checked={consented}
+            onChange={setConsented}
+            label="I consent to storing and analyzing these foot photos."
+          />
         </div>
-        <Checkbox
-          checked={consented}
-          onChange={setConsented}
-          label="I consent to storing and analyzing these foot photos."
-        />
       </div>
-      <div className="mt-auto pt-4">
+      <div className="shrink-0 pt-3">
         <Button
           fullWidth
           disabled={!consented}

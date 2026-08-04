@@ -38,9 +38,9 @@ export function Dialog({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 30, opacity: 0 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="absolute inset-x-3 bottom-3 z-40 rounded-3xl bg-surface-raised p-5 shadow-lifted"
+            className="absolute inset-x-3 bottom-3 z-40 flex max-h-[calc(100%-1.5rem)] flex-col rounded-3xl bg-surface-raised p-5 shadow-lifted"
           >
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex shrink-0 items-center justify-between">
               <h3 className="text-lg font-bold text-ink">{title}</h3>
               <button
                 onClick={onClose}
@@ -50,7 +50,11 @@ export function Dialog({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            {children}
+            {/* Sheets are bottom-anchored: without a cap a tall one grows off
+                the top of the screen, where nothing can scroll it back. */}
+            <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+              {children}
+            </div>
           </motion.div>
         </>
       )}

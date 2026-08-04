@@ -119,7 +119,7 @@ export function FourPhotoCapture() {
   if (reviewing) {
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <header className="mb-3">
+        <header className="mb-3 shrink-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
             Review photos
           </p>
@@ -171,7 +171,7 @@ export function FourPhotoCapture() {
             );
           })}
         </div>
-        <div className="pt-3">
+        <div className="shrink-0 pt-3">
           <Button fullWidth disabled={!complete} onClick={goNext}>
             Analyze these photos
           </Button>
@@ -182,7 +182,7 @@ export function FourPhotoCapture() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="mb-2.5 flex items-start justify-between gap-3">
+      <header className="mb-2.5 flex shrink-0 items-start justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
             Foot photo
@@ -197,7 +197,7 @@ export function FourPhotoCapture() {
 
       {/* Per-slot progress strip — purely presentational, derived from the
           same images/index state the flow already tracks. */}
-      <div className="mb-2.5 grid grid-cols-4 gap-1.5">
+      <div className="mb-2.5 grid shrink-0 grid-cols-4 gap-1.5">
         {SHOTS.map((item, slotIndex) => {
           const slotImage = images.find(
             (candidate) => candidate.side === item.side && candidate.view === item.view
@@ -250,7 +250,10 @@ export function FourPhotoCapture() {
         })}
       </div>
 
-      <div className="relative min-h-0 flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-surface-sunken">
+      {/* min-h keeps the camera/guide stage usable on short screens instead of
+          letting flex squeeze it to a sliver; the flow body scrolls if the
+          screen then runs past the fold. */}
+      <div className="relative min-h-[200px] flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-surface-sunken">
         {cameraOpen ? (
           <LiveCamera
             onCapture={handleCameraCapture}
@@ -297,7 +300,7 @@ export function FourPhotoCapture() {
         </div>
       )}
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid shrink-0 grid-cols-2 gap-2">
         <label className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-surface-raised text-sm font-bold text-primary shadow-card">
           <ImagePlus className="mr-1.5 h-4 w-4" /> Upload photo
           <input
@@ -326,7 +329,7 @@ export function FourPhotoCapture() {
           <Camera className="mr-1.5 h-4 w-4" /> Take photo
         </button>
       </div>
-      <div className="pt-2">
+      <div className="shrink-0 pt-2">
         <Button
           fullWidth
           disabled={!current || busy || cameraOpen}

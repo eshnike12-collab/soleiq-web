@@ -52,6 +52,8 @@ interface SoleiqStore {
     /** The canonical report for this check, when analysis finished inline —
      *  lets the UI link straight to "View my full report". */
     reportId?: string | null;
+    /** Saved, but the reading had not finished when the request returned. */
+    analysisPending?: boolean;
   }>;
 
   priorVisits: Visit[];
@@ -233,7 +235,13 @@ export const useSoleiqStore = create<SoleiqStore>()(
                 : visit
             ),
           }));
-          return { status: "saved", reportId: result.reportId };
+          // No report yet means the reading is still running server-side —
+          // the check itself is safely stored either way.
+          return {
+            status: "saved",
+            reportId: result.reportId,
+            analysisPending: !result.reportId,
+          };
         } catch (error) {
           // Surface the real step + reason to the UI — a swallowed error here
           // is exactly how "check your connection" got blamed for a server

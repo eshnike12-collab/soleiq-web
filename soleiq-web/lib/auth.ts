@@ -120,9 +120,9 @@ export function useAuth(): AuthState {
       if (
         event === "PASSWORD_RECOVERY" &&
         typeof window !== "undefined" &&
-        !window.location.pathname.startsWith("/reset-password")
+        !window.location.pathname.startsWith(RESET_PASSWORD_PATH)
       ) {
-        window.location.replace("/reset-password");
+        window.location.replace(RESET_PASSWORD_PATH);
         return;
       }
       void refresh();
@@ -134,6 +134,43 @@ export function useAuth(): AuthState {
   }, []);
 
   return state;
+}
+
+/** Where the password-recovery email link lands. */
+export const RESET_PASSWORD_PATH = "/reset-password";
+
+/**
+ * Absolute origin for links inside auth emails.
+ *
+ * NEXT_PUBLIC_SITE_URL wins when set, so an email requested from a preview
+ * deployment (or any host that isn't in Supabase's redirect allow-list) still
+ * points at the canonical app. Supabase silently rewrites a redirectTo it
+ * doesn't recognise to the project's Site URL, which is how recovery links
+ * end up on the wrong page.
+ */
+export function authRedirectOrigin(): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+  return typeof window !== "undefined" ? window.location.origin : "";
+}
+
+/**
+ * Does the current URL carry a password-recovery token?
+ *
+ * Only the token_hash and implicit shapes announce themselves with
+ * `type=recovery`; a PKCE `?code=` is indistinguishable from a signup
+ * confirmation until it is exchanged, which is why useAuth() also listens
+ * for the PASSWORD_RECOVERY event.
+ */
+export function hasRecoveryTokenInUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  const query = new URLSearchParams(window.location.search);
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  return (
+    query.get("type") === "recovery" ||
+    hash.get("type") === "recovery" ||
+    !!query.get("token_hash")
+  );
 }
 
 /** Resolve a landing route from an active hospital membership. */
@@ -178,7 +215,7 @@ export async function signUpWithPassword(email: string, password: string) {
     options: {
       // The confirmation link lands back on the sign-in page; the client
       // exchanges the token, and the page shows the signed-in confirmation.
-      emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
+      emailRedirectTo: `${authRedirectOrigin()}/login?confirmed=1`,
     },
   });
   if (error) throw new Error(error.message);
@@ -192,7 +229,7 @@ export async function resendConfirmationEmail(email: string) {
     type: "signup",
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/login?confirmed=1`,
+      emailRedirectTo: `${authRedirectOrigin()}/login?confirmed=1`,
     },
   });
   if (error) throw new Error(error.message);
@@ -209,12 +246,13 @@ export async function signInAsGuest() {
 export async function requestPasswordReset(email: string) {
   const sb = getSupabase();
   if (!sb) throw new Error("Supabase not configured");
-  // Lands on the dedicated set-new-password page. NOTE: this origin must be
-  // allowed in Supabase → Authentication → URL Configuration, or Supabase
-  // silently rewrites the link to the project's Site URL instead.
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  });
+  // Lands on the dedicated set-new-password page. NOTE: this exact URL must
+  // be listed in Supabase → Authentication → URL Configuration → Redirect
+  // URLs, or Supabase rewrites the link to the project's Site URL instead.
+  const { error } = await sb.auth.resetPasswordForEmail(
+    email.trim().toLowerCase(),
+    { redirectTo: `${authRedirectOrigin()}${RESET_PASSWORD_PATH}` }
+  );
   if (error) throw new Error(error.message);
 }
 

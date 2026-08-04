@@ -7,6 +7,7 @@ import { useSoleiqStore } from "@/lib/store";
 import { analyzeFootPhotos, PhotoRetakeError } from "@/lib/analyzeFootPhotos";
 import { SCREEN_ORDER } from "@/lib/flow-config";
 import { Button } from "@/components/ui/button";
+import { CenteredScreen } from "@/components/flow/ScreenContainer";
 
 export function Processing() {
   const visit = useSoleiqStore((state) => state.currentVisit);
@@ -43,8 +44,8 @@ export function Processing() {
   if (issues.length > 0) {
     const captureStep = SCREEN_ORDER.findIndex((screen) => screen.id === "right_foot");
     return (
-      <div className="flex h-full flex-col">
-        <header>
+      <div className="flex h-full min-h-0 flex-col">
+        <header className="shrink-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-urgent">Retake needed</p>
           <h1 className="mt-1 flex items-center gap-2 text-xl font-bold text-ink">
             <AlertTriangle className="h-5 w-5 text-urgent" /> We cannot check these photos yet
@@ -53,12 +54,14 @@ export function Processing() {
             A careful result needs clear photos. No screening result was generated.
           </p>
         </header>
-        <div className="mt-4 rounded-2xl border border-red-200 bg-urgent-soft p-3.5">
-          <ul className="list-disc space-y-1.5 pl-5 text-[15px] leading-snug text-ink">
-            {issues.map((issue) => <li key={issue}>{issue}</li>)}
-          </ul>
+        <div className="-mx-1 mt-4 flex-1 overflow-y-auto px-1 pb-2">
+          <div className="rounded-2xl border border-red-200 bg-urgent-soft p-3.5">
+            <ul className="list-disc space-y-1.5 pl-5 text-[15px] leading-snug text-ink">
+              {issues.map((issue) => <li key={issue}>{issue}</li>)}
+            </ul>
+          </div>
         </div>
-        <div className="mt-auto pt-4">
+        <div className="shrink-0 pt-3">
           <Button fullWidth onClick={() => goTo(captureStep)}>
             <RotateCcw className="mr-2 h-4 w-4" /> Review and retake photos
           </Button>
@@ -68,7 +71,7 @@ export function Processing() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center text-center">
+    <CenteredScreen>
       <motion.div
         className="flex h-24 w-24 items-center justify-center rounded-full bg-primary-soft"
         animate={{ scale: [1, 1.06, 1], opacity: [1, 0.85, 1] }}
@@ -80,6 +83,6 @@ export function Processing() {
       <p className="mt-2 max-w-[300px] text-[15px] leading-relaxed text-ink-soft">
         First we check photo quality, then visible skin and nail concerns. Photos cannot show problems beneath the skin.
       </p>
-    </div>
+    </CenteredScreen>
   );
 }

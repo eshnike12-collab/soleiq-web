@@ -46,7 +46,7 @@ export function AboutYou() {
         title="Patient name"
         subtitle="And the patient's home location for referral recommendations."
       />
-      <div className="space-y-4">
+      <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div className="grid grid-cols-2 gap-2.5">
           <div>
             <label className="field-label">First name</label>
@@ -79,7 +79,7 @@ export function AboutYou() {
           {resolving ? "Locating…" : "Use my location"}
         </button>
       </div>
-      <div className="mt-auto pt-4">
+      <div className="shrink-0 pt-3">
         <Button
           fullWidth
           disabled={!ready}

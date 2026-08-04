@@ -16,7 +16,7 @@ import { useSoleiqStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { useToastStore } from "@/components/ui/toast";
-import { ScreenHeader } from "@/components/flow/ScreenContainer";
+import { CenteredScreen, ScreenHeader } from "@/components/flow/ScreenContainer";
 import { buildPatientSummary } from "@/lib/exportSummary";
 import { downloadPatientSummaryPdf } from "@/lib/pdfExport";
 import { ShareWithDoctorDialog } from "@/components/share/ShareWithDoctorDialog";
@@ -33,6 +33,7 @@ export function NextSteps() {
   const [save, setSave] = useState<SaveState>("idle");
   const [failReason, setFailReason] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
+  const [analysisPending, setAnalysisPending] = useState(false);
 
   const saveAndContinue = async () => {
     if (save === "saving" || save === "saved") return;
@@ -42,6 +43,7 @@ export function NextSteps() {
     if (outcome.status === "saved" || outcome.status === "local") {
       setSave(outcome.status);
       setReportId(outcome.reportId ?? null);
+      setAnalysisPending(outcome.analysisPending ?? false);
       // Straight to the finished report when analysis completed inline;
       // otherwise a brief success beat, then home.
       setTimeout(
@@ -83,7 +85,7 @@ export function NextSteps() {
   // ----- Success state: full-screen confirmation, then auto-redirect -------
   if (save === "saved" || save === "local") {
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center">
+      <CenteredScreen>
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-success-soft">
           <CheckCircle2 className="h-9 w-9 text-success" />
         </span>
@@ -91,9 +93,11 @@ export function NextSteps() {
           {save === "saved" ? "Submitted securely" : "Kept on this device"}
         </h1>
         <p className="mt-2 max-w-[280px] text-[15px] leading-relaxed text-ink-soft">
-          {save === "saved"
-            ? "Your results and photos are available to you and your care team right away; a clinician will also review them."
-            : "This account is not linked to one hospital patient record, so no hospital record was created."}{" "}
+          {save === "local"
+            ? "This account is not linked to one hospital patient record, so no hospital record was created."
+            : analysisPending
+              ? "Your photos are stored safely. The reading is still being prepared and will appear in your history shortly."
+              : "Your results and photos are available to you and your care team right away; a clinician will also review them."}{" "}
           Taking you to your dashboard…
         </p>
         <button
@@ -107,7 +111,7 @@ export function NextSteps() {
         >
           {save === "saved" && reportId ? "View my full report now" : "Go now"}
         </button>
-      </div>
+      </CenteredScreen>
     );
   }
 
@@ -119,85 +123,87 @@ export function NextSteps() {
         subtitle="Keep it in your private history so you and your care team can track changes over time."
       />
 
-      {save === "failed" && (
-        <div className="mb-3 rounded-2xl border border-urgent/25 bg-urgent-soft p-3.5 text-sm leading-relaxed text-ink">
-          <p className="flex items-center gap-1.5 font-bold text-urgent">
-            <AlertTriangle className="h-4 w-4" /> Couldn&apos;t save to your account
-          </p>
-          <p className="mt-1">
-            {failReason
-              ? `Couldn't save: ${failReason}`
-              : "The save request failed. Try again in a moment."}{" "}
-            Your result stays on this device either way.
-          </p>
-        </div>
-      )}
-
-      {/* Primary action */}
-      <Button fullWidth size="lg" disabled={save === "saving"} onClick={saveAndContinue}>
-        {save === "saving" ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
-          </>
-        ) : save === "failed" ? (
-          "Try saving again"
-        ) : (
-          "Save and continue"
+      <div className="-mx-1 flex-1 overflow-y-auto px-1 pb-2">
+        {save === "failed" && (
+          <div className="mb-3 rounded-2xl border border-urgent/25 bg-urgent-soft p-3.5 text-sm leading-relaxed text-ink">
+            <p className="flex items-center gap-1.5 font-bold text-urgent">
+              <AlertTriangle className="h-4 w-4" /> Couldn&apos;t save to your account
+            </p>
+            <p className="mt-1">
+              {failReason
+                ? `Couldn't save: ${failReason}`
+                : "The save request failed. Try again in a moment."}{" "}
+              Your result stays on this device either way.
+            </p>
+          </div>
         )}
-      </Button>
-      {save === "failed" && (
-        <button
-          type="button"
-          onClick={() => router.push("/home")}
-          className="mt-1 min-h-[44px] text-center text-sm font-semibold text-ink-soft"
-        >
-          Continue to dashboard without saving
-        </button>
-      )}
-      <p className="mt-2 text-center text-xs text-ink-faint">
-        Saves your four photos and the result to your account.
-      </p>
 
-      {/* Secondary actions */}
-      <div className="mt-6">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
-          More options
+        {/* Primary action */}
+        <Button fullWidth size="lg" disabled={save === "saving"} onClick={saveAndContinue}>
+          {save === "saving" ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+            </>
+          ) : save === "failed" ? (
+            "Try saving again"
+          ) : (
+            "Save and continue"
+          )}
+        </Button>
+        {save === "failed" && (
+          <button
+            type="button"
+            onClick={() => router.push("/home")}
+            className="mt-1 min-h-[44px] text-center text-sm font-semibold text-ink-soft"
+          >
+            Continue to dashboard without saving
+          </button>
+        )}
+        <p className="mt-2 text-center text-xs text-ink-faint">
+          Saves your four photos and the result to your account.
         </p>
-        <div className="space-y-2.5">
-          <button
-            type="button"
-            onClick={() => setShareOpen(true)}
-            className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 text-left shadow-card transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99]"
-          >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-              <Share2 className="h-5 w-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold text-ink">Share or refer</span>
-              <span className="mt-0.5 block text-sm text-ink-faint">
-                Manage hospital access or download your personal summary.
+
+        {/* Secondary actions */}
+        <div className="mt-6">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+            More options
+          </p>
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={() => setShareOpen(true)}
+              className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 text-left shadow-card transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99]"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+                <Share2 className="h-5 w-5" />
               </span>
-            </span>
-            <ChevronRight className="h-5 w-5 shrink-0 text-ink-faint" />
-          </button>
-          <button
-            type="button"
-            onClick={goNext}
-            className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 text-left shadow-card transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99]"
-          >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-              <ShoppingBag className="h-5 w-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-bold text-ink">
-                Review foot-care options
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-bold text-ink">Share or refer</span>
+                <span className="mt-0.5 block text-sm text-ink-faint">
+                  Manage hospital access or download your personal summary.
+                </span>
               </span>
-              <span className="mt-0.5 block text-sm text-ink-faint">
-                General options only; follow your care team&apos;s advice.
+              <ChevronRight className="h-5 w-5 shrink-0 text-ink-faint" />
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 text-left shadow-card transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99]"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+                <ShoppingBag className="h-5 w-5" />
               </span>
-            </span>
-            <ChevronRight className="h-5 w-5 shrink-0 text-ink-faint" />
-          </button>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-bold text-ink">
+                  Review foot-care options
+                </span>
+                <span className="mt-0.5 block text-sm text-ink-faint">
+                  General options only; follow your care team&apos;s advice.
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-ink-faint" />
+            </button>
+          </div>
         </div>
       </div>
 

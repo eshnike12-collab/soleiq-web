@@ -169,6 +169,14 @@ function HistoryContent() {
                           src={photo.url}
                           alt={`${photo.side} foot ${photo.view}`}
                           className="h-full w-full object-cover"
+                          // A signed URL is minted from the stored path without
+                          // checking the object exists, so a row whose file was
+                          // deleted yields a URL that 404s. Drop the thumbnail
+                          // rather than render a broken-image icon over an
+                          // otherwise perfectly good report.
+                          onError={(event) => {
+                            event.currentTarget.parentElement?.remove();
+                          }}
                         />
                       </span>
                     ))}

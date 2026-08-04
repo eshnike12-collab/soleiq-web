@@ -3,6 +3,19 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { FootSide } from "@/lib/types";
 
+/**
+ * Reference photo per view. Each of the four is a distinct image, so unlike
+ * the illustration this replaced there is no mirroring — a left foot is not a
+ * flipped right foot to a patient checking their own toes against the guide,
+ * and on the sole view the big toe and arch genuinely swap sides.
+ */
+const GUIDE_PHOTO: Record<string, string> = {
+  "right-top": "/guide/right-top.png",
+  "right-sole": "/guide/right-sole.png",
+  "left-top": "/guide/left-top.png",
+  "left-sole": "/guide/left-sole.png",
+};
+
 export function PhotoGuideAnimation({
   side,
   view,
@@ -12,7 +25,6 @@ export function PhotoGuideAnimation({
 }) {
   const reduceMotion = useReducedMotion();
   const id = `${side}-${view}`;
-  const mirror = side === "left";
   const sideLabel = side === "left" ? "LEFT" : "RIGHT";
 
   return (
@@ -24,24 +36,22 @@ export function PhotoGuideAnimation({
         aria-label={`Example photo showing the ${view === "top" ? "top" : "sole"} of the ${side} foot fully inside the frame`}
       >
         <defs>
-          <linearGradient id={`${id}-skin`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#E9C7A7" />
-            <stop offset="1" stopColor="#C99670" />
-          </linearGradient>
-          <linearGradient id={`${id}-sole`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#F0D0B2" />
-            <stop offset="1" stopColor="#D5A27B" />
-          </linearGradient>
           <filter id={`${id}-shadow`} x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="#1F4E79" floodOpacity="0.16" />
           </filter>
+          {/* Keeps the photo inside the same rounded guide frame the dashed
+              outline draws, so the reference occupies exactly the box the
+              patient is being asked to fill. */}
+          <clipPath id={`${id}-frame`}>
+            <rect x="66" y="38" width="168" height="315" rx="28" />
+          </clipPath>
         </defs>
 
         <rect x="0" y="0" width="300" height="390" fill="transparent" />
         <circle cx="38" cy="58" r="48" fill="#FFFFFF" opacity="0.7" />
         <circle cx="270" cy="116" r="66" fill="#FFFFFF" opacity="0.55" />
 
-        <g transform={mirror ? "translate(300 0) scale(-1 1)" : undefined}>
+        <g clipPath={`url(#${id}-frame)`}>
           <motion.g
             initial={false}
             animate={
@@ -53,67 +63,20 @@ export function PhotoGuideAnimation({
             style={{ transformOrigin: "150px 210px" }}
             filter={`url(#${id}-shadow)`}
           >
-            <path
-              d="M150 337 C119 337 103 314 108 278 C112 247 110 222 104 193 C96 154 99 117 116 94 C126 81 139 75 150 75 C164 75 178 84 187 99 C201 123 203 157 196 194 C190 224 188 248 192 279 C197 314 181 337 150 337 Z"
-              fill={`url(#${id}-${view === "top" ? "skin" : "sole"})`}
-              stroke="#A96F4D"
-              strokeWidth="2"
+            {/* `slice` fills the frame and crops the surplus background rather
+                than letterboxing: the source photos are 3:4 and this box is
+                taller and narrower, so the sides are what get trimmed. */}
+            <image
+              href={GUIDE_PHOTO[id]}
+              x="66"
+              y="38"
+              width="168"
+              height="315"
+              preserveAspectRatio="xMidYMid slice"
             />
-            <ellipse cx="116" cy="83" rx="18" ry="25" fill={`url(#${id}-${view === "top" ? "skin" : "sole"})`} stroke="#A96F4D" strokeWidth="2" />
-            <ellipse cx="140" cy="68" rx="14" ry="21" fill={`url(#${id}-${view === "top" ? "skin" : "sole"})`} stroke="#A96F4D" strokeWidth="2" />
-            <ellipse cx="161" cy="66" rx="12" ry="19" fill={`url(#${id}-${view === "top" ? "skin" : "sole"})`} stroke="#A96F4D" strokeWidth="2" />
-            <ellipse cx="181" cy="72" rx="10" ry="16" fill={`url(#${id}-${view === "top" ? "skin" : "sole"})`} stroke="#A96F4D" strokeWidth="2" />
-            <ellipse cx="197" cy="83" rx="8" ry="13" fill={`url(#${id}-${view === "top" ? "skin" : "sole"})`} stroke="#A96F4D" strokeWidth="2" />
-
-            {view === "top" ? (
-              <>
-                {/* The leg/ankle entering the frame is what makes a TOP view
-                    read as a top view — a bare silhouette reads as a sole. */}
-                <path
-                  d="M126 316 C128 344 126 368 124 390 L 178 390 C 176 366 174 342 176 314 C 168 326 136 328 126 316 Z"
-                  fill={`url(#${id}-skin)`}
-                  stroke="#A96F4D"
-                  strokeWidth="2"
-                />
-                <ellipse cx="129" cy="322" rx="6" ry="7" fill="#D8A883" opacity="0.8" />
-                <ellipse cx="173" cy="320" rx="6" ry="7" fill="#D8A883" opacity="0.8" />
-                {/* Tendon + vein hints running toward the toes */}
-                <path d="M139 130 C145 174 139 211 132 247" fill="none" stroke="#8FA6B8" strokeWidth="1.8" opacity="0.65" />
-                <path d="M162 126 C166 165 174 199 177 237" fill="none" stroke="#8FA6B8" strokeWidth="1.8" opacity="0.55" />
-                <path d="M151 146 C143 166 133 177 124 183" fill="none" stroke="#8FA6B8" strokeWidth="1.4" opacity="0.5" />
-                {/* Bold outlined toenails — the second unmistakable TOP cue */}
-                <ellipse cx="114" cy="73" rx="11" ry="10" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.6" />
-                <ellipse cx="139" cy="60" rx="8" ry="8" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.5" />
-                <ellipse cx="160" cy="58" rx="7" ry="7" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.4" />
-                <ellipse cx="180" cy="65" rx="6" ry="6" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.3" />
-                <ellipse cx="196" cy="77" rx="5" ry="5" fill="#FBEAE0" stroke="#C08A6A" strokeWidth="1.2" />
-              </>
-            ) : (
-              <>
-                {/* SOLE: prominent ball + heel pads with an arch waist, toe
-                    pads with NO nails — a footprint, not a foot from above. */}
-                <ellipse cx="150" cy="130" rx="44" ry="40" fill="#C9805B" opacity="0.5" />
-                <ellipse cx="151" cy="292" rx="36" ry="34" fill="#BE7350" opacity="0.55" />
-                <path
-                  d="M112 175 C136 192 138 234 118 258"
-                  fill="none"
-                  stroke="#B87859"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  opacity="0.55"
-                />
-                <ellipse cx="150" cy="212" rx="20" ry="34" fill="#EBC5A6" opacity="0.5" />
-                <ellipse cx="116" cy="83" rx="10" ry="12" fill="#C9805B" opacity="0.45" />
-                <ellipse cx="140" cy="68" rx="8" ry="10" fill="#C9805B" opacity="0.45" />
-                <ellipse cx="161" cy="66" rx="7" ry="9" fill="#C9805B" opacity="0.45" />
-                <ellipse cx="181" cy="72" rx="6" ry="8" fill="#C9805B" opacity="0.45" />
-                <ellipse cx="197" cy="83" rx="5" ry="7" fill="#C9805B" opacity="0.45" />
-                <path d="M126 139 C143 151 168 151 187 138" fill="none" stroke="#B87859" strokeWidth="2" opacity="0.4" />
-                <path d="M132 277 C145 268 162 268 174 278" fill="none" stroke="#B87859" strokeWidth="2" opacity="0.4" />
-              </>
-            )}
           </motion.g>
         </g>
+
 
         <motion.rect
           x="66"
@@ -129,16 +92,20 @@ export function PhotoGuideAnimation({
           transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}
         />
 
+        {/* Swept by transform, not by animating y1/y2: framer-motion has no
+            interpolator for those SVG attributes, so it wrote "undefined"
+            into them on every frame and the browser rejected each one
+            ("<line> attribute y1: Expected length"). */}
         <motion.line
           x1="83"
           x2="217"
-          y1="100"
-          y2="100"
+          y1="94"
+          y2="94"
           stroke="#337A62"
           strokeWidth="3"
           strokeLinecap="round"
           opacity="0.55"
-          animate={reduceMotion ? undefined : { y1: [94, 315, 94], y2: [94, 315, 94], opacity: [0, 0.65, 0] }}
+          animate={reduceMotion ? undefined : { y: [0, 221, 0], opacity: [0, 0.65, 0] }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
 

@@ -58,6 +58,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   // Arriving from the email-confirmation link (?confirmed=1). If the link
@@ -354,24 +355,37 @@ export default function LoginPage() {
         {mode === "signin" && (
           <button
             type="button"
-            className="min-h-[44px] w-full py-2 text-center text-[13px] font-semibold text-primary transition-colors hover:text-primary-deep"
+            disabled={sendingReset}
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 py-2 text-center text-[13px] font-semibold text-primary transition-colors hover:text-primary-deep disabled:opacity-60"
             onClick={async () => {
-              if (!email.trim()) {
-                setError("Enter your email first.");
+              const target = email.trim();
+              if (!target) {
+                setError("Enter your email first, then tap Forgot password.");
                 return;
               }
-              setBusy(true);
+              setSendingReset(true);
+              setError(null);
+              setInfo(null);
               try {
-                await requestPasswordReset(email.trim());
-                setInfo("Password recovery email requested.");
+                await requestPasswordReset(target);
+                // Deliberately not confirming whether the address exists.
+                setInfo(
+                  `If an account exists for ${target}, a reset link is on its way — check spam too. Open it on this device; the link expires in an hour.`
+                );
               } catch (err) {
                 setError(friendlyAuthError(err, "Recovery request failed."));
               } finally {
-                setBusy(false);
+                setSendingReset(false);
               }
             }}
           >
-            Forgot password?
+            {sendingReset ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sending reset link…
+              </>
+            ) : (
+              "Forgot password?"
+            )}
           </button>
         )}
       </form>

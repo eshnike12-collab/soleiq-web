@@ -211,6 +211,12 @@ export function Timeline() {
                         src={photo.url}
                         alt={`${photo.side} foot ${photo.view}`}
                         className="h-full w-full object-cover"
+                        // Signed URLs are minted from the stored path without
+                        // verifying the object still exists; hide the tile
+                        // instead of showing a broken image.
+                        onError={(event) => {
+                          event.currentTarget.closest("a")?.remove();
+                        }}
                       />
                     </div>
                     <span className="absolute inset-x-0 bottom-0 bg-slate-900/60 px-1 py-0.5 text-center text-[10px] font-semibold uppercase text-white">

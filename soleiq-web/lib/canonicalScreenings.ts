@@ -46,15 +46,22 @@ export async function listMyCanonicalChecks(): Promise<CanonicalCheck[]> {
   const { data: u } = await sb.auth.getUser();
   if (!u.user) return [];
 
-  const { data: reports, error } = await sb
+  // Newest 50, flipped back to oldest-first below. Ordering ascending before
+  // LIMIT selected the OLDEST 50 rows, so once a patient passed 50 checks
+  // every new one fell outside the window and history silently stopped
+  // updating — the save had worked, the report existed, and it was simply
+  // never fetched.
+  const { data: newestFirst, error } = await sb
     .from("reports")
     .select(
       "id, screening_session_id, status, risk_level, patient_summary, hospital_name_snapshot, finalized_at, created_at, screening_sessions(started_at)"
     )
     .neq("status", "superseded")
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(50);
-  if (error || !reports || reports.length === 0) return [];
+  if (error || !newestFirst || newestFirst.length === 0) return [];
+  // Callers (history, timeline, compare) all rely on oldest-first ordering.
+  const reports = [...newestFirst].reverse();
 
   const sessionIds = reports
     .map((report: any) => report.screening_session_id)
@@ -177,6 +184,52 @@ export async function listMyRecommendations(): Promise<MyRecommendation[]> {
   }
 }
 
+/** Longer than the route's own analysis budget, so the server gets to answer
+ *  for itself before the browser gives up on it. */
+const SAVE_REQUEST_TIMEOUT_MS = 75_000;
+
+/**
+ * Did this check land in the database despite the request not coming back?
+ *
+ * The upload and the queued analysis are committed well before the reading
+ * finishes, so a gateway timeout or a dropped connection says nothing about
+ * whether the patient's photos were saved. Reading the session back (RLS
+ * scopes this to the caller's own checks) is what separates "still being
+ * analyzed" from a genuine failure — the difference between telling someone
+ * their check is safe and telling them to do it again.
+ */
+async function findPersistedSession(
+  idempotencyKey: string
+): Promise<{ id: string; status: string; reportId: string | null } | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const { data: session } = await sb
+      .from("screening_sessions")
+      .select("id, status")
+      .eq("idempotency_key", idempotencyKey)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!session) return null;
+    const { data: report } = await sb
+      .from("reports")
+      .select("id")
+      .eq("screening_session_id", session.id)
+      .neq("status", "superseded")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return {
+      id: session.id,
+      status: session.status,
+      reportId: report?.id ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function saveCanonicalScreening(
   profile: Partial<PatientProfile>,
   visit: Visit
@@ -184,9 +237,10 @@ export async function saveCanonicalScreening(
   | { saved: true; sessionId: string; status: string; reportId: string | null }
   | { saved: false; localOnly: true; reason: string }
 > {
-  const response = await fetch("/api/screenings", {
+  const request = {
     method: "POST",
     headers: { "content-type": "application/json" },
+    signal: AbortSignal.timeout(SAVE_REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       idempotencyKey: visit.id,
       startedAt: visit.startedAt,
@@ -201,7 +255,27 @@ export async function saveCanonicalScreening(
         })),
       patientContext: profile,
     }),
-  });
+  } satisfies RequestInit;
+
+  let response: Response;
+  try {
+    response = await fetch("/api/screenings", request);
+  } catch {
+    // Timed out or the connection dropped mid-request.
+    const persisted = await findPersistedSession(visit.id);
+    if (persisted) {
+      return {
+        saved: true,
+        sessionId: persisted.id,
+        status: persisted.status,
+        reportId: persisted.reportId,
+      };
+    }
+    throw new Error(
+      "The screening could not be sent. Check your connection and try again."
+    );
+  }
+
   const payload = await response.json().catch(() => null);
   if (response.status === 409) {
     return {
@@ -211,6 +285,19 @@ export async function saveCanonicalScreening(
         payload?.error?.message ??
         "This check is available locally but is not linked to a hospital record.",
     };
+  }
+  // 502/504 come from the platform, not the route: the upload and the queued
+  // analysis may well have committed before the invocation was cut off.
+  if (response.status === 502 || response.status === 504) {
+    const persisted = await findPersistedSession(visit.id);
+    if (persisted) {
+      return {
+        saved: true,
+        sessionId: persisted.id,
+        status: persisted.status,
+        reportId: persisted.reportId,
+      };
+    }
   }
   if (!response.ok || !payload?.ok) {
     throw new Error(payload?.error?.message ?? "The screening could not be saved.");

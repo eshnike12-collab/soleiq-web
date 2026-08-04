@@ -6,6 +6,16 @@ import type { AnalysisProvider, AnalysisImage } from "@/server/providers/analysi
 import { infrastructureClient } from "@/server/storage";
 
 /**
+ * How many times one analysis_requested event may be attempted before it is
+ * dead-lettered. Some failures are permanent: once a session leaves the
+ * "analyzing" state, complete_screening_analysis raises every time, so the
+ * event can never be completed. Retrying it forever costs a full vision call
+ * per attempt and blocks the rest of the backlog behind it, because sweeps
+ * select the oldest unprocessed event first.
+ */
+export const MAX_ANALYSIS_ATTEMPTS = 3;
+
+/**
  * Development/managed-queue compatible worker entry point.
  * It uses privileged infrastructure credentials only for the queued event and
  * private media fetch, then persists through one atomic worker-only RPC.
@@ -23,6 +33,19 @@ export async function processAnalysisEvent(
     .maybeSingle();
   if (eventError || !event) throw new Error("Analysis event not found.");
   if (event.processed_at) return { alreadyProcessed: true };
+  if ((event.attempts ?? 0) >= MAX_ANALYSIS_ATTEMPTS) {
+    // Dead-letter so this stops being selected. The session keeps its
+    // failure_reason and can be re-enqueued by a fresh save, which is the
+    // only thing that can actually move it forward.
+    await supabase
+      .from("outbox_events")
+      .update({
+        processed_at: new Date().toISOString(),
+        last_error: "DeadLetteredAfterMaxAttempts",
+      })
+      .eq("id", event.id);
+    return { alreadyProcessed: true, deadLettered: true };
+  }
 
   const { data: session, error: sessionError } = await supabase
     .from("screening_sessions")

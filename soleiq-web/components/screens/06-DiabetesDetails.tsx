@@ -37,7 +37,7 @@ export function DiabetesDetails() {
         title="Diabetes details"
         subtitle="Type and year of diagnosis."
       />
-      <div className="space-y-4">
+      <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div>
           <label className="field-label">Type</label>
           <div className="grid grid-cols-2 gap-2.5">
@@ -67,7 +67,7 @@ export function DiabetesDetails() {
           </Select>
         </div>
       </div>
-      <div className="mt-auto pt-4">
+      <div className="shrink-0 pt-3">
         <Button
           fullWidth
           disabled={!ready}

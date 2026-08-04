@@ -1,4 +1,7 @@
 import type { Config } from "tailwindcss";
+// Imported rather than require()d: on Node 22+ this config is loaded as ESM,
+// where `require` is undefined and the whole CSS build throws.
+import tailwindcssAnimate from "tailwindcss-animate";
 
 /**
  * SoleIQ design tokens.
@@ -194,7 +197,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;

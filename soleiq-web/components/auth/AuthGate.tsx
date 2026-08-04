@@ -3,7 +3,11 @@
 import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import {
+  RESET_PASSWORD_PATH,
+  hasRecoveryTokenInUrl,
+  useAuth,
+} from "@/lib/auth";
 import { AuthConfigurationError } from "./AuthConfigurationError";
 
 /**
@@ -18,7 +22,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !userId) router.replace("/login");
+    if (loading || userId) return;
+    // A recovery link whose redirectTo wasn't allow-listed lands here on the
+    // project's Site URL instead of /reset-password. Hand the token on with
+    // the URL intact rather than bouncing to /login and losing it.
+    if (hasRecoveryTokenInUrl()) {
+      window.location.replace(
+        `${RESET_PASSWORD_PATH}${window.location.search}${window.location.hash}`
+      );
+      return;
+    }
+    router.replace("/login");
   }, [loading, userId, router]);
 
   if (loading || !userId) {

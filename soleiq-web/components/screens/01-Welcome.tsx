@@ -10,6 +10,7 @@ import { useSoleiqStore } from "@/lib/store";
 import { loadSavedIntake } from "@/lib/intake";
 import { signOut, useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { CenteredScreen } from "@/components/flow/ScreenContainer";
 
 export function Welcome() {
   const goNext = useSoleiqStore((s) => s.goNext);
@@ -45,7 +46,7 @@ export function Welcome() {
   );
 
   return (
-    <div className="flex h-full flex-col items-center justify-center text-center">
+    <CenteredScreen>
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -119,6 +120,6 @@ export function Welcome() {
           </button>
         </div>
       )}
-    </div>
+    </CenteredScreen>
   );
 }

@@ -77,7 +77,7 @@ export function FeedbackButton({
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-surface-raised p-6 shadow-lifted"
+            className="max-h-full w-full max-w-md overflow-y-auto rounded-3xl bg-surface-raised p-6 shadow-lifted"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-ink">Send feedback</h2>
