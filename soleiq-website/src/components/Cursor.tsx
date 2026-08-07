@@ -94,6 +94,7 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
     }
 
     const resolve = (el: HTMLElement | null) => {
+      box.dataset.icon = ''
       if (pressed) return apply('pressed')
       if (!el || typeof el.closest !== 'function') return apply('default')
 
@@ -106,6 +107,9 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
           labelRef.current.textContent = custom
           labelRef.current.style.opacity = custom ? '1' : '0'
         }
+        // A link can also ask for a mark inside the ring instead of a word —
+        // an arrow, for something that opens away from this page.
+        box.dataset.icon = link.dataset.cursorIcon ?? ''
         return
       }
       if (el.closest('[data-cursor="canvas"]')) {

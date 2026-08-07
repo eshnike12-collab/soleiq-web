@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowUpRight, ChevronDown } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, Linkedin } from 'lucide-react'
 import { sortedPapers, STATUS_LABEL } from '../../data/research'
+import { PROFILE_LINKS } from '../../data/social'
 
 /**
  * SoleIQ's own paper — the one thing in this section that is always on screen.
@@ -53,40 +54,70 @@ export default function FeaturedPaper() {
         {paper.citation ? ` · ${paper.citation}` : ''}
       </p>
 
-      {/* Authors, as they are credited on the paper itself. */}
+      {/* Authors, as they are credited on the paper itself. Each links to their
+          own profile where there is one; the cursor picks up an arrow over it. */}
       <ul className="mt-8 flex flex-wrap gap-x-12 gap-y-6">
-        {paper.authors.map((author) => (
-          <li key={author.name} className="flex items-center gap-4">
-            {author.photo && (
-              <img
-                src={author.photo}
-                alt=""
-                aria-hidden="true"
-                width={220}
-                height={220}
-                loading="lazy"
-                decoding="async"
-                className="h-14 w-14 shrink-0 rounded-full object-cover"
-              />
-            )}
-            <span className="min-w-0">
-              <span className="block font-display text-[1.0625rem] font-medium tracking-tight text-clr-text">
-                {author.name}
-              </span>
-              <span
-                className="block text-[0.75rem] font-medium uppercase tracking-widest"
-                style={{ color: 'var(--clr-accent-2)' }}
-              >
-                {author.credit}
-              </span>
-              {author.title && (
-                <span className="mt-1 block max-w-xs text-[0.8125rem] leading-snug text-clr-muted">
-                  {author.title}
-                </span>
+        {paper.authors.map((author) => {
+          const profile = PROFILE_LINKS[author.name]
+          const body = (
+            <>
+              {author.photo && (
+                <img
+                  src={author.photo}
+                  alt=""
+                  aria-hidden="true"
+                  width={220}
+                  height={220}
+                  loading="lazy"
+                  decoding="async"
+                  className="author-photo h-14 w-14 shrink-0 rounded-full object-cover"
+                />
               )}
-            </span>
-          </li>
-        ))}
+              <span className="min-w-0">
+                <span className="author-name flex items-center gap-1.5 font-display text-[1.0625rem] font-medium tracking-tight text-clr-text">
+                  {author.name}
+                  {profile && (
+                    <Linkedin
+                      size={14}
+                      className="shrink-0 text-clr-muted"
+                      aria-hidden="true"
+                    />
+                  )}
+                </span>
+                <span
+                  className="block text-[0.75rem] font-medium uppercase tracking-widest"
+                  style={{ color: 'var(--clr-accent-2)' }}
+                >
+                  {author.credit}
+                </span>
+                {author.title && (
+                  <span className="mt-1 block max-w-xs text-[0.8125rem] leading-snug text-clr-muted">
+                    {author.title}
+                  </span>
+                )}
+              </span>
+            </>
+          )
+
+          return (
+            <li key={author.name}>
+              {profile ? (
+                <a
+                  href={profile}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="author-link flex items-center gap-4"
+                  data-cursor-icon="arrow"
+                  aria-label={`${author.name} on LinkedIn`}
+                >
+                  {body}
+                </a>
+              ) : (
+                <div className="flex items-center gap-4">{body}</div>
+              )}
+            </li>
+          )
+        })}
       </ul>
 
       <div className="mt-10 grid gap-8 md:grid-cols-[1fr_16rem] md:gap-12">

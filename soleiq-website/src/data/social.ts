@@ -26,7 +26,12 @@ export const SOCIAL: SocialLink[] = [
   },
 ]
 
-/** Personal profiles, shown on the team card they belong to. */
+/**
+ * Personal profiles, keyed by the person's name exactly as it is written
+ * wherever they appear — the team list in About.tsx and the author credits on
+ * the paper. A name with no entry here simply is not linked.
+ */
 export const PROFILE_LINKS: Record<string, string> = {
   'Eshaan Naik': 'https://www.linkedin.com/in/eshaan-naik-8b329a320/',
+  'David G. Armstrong, DPM, MD, PhD': 'https://www.linkedin.com/in/dgarmstrong',
 }
