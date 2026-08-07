@@ -2,34 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ───────────────────────────────────────────────────────────────────────────
+   Palette
+   White ground, deep navy from the SoleIQ mark as primary, a soft teal for
+   health / positive signals, and a warm neutral for the few tinted bands.
+   Everything else is whitespace. Change colours here, nowhere else.
+   ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  --clr-bg: #0D2B3E;
-  --clr-surface: #1A4A5C;
-  --clr-surface-2: #0F3548;
-  --clr-accent: #4ECDC4;
-  --clr-accent-2: #3B82F6;
-  --clr-accent-light: #A8EDEA;
-  --clr-text: #F0FFFE;
-  --clr-text-muted: #7EC8C0;
-  --clr-border: rgba(78, 205, 196, 0.2);
-  --clr-glow: rgba(78, 205, 196, 0.15);
-}
+  --clr-bg: #ffffff;
+  --clr-surface: #f7f6f3; /* warm neutral band */
+  --clr-surface-2: #f0eee8;
 
-html.light {
-  --clr-bg: #F0FFFE;
-  --clr-surface: #DFFAF8;
-  --clr-surface-2: #C8F5F2;
-  --clr-accent: #0F6E66;
-  --clr-accent-2: #1D4ED8;
-  --clr-accent-light: #0A4F49;
-  --clr-text: #0D2B3E;
-  --clr-text-muted: #2A6B65;
-  --clr-border: rgba(15, 110, 102, 0.2);
-  --clr-glow: rgba(15, 110, 102, 0.12);
-}
+  --clr-accent: #0b2a3c; /* deep navy — primary */
+  --clr-accent-soft: #eef2f5;
 
-html {
-  scroll-behavior: smooth;
+  --clr-accent-2: #1e7a70; /* teal — passes AA on white */
+  --clr-accent-2-soft: #e8f2f0;
+
+  --clr-text: #0b2a3c;
+  --clr-text-muted: #5c6b75; /* 5.5:1 on white */
+
+  --clr-border: #e6e3dd;
+  --clr-border-strong: #d3cfc7;
+
+  /* Screening-level tints, used sparingly in the product visuals.
+     These are the darker variants, chosen to clear 4.5:1 against their own
+     tinted backgrounds (not just against white). */
+  --clr-level-clear: #1a6b62;
+  --clr-level-watch: #8a5e12;
+  --clr-level-soon: #9c4a0b;
+  --clr-level-urgent: #a32e26;
 }
 
 *,
@@ -38,242 +40,737 @@ html {
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  /* Anchored sections must clear the fixed navbar. */
+  scroll-padding-top: 5.5rem;
+  -webkit-text-size-adjust: 100%;
+  /* The page ground lives here so the cursor grid can sit behind content. */
+  background-color: var(--clr-bg);
+}
+
+/* Lenis owns the scroll position when it is mounted. */
+html.lenis {
+  scroll-behavior: auto;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--clr-bg);
+  background-color: transparent;
   color: var(--clr-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Inter Tight', Inter, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin: 0;
+  color: var(--clr-text);
+  text-wrap: balance;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--clr-bg);
+p {
+  margin: 0;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--clr-accent);
-  border-radius: 3px;
+/* Keyboard focus, never suppressed. */
+:focus-visible {
+  outline: 2px solid var(--clr-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--clr-accent-light);
-}
+/* ───────────────────────────────────────────────────────────────────────────
+   Layout and controls.
+   These sit in the components layer so Tailwind utilities used alongside them
+   (e.g. `class="field pl-11"`) still win the cascade.
+   ─────────────────────────────────────────────────────────────────────────── */
+@layer components {
+  .shell {
+    width: 100%;
+    max-width: 74rem;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
 
-/* Glass morphism */
-.glass {
-  background: rgba(26, 74, 92, 0.4);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(78, 205, 196, 0.15);
-}
-
-html.light .glass {
-  background: rgba(223, 250, 248, 0.6);
-  border: 1px solid rgba(15, 110, 102, 0.15);
-}
-
-/* Glow */
-.glow {
-  box-shadow: 0 0 30px rgba(78, 205, 196, 0.25);
-}
-
-html.light .glow {
-  box-shadow: 0 0 30px rgba(15, 110, 102, 0.2);
-}
-
-/* Section padding */
-.section-pad {
-  padding-top: 6rem;
-  padding-bottom: 6rem;
-}
-
-@media (min-width: 768px) {
   .section-pad {
-    padding-top: 8rem;
-    padding-bottom: 8rem;
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+
+  /* Small uppercase section label — the only decorative type on the page. */
+  .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--clr-text-muted);
+  }
+
+  .h-display {
+    font-size: clamp(2.25rem, 6.5vw, 4rem);
+    font-weight: 500;
+    letter-spacing: -0.035em;
+  }
+
+  .h-section {
+    font-size: clamp(1.875rem, 4vw, 2.75rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+
+  .h-sub {
+    font-size: clamp(1.125rem, 2vw, 1.375rem);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .lede {
+    font-size: clamp(1.0625rem, 1.6vw, 1.25rem);
+    line-height: 1.6;
+    color: var(--clr-text-muted);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1;
+    padding: 0.8125rem 1.375rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  }
+
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--clr-accent);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: #143d54;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--clr-text);
+    border-color: var(--clr-border-strong);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--clr-accent);
+  }
+
+  .btn-sm {
+    padding: 0.5rem 0.9375rem;
+    font-size: 0.875rem;
+  }
+
+  /* The one thing on the first screen that has to say "keep going". It was a
+     line of small grey text, which is easy to miss on a screen with this much
+     white in it. */
+  .scroll-cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    color: var(--clr-text);
+    transition: color 0.2s ease;
+  }
+
+  .scroll-cue:hover {
+    color: var(--clr-accent-2);
+  }
+
+  /* The arrow on its own — no button around it. */
+  .scroll-cue-arrow {
+    display: inline-flex;
+    flex: none;
+    color: var(--clr-accent);
+    /* A slow, shallow fall — enough to read as an invitation to scroll, not
+       enough to nag. Stopped outright under prefers-reduced-motion by the
+       blanket rule at the foot of this file. */
+    animation: scroll-cue-fall 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  @keyframes scroll-cue-fall {
+    0%,
+    62%,
+    100% {
+      transform: translateY(0);
+    }
+    31% {
+      transform: translateY(5px);
+    }
+  }
+
+  .field {
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    color: var(--clr-text);
+    background: var(--clr-bg);
+    border: 1px solid var(--clr-border-strong);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.9375rem;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .field::placeholder {
+    color: #8b959c;
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--clr-accent);
+    box-shadow: 0 0 0 3px rgba(11, 42, 60, 0.1);
+  }
+
+  .field[aria-invalid='true'] {
+    border-color: var(--clr-level-urgent);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: -4rem;
+    z-index: 100;
+    background: var(--clr-accent);
+    color: #fff;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: top 0.18s ease;
+  }
+
+  .skip-link:focus {
+    top: 0.75rem;
+  }
+
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Article prose: blog reader and paper abstracts. */
+  .prose-soleiq {
+    color: var(--clr-text);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+
+  .prose-soleiq > * + * {
+    margin-top: 1.15em;
+  }
+
+  .prose-soleiq h1,
+  .prose-soleiq h2,
+  .prose-soleiq h3,
+  .prose-soleiq h4 {
+    margin-top: 2em;
+    margin-bottom: 0.6em;
+    line-height: 1.25;
+  }
+
+  .prose-soleiq h2 {
+    font-size: 1.5rem;
+  }
+
+  .prose-soleiq h3 {
+    font-size: 1.25rem;
+  }
+
+  .prose-soleiq a {
+    color: var(--clr-accent-2);
+    text-underline-offset: 3px;
+  }
+
+  .prose-soleiq ul,
+  .prose-soleiq ol {
+    padding-left: 1.25rem;
+    list-style: revert;
+  }
+
+  .prose-soleiq li + li {
+    margin-top: 0.4em;
+  }
+
+  .prose-soleiq blockquote {
+    border-left: 2px solid var(--clr-border-strong);
+    padding-left: 1rem;
+    color: var(--clr-text-muted);
+  }
+
+  .prose-soleiq img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+  }
+
+  .prose-soleiq code {
+    font-size: 0.9em;
+    background: var(--clr-surface);
+    padding: 0.15em 0.35em;
+    border-radius: 4px;
   }
 }
 
-/* Interactive element transitions */
-a,
-button,
-input,
-textarea,
-select {
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+@media (min-width: 768px) {
+  .shell {
+    padding-inline: 2.5rem;
+  }
+
+  .section-pad {
+    padding-top: 9rem;
+    padding-bottom: 9rem;
+  }
 }
 
-/* Text gradient utility */
-.text-gradient {
-  background: linear-gradient(135deg, var(--clr-accent), var(--clr-accent-2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Accent border */
-.accent-border {
-  border: 1px solid var(--clr-border);
-}
-
-/* Animated underline for nav links */
-.nav-link {
+/* ───────────────────────────────────────────────────────────────────────────
+   Team portraits
+   The photograph carries its own dark, blurred studio background. Rather than
+   cutting the subject out, the frame is filled with the brand navy and the
+   image edges are feathered into it, so the two darks meet and the portrait
+   reads as sitting in the page instead of pasted onto it.
+   ─────────────────────────────────────────────────────────────────────────── */
+.portrait {
   position: relative;
-  color: var(--clr-text-muted);
-  text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: color 0.2s ease;
+  width: 100%;
+  max-width: 19rem;
+  aspect-ratio: 641 / 800;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0e2c40 0%, var(--clr-accent) 100%);
 }
 
-.nav-link::after {
+.portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Feather every edge so the photo's own dark surround melts into the frame. */
+  -webkit-mask-image: radial-gradient(
+    118% 108% at 44% 38%,
+    #000 46%,
+    rgba(0, 0, 0, 0.72) 68%,
+    transparent 96%
+  );
+  mask-image: radial-gradient(
+    118% 108% at 44% 38%,
+    #000 46%,
+    rgba(0, 0, 0, 0.72) 68%,
+    transparent 96%
+  );
+}
+
+/* A quiet wash that pulls the warmer corners of the photo back toward navy. */
+.portrait::after {
   content: '';
   position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: var(--clr-accent);
-  border-radius: 1px;
-  transition: width 0.2s ease;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 52%, rgba(11, 42, 60, 0.55) 100%),
+    radial-gradient(120% 100% at 50% 40%, transparent 52%, rgba(11, 42, 60, 0.4) 100%);
 }
 
-.nav-link:hover,
-.nav-link.active {
-  color: var(--clr-accent);
-}
-
-.nav-link:hover::after,
-.nav-link.active::after {
-  width: 100%;
-}
-
-/* Blinking dot */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.blink {
-  animation: blink 1.2s ease infinite;
-}
-
-/* Float animation */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-.float {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* Pulse glow */
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 10px rgba(78, 205, 196, 0.3); }
-  50% { box-shadow: 0 0 25px rgba(78, 205, 196, 0.6); }
-}
-
-.pulse-glow {
-  animation: pulseGlow 2s ease-in-out infinite;
-}
-
-/* Circuit dot animation */
-@keyframes circuitTravel {
-  0% { stroke-dashoffset: 1000; }
-  100% { stroke-dashoffset: 0; }
-}
-
-/* Card hover style */
-.card-hover {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(78, 205, 196, 0.15);
-}
-
-/* Focus styles */
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: var(--clr-accent) !important;
-  box-shadow: 0 0 0 3px var(--clr-glow);
-}
-
-/* Button base styles */
-.btn-primary {
-  background: linear-gradient(135deg, var(--clr-accent), #3ab5ad);
-  color: var(--clr-bg);
-  font-weight: 600;
-  padding: 0.75rem 1.75rem;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.9375rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(78, 205, 196, 0.4);
-  filter: brightness(1.1);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--clr-accent);
-  font-weight: 600;
-  padding: 0.75rem 1.75rem;
-  border-radius: 0.5rem;
-  border: 1.5px solid var(--clr-accent);
-  cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.9375rem;
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: var(--clr-glow);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(78, 205, 196, 0.15);
-}
-
-/* Heatmap pulse dots */
-@keyframes heatPulse {
-  0%, 100% { r: 5; opacity: 0.7; }
-  50% { r: 8; opacity: 1; }
-}
-
-/* Section heading */
-.section-heading {
-  font-family: 'Syne', sans-serif;
-  font-weight: 700;
-  font-size: clamp(2rem, 5vw, 3rem);
-  line-height: 1.15;
+/* ───────────────────────────────────────────────────────────────────────────
+   Narrative scene copy
+   Tone is driven by `html[data-tone]`, which the particle field writes from the
+   background it is actually rendering — including mid-cycle in scene five,
+   where a declared colour would be wrong half the time.
+   ─────────────────────────────────────────────────────────────────────────── */
+.scene-copy {
   color: var(--clr-text);
+  transition: color 0.5s ease;
 }
 
-/* Muted text */
-.text-muted {
+.scene-copy h2 {
+  color: inherit;
+}
+
+.scene-copy .scene-body {
   color: var(--clr-text-muted);
+  transition: color 0.5s ease;
 }
 
-/* Stat highlight */
-.stat-num {
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
+.scene-copy .scene-kicker,
+.scene-copy .scene-note {
+  color: var(--clr-text-muted);
+  transition: color 0.5s ease;
+}
+
+html[data-tone='dark'] .scene-copy {
+  color: #ffffff;
+}
+
+html[data-tone='dark'] .scene-copy .scene-body {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+html[data-tone='dark'] .scene-copy .scene-kicker {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+html[data-tone='dark'] .scene-copy .scene-note {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Scene labels
+   Names the parts of a scene a viewer cannot identify on sight. Positioned
+   from the canvas each frame, so they sit on the thing they name rather than
+   in a legend off to the side.
+   ─────────────────────────────────────────────────────────────────────────── */
+.scene-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(6, 20, 30, 0.55);
+  backdrop-filter: blur(6px);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition: opacity 0.25s ease;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Sequence rail
+   Step number, a fill that tracks progress through that step, and the step's
+   own name. Everything behind the current step reads as done.
+   ─────────────────────────────────────────────────────────────────────────── */
+.scene-rail-num {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.35);
+  width: 1.4em;
+}
+
+.scene-rail-track {
+  display: block;
+  position: relative;
+  width: 34px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.scene-rail-fill {
+  display: block;
+  position: absolute;
+  inset: 0;
+  background: #26f7fd;
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.scene-rail-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.3s ease, opacity 0.3s ease;
+  color: rgba(255, 255, 255, 0.4);
+  opacity: 0.6;
+}
+
+.scene-rail-label[data-state='active'] {
+  color: #ffffff;
+  opacity: 1;
+}
+
+.scene-rail-label[data-state='done'] {
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 0.85;
+}
+
+.scene-rail-count {
+  margin-top: 1.25rem;
+  padding-left: 0.1rem;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Labels floating over a particle composition. */
+.scene-label {
+  position: absolute;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(6, 14, 48, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+  will-change: transform, opacity;
+  transition: opacity 0.25s ease;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Navbar
+   Tailwind's `/85` opacity modifier cannot apply to a bare CSS variable colour,
+   so the translucency is written out here. The particle narrative sets
+   `data-tone="dark"` on <html> while a dark scene is on screen, and the bar
+   inverts rather than sitting on the scene as a white slab.
+   ─────────────────────────────────────────────────────────────────────────── */
+.site-nav {
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+}
+
+.site-nav[data-scrolled='true'] {
+  border-bottom-color: var(--clr-border);
+}
+
+html[data-tone='dark'] .site-nav {
+  background: rgba(7, 27, 40, 0.55);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+html[data-tone='dark'] .site-nav .text-clr-text,
+html[data-tone='dark'] .site-nav a:not(.btn) {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+html[data-tone='dark'] .site-nav .btn-primary {
+  background: #ffffff;
   color: var(--clr-accent);
+}
+
+html[data-tone='dark'] .site-nav .btn-primary:hover {
+  background: #e9f2f1;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Custom cursor
+   The square, the grid it illuminates, and the small nudge hovered text takes.
+   Native focus rings are deliberately untouched — this is decoration on top of
+   the pointer, never a replacement for keyboard affordances.
+   ─────────────────────────────────────────────────────────────────────────── */
+.cursor-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+/* The lit patch. Its mask never moves relative to itself, so it is rasterised
+   once and thereafter only translated — a compositor operation, not a repaint. */
+.cursor-grid-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 620px;
+  height: 620px;
+  will-change: transform;
+  -webkit-mask-image: radial-gradient(
+    closest-side circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.6) 42%,
+    transparent 76%
+  );
+  mask-image: radial-gradient(
+    closest-side circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.6) 42%,
+    transparent 76%
+  );
+}
+
+/* Counter-translated by the same offset, so the lines stay locked to the page
+   while the window slides over them. */
+.cursor-grid-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  will-change: transform;
+  background-image:
+    linear-gradient(to right, rgba(11, 42, 60, 0.26) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 42, 60, 0.26) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+
+html.has-custom-cursor .cursor-grid,
+html.has-custom-cursor .cursor-box {
+  opacity: 1;
+}
+
+html.has-custom-cursor,
+html.has-custom-cursor a,
+html.has-custom-cursor button,
+html.has-custom-cursor input,
+html.has-custom-cursor textarea,
+html.has-custom-cursor select,
+html.has-custom-cursor label {
+  cursor: none;
+}
+
+.cursor-box {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  width: 11px;
+  height: 11px;
+  /* A square, always — no radius in any state. */
+  border-radius: 0;
+  background: #ffffff;
+  border: 0 solid #ffffff;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, width, height;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.24s ease,
+    opacity 0.25s ease;
+}
+
+/* Over text and headings: big and hollow, so the words stay readable through it. */
+.cursor-box[data-state='text'] {
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  border-width: 1.5px;
+}
+
+.cursor-box[data-state='link'] {
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border-width: 1.5px;
+}
+
+.cursor-box[data-state='canvas'] {
+  width: 25px;
+  height: 25px;
+  background: transparent;
+  border-width: 1px;
+}
+
+.cursor-box[data-state='pressed'] {
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border-width: 0;
+}
+
+.cursor-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  color: #ffffff;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  user-select: none;
+}
+
+.cursor-box[data-state='link'] .cursor-label {
+  opacity: 1;
+}
+
+/* The nudge hovered text takes. Transform only — no layout is affected. */
+.cursor-nudge {
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Touch devices never get any of this. */
+@media (pointer: coarse) {
+  .cursor-grid,
+  .cursor-box {
+    display: none;
+  }
+
+  html.has-custom-cursor,
+  html.has-custom-cursor a,
+  html.has-custom-cursor button {
+    cursor: auto;
+  }
+}
+
+/* ── Reduced motion: no transforms, no transitions, nothing hidden ───────── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* The custom cursor is decoration built out of motion — it is not offered
+     at all here, and the native pointer comes back. */
+  .cursor-grid,
+  .cursor-box {
+    display: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

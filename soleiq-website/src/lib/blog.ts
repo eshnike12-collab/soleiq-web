@@ -1,5 +1,3 @@
-import { getSupabase } from './supabase'
-
 export interface PublicBlogPost {
   id: string
   slug: string
@@ -12,7 +10,13 @@ export interface PublicBlogPost {
   published_at: string | null
 }
 
+/**
+ * Published posts, authored in the app's admin CMS and read straight from
+ * Supabase. The client is imported lazily so the SDK never lands in the entry
+ * chunk — the blog is well below the fold.
+ */
 export async function listPublishedPosts(): Promise<PublicBlogPost[]> {
+  const { getSupabase } = await import('./supabase')
   const sb = getSupabase()
   if (!sb) return []
   const { data, error } = await sb

@@ -1,141 +1,79 @@
-import { motion } from 'framer-motion'
-import { Twitter, Linkedin, Instagram } from 'lucide-react'
 import SoleIQLogo from './SoleIQLogo'
+import { APP_URL, useAppSession } from '../hooks/useAppSession'
 
-const NAV_GROUPS = [
-  {
-    heading: 'Product',
-    links: ['Smart Insole', 'Offloading Insole', 'PBM Slipper', 'Therapy Pods'],
-  },
-  {
-    heading: 'Company',
-    links: ['About', 'Science', 'Careers', 'Press'],
-  },
-  {
-    heading: 'Support',
-    links: ['FAQ', 'Contact', 'Shipping & Returns', 'Warranty'],
-  },
-  {
-    heading: 'Clinicians',
-    links: ['Clinical Dashboard', 'Research Portal', 'Order for Patients', 'Billing Codes'],
-  },
+const LINKS = [
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'In practice', href: '#journeys' },
+  { label: 'Research', href: '#research' },
+  { label: 'About', href: '#about' },
+  { label: 'Contact', href: '#contact' },
 ]
 
-const SOCIAL = [
-  { icon: Twitter, label: 'Twitter', href: '#' },
-  { icon: Linkedin, label: 'LinkedIn', href: '#' },
-  { icon: Instagram, label: 'Instagram', href: '#' },
-]
+const CONTACT_EMAIL = 'contact.soleiq@gmail.com'
 
 export default function Footer() {
-  const handleScroll = (id: string) => {
-    const el = document.getElementById(id)
-    if (el) el.scrollIntoView({ behavior: 'smooth' })
-  }
+  const { signedIn } = useAppSession()
+  const year = new Date().getFullYear()
 
   return (
-    <footer style={{ background: '#071F2E', borderTop: '1px solid rgba(78,205,196,0.1)' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Main footer content */}
-        <div className="py-14 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-          {/* Brand */}
-          <div className="col-span-2">
-            <button
-              onClick={() => handleScroll('home')}
-              className="flex items-center gap-2 mb-4"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            >
-              <SoleIQLogo width={28} height={33} id="lgFooter" />
-              <span
-                className="font-syne font-bold text-lg tracking-widest"
-                style={{ color: '#4ECDC4', letterSpacing: '0.15em' }}
-              >
-                SOLEIQ
-              </span>
-            </button>
-            <p
-              className="text-sm leading-relaxed mb-5 max-w-xs"
-              style={{ color: 'rgba(168,237,234,0.6)' }}
-            >
-              AI-powered diabetic foot care — preventing ulcers before they begin, through science patients can trust.
+    <footer className="border-t border-clr-border" aria-labelledby="footer-heading">
+      <h2 id="footer-heading" className="sr-only">
+        Site footer
+      </h2>
+      <div className="shell py-16 md:py-20">
+        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+          <div>
+            <SoleIQLogo size={32} />
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-clr-muted">
+              AI-assisted diabetic foot screening from four guided phone photos.
             </p>
-            <div className="flex gap-3">
-              {SOCIAL.map(s => (
-                <motion.a
-                  key={s.label}
-                  href={s.href}
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label={s.label}
-                  className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-                  style={{
-                    background: 'rgba(78,205,196,0.08)',
-                    border: '1px solid rgba(78,205,196,0.15)',
-                    color: 'rgba(168,237,234,0.7)',
-                  }}
-                >
-                  <s.icon size={16} />
-                </motion.a>
+            <a href={APP_URL} className="btn btn-secondary btn-sm mt-6">
+              {signedIn ? 'Dashboard' : 'Open the app'}
+            </a>
+          </div>
+
+          <nav aria-label="Footer">
+            <ul className="grid grid-cols-2 gap-x-12 gap-y-3 sm:grid-cols-3 md:grid-cols-2">
+              {LINKS.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    className="text-sm text-clr-muted transition-colors hover:text-clr-text"
+                  >
+                    {link.label}
+                  </a>
+                </li>
               ))}
-            </div>
-          </div>
-
-          {/* Nav groups */}
-          {NAV_GROUPS.map(group => (
-            <div key={group.heading}>
-              <h4
-                className="font-syne font-semibold text-sm mb-4"
-                style={{ color: '#4ECDC4', letterSpacing: '0.05em' }}
-              >
-                {group.heading}
-              </h4>
-              <ul className="space-y-2.5">
-                {group.links.map(link => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-sm transition-colors hover:text-white"
-                      style={{ color: 'rgba(168,237,234,0.55)', textDecoration: 'none' }}
-                    >
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+              <li>
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="text-sm text-clr-muted transition-colors hover:text-clr-text"
+                >
+                  Email us
+                </a>
+              </li>
+            </ul>
+          </nav>
         </div>
 
-        {/* Bottom bar */}
-        <div
-          className="py-6 flex flex-col md:flex-row items-center justify-between gap-4"
-          style={{ borderTop: '1px solid rgba(78,205,196,0.08)' }}
-        >
-          <p className="text-xs" style={{ color: 'rgba(126,200,192,0.5)' }}>
-            © 2026 SoleIQ Inc. All rights reserved.
+        <div className="mt-14 border-t border-clr-border pt-8">
+          <p className="max-w-3xl text-xs leading-relaxed text-clr-muted">
+            SoleIQ is a screening and decision-support tool. It is not a
+            diagnostic device, it does not provide medical advice, and it is not
+            a substitute for assessment by a qualified clinician. If you have a
+            wound, an infection, sudden pain, or a change in the colour or
+            temperature of a foot, seek medical care immediately.
           </p>
-
-          <div className="flex flex-wrap gap-5">
-            {['Privacy Policy', 'Terms of Service', 'Accessibility', 'Sitemap'].map(item => (
-              <a
-                key={item}
-                href="#"
-                className="text-xs transition-colors hover:text-white"
-                style={{ color: 'rgba(126,200,192,0.5)', textDecoration: 'none' }}
-              >
-                {item}
-              </a>
-            ))}
+          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <p className="text-xs text-clr-muted">© {year} SoleIQ Health</p>
+            {/* TODO(soleiq): point these at the real policy pages when they exist. */}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="text-xs text-clr-muted hover:text-clr-text">
+              Privacy
+            </a>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="text-xs text-clr-muted hover:text-clr-text">
+              Terms
+            </a>
           </div>
-        </div>
-
-        {/* Medical disclaimer */}
-        <div
-          className="pb-6 text-center"
-        >
-          <p className="text-xs leading-relaxed max-w-4xl mx-auto" style={{ color: 'rgba(126,200,192,0.38)' }}>
-            MEDICAL DISCLAIMER: SoleIQ products are intended for adjunctive use only and are not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or qualified health provider with any questions regarding your condition. Never disregard professional medical advice or delay in seeking it because of information provided by SoleIQ. Individual results may vary.
-          </p>
         </div>
       </div>
     </footer>
