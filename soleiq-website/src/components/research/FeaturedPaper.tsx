@@ -34,7 +34,7 @@ export default function FeaturedPaper() {
     >
       <div className="flex flex-wrap items-center gap-2">
         <span
-          className="rounded px-1.5 py-0.5 text-[0.6875rem] font-medium uppercase tracking-widest text-white"
+          className="rounded px-1.5 py-0.5 text-[0.75rem] font-medium uppercase tracking-widest text-white"
           style={{ background: 'var(--clr-accent)' }}
         >
           SoleIQ
@@ -74,7 +74,7 @@ export default function FeaturedPaper() {
                 {author.name}
               </span>
               <span
-                className="block text-[0.6875rem] font-medium uppercase tracking-widest"
+                className="block text-[0.75rem] font-medium uppercase tracking-widest"
                 style={{ color: 'var(--clr-accent-2)' }}
               >
                 {author.credit}
@@ -118,7 +118,7 @@ export default function FeaturedPaper() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls={panelId}
-            className="mt-4 inline-flex items-center gap-1.5 text-[0.9375rem] font-medium"
+            className="tap mt-4 inline-flex items-center gap-1.5 text-[0.9375rem] font-medium"
             style={{ color: 'var(--clr-accent-2)' }}
           >
             {open ? 'Show less' : 'Read the full abstract'}

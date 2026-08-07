@@ -33,12 +33,12 @@ export default function Footer() {
           </div>
 
           <nav aria-label="Footer">
-            <ul className="grid grid-cols-2 gap-x-12 gap-y-3 sm:grid-cols-3 md:grid-cols-2">
+            <ul className="grid grid-cols-2 gap-x-12 gap-y-0 sm:grid-cols-3 sm:gap-y-3 md:grid-cols-2">
               {LINKS.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-sm text-clr-muted transition-colors hover:text-clr-text"
+                    className="tap inline-flex items-center text-sm text-clr-muted transition-colors hover:text-clr-text"
                   >
                     {link.label}
                   </a>
@@ -47,7 +47,7 @@ export default function Footer() {
               <li>
                 <a
                   href={`mailto:${CONTACT_EMAIL}`}
-                  className="text-sm text-clr-muted transition-colors hover:text-clr-text"
+                  className="tap inline-flex items-center text-sm text-clr-muted transition-colors hover:text-clr-text"
                 >
                   Email us
                 </a>
@@ -64,13 +64,13 @@ export default function Footer() {
             wound, an infection, sudden pain, or a change in the colour or
             temperature of a foot, seek medical care immediately.
           </p>
-          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 sm:mt-6">
             <p className="text-xs text-clr-muted">© {year} SoleIQ Health</p>
             {/* TODO(soleiq): point these at the real policy pages when they exist. */}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="text-xs text-clr-muted hover:text-clr-text">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="tap inline-flex items-center text-xs text-clr-muted hover:text-clr-text">
               Privacy
             </a>
-            <a href={`mailto:${CONTACT_EMAIL}`} className="text-xs text-clr-muted hover:text-clr-text">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="tap inline-flex items-center text-xs text-clr-muted hover:text-clr-text">
               Terms
             </a>
           </div>

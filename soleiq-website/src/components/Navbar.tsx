@@ -38,63 +38,75 @@ export default function Navbar() {
   const appLabel = signedIn ? 'Dashboard' : 'App'
 
   return (
-    <header
-      className="site-nav fixed inset-x-0 top-0 z-50 backdrop-blur-md"
-      data-scrolled={scrolled ? 'true' : 'false'}
-    >
-      <div className="shell flex h-[4.75rem] items-center">
-        {/* Left cluster: the lockup and the app entry point, deliberately on the
-            left. Both are flex items on one `items-center` row, and both are
-            given the same height, so they sit on a single optical line rather
-            than one riding below the other. */}
-        <div className="flex shrink-0 items-center gap-5">
-          <a
-            href="#top"
-            className="flex h-10 items-center rounded"
-            aria-label="SoleIQ Health, back to top"
-          >
-            <SoleIQLogo size={38} />
-          </a>
+    <>
+      <header
+        className="site-nav fixed inset-x-0 top-0 z-50 backdrop-blur-md"
+        data-scrolled={scrolled ? 'true' : 'false'}
+      >
+        <div className="shell flex h-[4.75rem] items-center gap-3">
+          {/* Left cluster: the lockup and the app entry point, deliberately on
+              the left. Both are flex items on one `items-center` row, and both
+              are given the same height, so they sit on a single optical line
+              rather than one riding below the other. */}
+          <div className="flex min-w-0 shrink items-center gap-3 sm:gap-5">
+            <a
+              href="#top"
+              className="tap flex h-10 min-w-0 items-center rounded"
+              aria-label="SoleIQ Health, back to top"
+            >
+              <SoleIQLogo size={38} />
+            </a>
 
-          <a
-            href={APP_URL}
-            className="btn btn-primary btn-sm h-10 shrink-0"
-            aria-label={
-              signedIn ? 'Open your SoleIQ dashboard' : 'Open the SoleIQ app'
-            }
+            <a
+              href={APP_URL}
+              className="btn btn-primary btn-sm h-10 shrink-0"
+              aria-label={
+                signedIn ? 'Open your SoleIQ dashboard' : 'Open the SoleIQ app'
+              }
+            >
+              {appLabel}
+              <ArrowUpRight size={15} aria-hidden="true" />
+            </a>
+          </div>
+
+          <nav className="ml-auto hidden md:block" aria-label="Primary">
+            <ul className="flex items-center gap-8">
+              {NAV_LINKS.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    className="text-[0.9375rem] text-clr-muted transition-colors hover:text-clr-text"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-clr-text md:hidden"
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-nav"
+            aria-label="Open menu"
           >
-            {appLabel}
-            <ArrowUpRight size={15} aria-hidden="true" />
-          </a>
+            <Menu size={22} aria-hidden="true" />
+          </button>
         </div>
+      </header>
 
-        <nav className="ml-auto hidden md:block" aria-label="Primary">
-          <ul className="flex items-center gap-8">
-            {NAV_LINKS.map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  className="text-[0.9375rem] text-clr-muted transition-colors hover:text-clr-text"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+      {/*
+        Deliberately a sibling of the header, not a child of it.
 
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-lg text-clr-text md:hidden"
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-nav"
-          aria-label="Open menu"
-        >
-          <Menu size={20} aria-hidden="true" />
-        </button>
-      </div>
-
+        The header carries `backdrop-blur`, and an element with a backdrop
+        filter becomes the containing block for its `position: fixed`
+        descendants. Nested inside it, this sheet's `inset-0` resolved against
+        the 76px-tall bar instead of the viewport: it was drawn 76px high, its
+        background covered only that strip, and every link below spilled out
+        over the page with nothing behind it.
+      */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -103,41 +115,61 @@ export default function Navbar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 top-0 z-50 bg-clr-bg md:hidden"
+            className="mobile-sheet md:hidden"
           >
-            <div className="shell flex h-[4.5rem] items-center">
-              <SoleIQLogo size={32} />
+            <div className="shell flex h-[4.75rem] shrink-0 items-center">
+              <SoleIQLogo size={38} />
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-lg text-clr-text"
+                className="-mr-2 ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg text-clr-text"
                 aria-label="Close menu"
               >
-                <X size={20} aria-hidden="true" />
+                <X size={22} aria-hidden="true" />
               </button>
             </div>
-            <nav className="shell pt-6" aria-label="Primary, mobile">
-              <ul className="flex flex-col gap-1">
+
+            {/* Scrolls on its own if a short screen cannot hold the list. */}
+            <nav
+              className="shell flex min-h-0 flex-1 flex-col overflow-y-auto pb-8 pt-4"
+              aria-label="Primary, mobile"
+            >
+              <ul className="flex flex-col">
                 {NAV_LINKS.map((link) => (
                   <li key={link.href}>
                     <a
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
-                      className="block border-b border-clr-border py-4 font-display text-2xl tracking-tight text-clr-text"
+                      className="flex items-center justify-between gap-4 border-b border-clr-border py-5 font-display text-[1.625rem] tracking-tight text-clr-text"
                     >
                       {link.label}
+                      <ArrowUpRight
+                        size={18}
+                        className="shrink-0 text-clr-muted"
+                        aria-hidden="true"
+                      />
                     </a>
                   </li>
                 ))}
               </ul>
-              <a href={APP_URL} className="btn btn-primary mt-8 w-full">
+
+              <a
+                href={APP_URL}
+                onClick={() => setMobileOpen(false)}
+                className="btn btn-primary mt-8 w-full"
+              >
                 {appLabel}
                 <ArrowUpRight size={16} aria-hidden="true" />
               </a>
+
+              <p className="mt-6 text-sm leading-relaxed text-clr-muted">
+                Screening and decision support for the diabetic foot. Not a
+                diagnostic device.
+              </p>
             </nav>
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   )
 }

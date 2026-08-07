@@ -76,7 +76,7 @@ export default function Hero() {
         transition={{ duration: 0.6, delay: 0.35 }}
         className="relative z-10 shell mt-16 md:mt-24"
       >
-        <a href="#narrative" className="scroll-cue" data-cursor-label="Scroll">
+        <a href="#narrative" className="scroll-cue tap" data-cursor-label="Scroll">
           <span className="scroll-cue-arrow" aria-hidden="true">
             <ArrowDown size={22} strokeWidth={2} />
           </span>

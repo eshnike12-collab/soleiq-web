@@ -211,6 +211,39 @@ p {
     color: var(--clr-accent-2);
   }
 
+  /*
+    A finger is not a mouse pointer.
+
+    Every standalone control gets a 44px hit area, which is about the smallest
+    thing most people can reliably tap. Keyed on width as well as pointer type
+    on purpose: plenty of touch devices report `pointer: fine`, and a phone is
+    a phone whatever it claims about its input. `.tap` is for the controls that
+    are not buttons — a disclosure, a scroll cue, a tab.
+  */
+  @media (max-width: 767px), (pointer: coarse) {
+    .btn,
+    .tap {
+      min-height: 44px;
+    }
+  }
+
+  /* The mobile menu, as a full-screen sheet.
+     `100dvh` rather than `100vh` so the browser's own collapsing toolbars do
+     not leave the last item under the address bar on iOS, and the safe-area
+     inset so the App button clears the home indicator. */
+  .mobile-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    background: var(--clr-bg);
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    overscroll-behavior: contain;
+  }
+
   /* The arrow on its own — no button around it. */
   .scroll-cue-arrow {
     display: inline-flex;
@@ -264,6 +297,9 @@ p {
     left: 0.75rem;
     top: -4rem;
     z-index: 100;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     background: var(--clr-accent);
     color: #fff;
     padding: 0.625rem 1rem;

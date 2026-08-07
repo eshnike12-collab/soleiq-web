@@ -150,7 +150,7 @@ export default function Journeys() {
                 aria-selected={selected}
                 aria-controls={`${baseId}-panel-${key}`}
                 onClick={() => setSetting(key)}
-                className="rounded-md px-5 py-2 text-sm font-medium transition-colors"
+                className="tap inline-flex items-center rounded-md px-5 py-2 text-sm font-medium transition-colors"
                 style={{
                   background: selected ? 'var(--clr-accent)' : 'transparent',
                   color: selected ? '#fff' : 'var(--clr-text-muted)',
