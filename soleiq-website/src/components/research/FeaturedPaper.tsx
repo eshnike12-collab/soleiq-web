@@ -55,7 +55,7 @@ export default function FeaturedPaper() {
       </p>
 
       {/* Authors, as they are credited on the paper itself. Each links to their
-          own profile where there is one; the cursor picks up an arrow over it. */}
+          own profile where there is one. */}
       <ul className="mt-8 flex flex-wrap gap-x-12 gap-y-6">
         {paper.authors.map((author) => {
           const profile = PROFILE_LINKS[author.name]
@@ -107,7 +107,6 @@ export default function FeaturedPaper() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="author-link flex items-center gap-4"
-                  data-cursor-icon="arrow"
                   aria-label={`${author.name} on LinkedIn`}
                 >
                   {body}

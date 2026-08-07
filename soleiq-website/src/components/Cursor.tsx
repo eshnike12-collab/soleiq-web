@@ -6,6 +6,24 @@ type CursorState = 'default' | 'text' | 'link' | 'canvas' | 'pressed'
 const TEXT_SELECTOR = 'h1,h2,h3,h4,p,li,dt,dd,blockquote,label,figcaption'
 const LINK_SELECTOR = 'a,button,[role="button"],[role="tab"],input,textarea,select,summary'
 
+/**
+ * Does following this take you off the site?
+ *
+ * Worked out from the element rather than declared on it, so a link added later
+ * — or one built at runtime, like a search result — is marked without anyone
+ * remembering to. `href` is read through the anchor's own resolved `hostname`,
+ * which handles relative URLs for free. `mailto:` and `tel:` are left out: they
+ * hand off to another app rather than navigating anywhere, and an arrow would
+ * be saying the wrong thing.
+ */
+function leavesTheSite(el: HTMLElement): boolean {
+  if (el.getAttribute('target') === '_blank') return true
+  const a = el as HTMLAnchorElement
+  if (!a.href || typeof a.hostname !== 'string' || !a.hostname) return false
+  if (a.protocol !== 'http:' && a.protocol !== 'https:') return false
+  return a.hostname !== window.location.hostname
+}
+
 const LERP = 0.15
 /** Diameter of the lit patch of grid, in px. */
 const LIGHT = 620
@@ -107,9 +125,10 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
           labelRef.current.textContent = custom
           labelRef.current.style.opacity = custom ? '1' : '0'
         }
-        // A link can also ask for a mark inside the ring instead of a word —
-        // an arrow, for something that opens away from this page.
-        box.dataset.icon = link.dataset.cursorIcon ?? ''
+        // A mark inside the ring instead of a word. Anything that leaves the
+        // site gets the arrow automatically; `data-cursor-icon` overrides that
+        // where a link needs to say something else.
+        box.dataset.icon = link.dataset.cursorIcon ?? (leavesTheSite(link) ? 'arrow' : '')
         return
       }
       if (el.closest('[data-cursor="canvas"]')) {
