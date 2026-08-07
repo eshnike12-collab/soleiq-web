@@ -1,5 +1,12 @@
+import { Instagram, Linkedin } from 'lucide-react'
 import SoleIQLogo from './SoleIQLogo'
 import { APP_URL, useAppSession } from '../hooks/useAppSession'
+import { SOCIAL } from '../data/social'
+
+const SOCIAL_ICON: Record<string, typeof Instagram> = {
+  Instagram,
+  LinkedIn: Linkedin,
+}
 
 const LINKS = [
   { label: 'How it works', href: '#how-it-works' },
@@ -30,6 +37,25 @@ export default function Footer() {
             <a href={APP_URL} className="btn btn-secondary btn-sm mt-6">
               {signedIn ? 'Dashboard' : 'Open the app'}
             </a>
+
+            <ul className="mt-8 flex items-center gap-2">
+              {SOCIAL.map(({ label, href }) => {
+                const Icon = SOCIAL_ICON[label]
+                return (
+                  <li key={label}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="social-link"
+                      aria-label={`SoleIQ Health on ${label}`}
+                    >
+                      {Icon && <Icon size={19} aria-hidden="true" />}
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
 
           <nav aria-label="Footer">

@@ -244,6 +244,25 @@ p {
     overscroll-behavior: contain;
   }
 
+  /* Social icons: a quiet outlined square, sized to be tappable everywhere. */
+  .social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--clr-border);
+    color: var(--clr-text-muted);
+    transition: color 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+  }
+
+  .social-link:hover {
+    color: var(--clr-accent);
+    border-color: var(--clr-border-strong);
+    background: var(--clr-surface);
+  }
+
   /* The arrow on its own — no button around it. */
   .scroll-cue-arrow {
     display: inline-flex;

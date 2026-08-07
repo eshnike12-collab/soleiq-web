@@ -1,4 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
+import { Linkedin } from 'lucide-react'
+import { PROFILE_LINKS } from '../data/social'
 
 /**
  * The team.
@@ -109,6 +111,18 @@ export default function About() {
                 <p className="mt-3 max-w-sm text-[0.9375rem] leading-relaxed text-clr-muted">
                   {member.line}
                 </p>
+                {PROFILE_LINKS[member.name] && (
+                  <a
+                    href={PROFILE_LINKS[member.name]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="tap mt-4 inline-flex items-center gap-2 text-[0.9375rem] font-medium text-clr-muted transition-colors hover:text-clr-accent"
+                    aria-label={`${member.name} on LinkedIn`}
+                  >
+                    <Linkedin size={17} aria-hidden="true" />
+                    LinkedIn
+                  </a>
+                )}
               </li>
             ))}
           </ul>
