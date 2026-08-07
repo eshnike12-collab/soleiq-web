@@ -64,7 +64,11 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 0.61, 0.36, 1] }}
           className="mt-12 flex flex-wrap items-center gap-4"
         >
-          <a href={APP_URL} className="btn btn-primary" data-cursor-label="Open">
+          {/* No `data-cursor-label` here: this one leaves the site, so the
+              cursor already shows the arrow, and a word beside it just
+              collided with it. The scroll cue below keeps its label — that is
+              an in-page anchor and gets no arrow. */}
+          <a href={APP_URL} className="btn btn-primary">
             {signedIn ? 'Open your dashboard' : 'Start a screening'}
             <ArrowUpRight size={16} aria-hidden="true" />
           </a>
