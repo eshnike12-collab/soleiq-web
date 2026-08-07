@@ -652,6 +652,15 @@ async function buildLogo(count: number): Promise<BuiltTarget> {
     size: 900,
     font: '600 190px "Inter Tight", Inter, system-ui, sans-serif',
   })
+  // Rasterised as its own line rather than as part of "SoleIQ Health".
+  // A word a third of the height, sampled from the same raster as the big one,
+  // arrives with a third of the pixels to place particles on and comes out as
+  // mush. Its own mask gets its own resolution.
+  const sub = maskFromText('Health', {
+    size: 900,
+    font: '500 190px "Inter Tight", Inter, system-ui, sans-serif',
+    letterSpacing: '18px',
+  })
 
   // The artwork is light line-work on a dark navy field, so it is sampled by
   // luminance rather than alpha. If it cannot be loaded the wordmark alone still
@@ -693,13 +702,27 @@ async function buildLogo(count: number): Promise<BuiltTarget> {
           sampleMask(mark, n, { rng, width: 2.1, depth: 0.13, offset: [0, 0.55, 0] }),
       },
       {
-        weight: 0.32,
+        weight: 0.29,
         // Top of the ramp, which on the logo scene is white.
         tone: 1,
         toneJitter: 0.03,
         ai: 0,
         build: (n) =>
           sampleMask(word, n, { rng, width: 2.4, depth: 0.05, offset: [0, -1.0, 0] }),
+      },
+      {
+        // "Health", set under the wordmark on the centre line.
+        //
+        // Stacked rather than alongside: the composition is already a vertical
+        // one, and a small word set beside a large one leaves the whole thing
+        // hanging off to one side. Kept at the white end of the ramp with the
+        // wordmark, so the colour wave runs through the mark alone.
+        weight: 0.07,
+        tone: 0.98,
+        toneJitter: 0.03,
+        ai: 0,
+        build: (n) =>
+          sampleMask(sub, n, { rng, width: 0.98, depth: 0.04, offset: [0, -1.62, 0] }),
       },
     ]),
     1.6

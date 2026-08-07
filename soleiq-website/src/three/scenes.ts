@@ -46,6 +46,13 @@ export interface Scene {
    * being large.
    */
   centred?: boolean
+  /**
+   * Lets this scene's copy run past the usual reading column, on one line.
+   *
+   * The column exists so a paragraph is a comfortable width. A single short
+   * line is not a paragraph, and breaking it in two makes it look like one.
+   */
+  wideCopy?: boolean
   /** Background gradient, top then bottom. */
   bg: [string, string]
   /**
@@ -173,6 +180,7 @@ export const SCENES: Scene[] = [
     hold: 1,
     x: 0.5,
     centred: true,
+    wideCopy: true,
     bg: ['#090e44', '#020520'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#ffffff', hot: '#ffffff', ai: '#26f7fd' },
     additive: true,

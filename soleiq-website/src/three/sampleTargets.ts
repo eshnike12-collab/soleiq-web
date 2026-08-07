@@ -299,7 +299,11 @@ export function maskFromText(
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')!
   const font = opts.font ?? `600 160px "Inter Tight", Inter, sans-serif`
+  // `letterSpacing` is not supported everywhere; where it is not, the text
+  // simply renders at its natural tracking.
+  const tracking = opts.letterSpacing
   ctx.font = font
+  if (tracking) ctx.letterSpacing = tracking
   const metrics = ctx.measureText(text)
   canvas.width = size
   canvas.height = Math.max(
@@ -308,6 +312,7 @@ export function maskFromText(
   )
   const c2 = canvas.getContext('2d')!
   c2.font = font
+  if (tracking) c2.letterSpacing = tracking
   c2.fillStyle = '#fff'
   c2.textAlign = 'center'
   c2.textBaseline = 'middle'

@@ -394,14 +394,22 @@ export default function ParticleNarrative() {
                 className="scene-copy shell absolute inset-x-0 bottom-[8vh] md:bottom-[12vh]"
                 style={{ opacity: 0, visibility: 'hidden', willChange: 'opacity, transform' }}
               >
-                <div className="max-w-xl">
+                <div className={scene.wideCopy ? 'max-w-none' : 'max-w-xl'}>
                   {scene.kicker && <p className="scene-kicker eyebrow">{scene.kicker}</p>}
                   {scene.id !== 'logo' && (
                     <h2 className="mt-4 text-[clamp(1.6rem,3.4vw,2.6rem)] font-medium tracking-tightest">
                       {scene.headline}
                     </h2>
                   )}
-                  <p className="scene-body mt-5 text-[1rem] leading-relaxed md:text-[1.0625rem]">
+                  <p
+                    className={
+                      scene.wideCopy
+                        ? // One line from `md` up, where there is room for it.
+                          // Below that no size would fit, so it wraps as normal.
+                          'scene-body mt-5 text-[0.9375rem] leading-relaxed md:whitespace-nowrap md:text-[0.9375rem]'
+                        : 'scene-body mt-5 text-[1rem] leading-relaxed md:text-[1.0625rem]'
+                    }
+                  >
                     {scene.body}
                   </p>
                   {scene.note && <p className="scene-note mt-3 text-xs">{scene.note}</p>}
