@@ -365,6 +365,38 @@ function buildCapture(count: number, shot = -1): BuiltTarget {
             }),
         }
       }),
+      // The flash on whichever frame is being taken.
+      //
+      // Brightness under additive blending is density, and the four frames
+      // cannot lend each other particles — their shares are what tie a
+      // particle to a frame. So this is a part of its own, a constant size
+      // that simply moves to the lit frame, laying a tight bright core over
+      // the softer edge already there. It moves, so it is kept out of the
+      // normalise measurement; otherwise the whole picture would shuffle
+      // after it every time the light changed frames.
+      {
+        weight: shot < 0 ? 0.0001 : 0.1,
+        tone: 1,
+        toneJitter: 0,
+        ai: 0,
+        label: 'flash',
+        build: (n) => {
+          if (shot < 0) return new Float32Array(n * 3)
+          const [fx, fy] = [
+            [-0.28, PHONE_Y + 0.42],
+            [0.28, PHONE_Y + 0.42],
+            [-0.28, PHONE_Y - 0.38],
+            [0.28, PHONE_Y - 0.38],
+          ][shot]
+          return frameOutline(n, rng, {
+            w: 0.48,
+            h: 0.655,
+            corner: 0.2,
+            stroke: 0.016,
+            position: [fx, fy, 0.84],
+          })
+        },
+      },
       // The beam from the phone down to the foot.
       {
         weight: 0.09,
@@ -382,7 +414,8 @@ function buildCapture(count: number, shot = -1): BuiltTarget {
           ),
       },
     ]),
-    1.8
+    1.8,
+    { ignore: 'flash' }
   )
 }
 
