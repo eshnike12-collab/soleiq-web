@@ -431,15 +431,22 @@ function buildAnalysis(count: number): BuiltTarget {
   )
 }
 
+/** The path the record takes from the phone to the dashboard. */
+const STREAM = (u: number): [number, number, number] => [
+  1.95 - 2.5 * u,
+  -0.35 + 1.4 * Math.pow(u, 1.6),
+  0.35 + Math.sin(u * Math.PI) * 0.55,
+]
+
 /**
- * `flow` slides the data current along its own path, 0 to 1.
+ * `flow` is where the travelling packet has got to along the current, 0 to 1,
+ * or -1 for the still version with no packet at all.
  *
- * Each particle keeps its place in the queue and moves forward by one gap over
- * the loop, so the current travels without any of them jumping the line. As
- * with the timeline, every other part is built from the same seed in the same
- * order and so does not move at all between keyframes.
+ * Only the packet moves. Every other part is built from the same seed in the
+ * same order across keyframes, so the laptop, the record, the current itself
+ * and the two clinicians land on identical coordinates and stay put.
  */
-function buildClinician(count: number, flow = 0): BuiltTarget {
+function buildClinician(count: number, flow = -1): BuiltTarget {
   const rng = makeRng(53)
   return normalize(
     compose(count, [
@@ -509,29 +516,26 @@ function buildClinician(count: number, flow = 0): BuiltTarget {
             rotation: [-0.1, -0.35, 0.06],
           }),
       },
-      // The data current streaming from phone to dashboard.
+      // The data current streaming from phone to dashboard. It stays where it
+      // is; what moves along it is the courier below.
       {
-        weight: 0.18,
+        weight: 0.16,
         tone: 0.9,
         ai: 1,
+        build: (n) => sampleCurve((t) => STREAM(t), n, { rng, radius: 0.16 }),
+      },
+      // One packet, carried along the current and back again. White rather
+      // than the current's blue, so it reads as a thing travelling the line
+      // instead of a brighter piece of the line.
+      {
+        weight: flow < 0 ? 0.0001 : 0.035,
+        tone: 1,
+        toneJitter: 0,
+        ai: 0,
         build: (n) => {
-          // Packets on a fixed queue rather than a scatter along the path: one
-          // gap of travel over the whole loop keeps the current moving without
-          // any particle overtaking the one in front.
-          const PACKETS = 26
-          const GAP = 1 / PACKETS
-          const out = new Float32Array(n * 3)
-          for (let i = 0; i < n; i++) {
-            const slot = (rng() * PACKETS) | 0
-            const u = (slot * GAP + flow * GAP) % 1
-            const x = 1.95 - 2.5 * u
-            const y = -0.35 + 1.4 * Math.pow(u, 1.6)
-            const z = 0.35 + Math.sin(u * Math.PI) * 0.55
-            out[i * 3] = x + (rng() - 0.5) * 0.16
-            out[i * 3 + 1] = y + (rng() - 0.5) * 0.16
-            out[i * 3 + 2] = z + (rng() - 0.5) * 0.16
-          }
-          return out
+          if (flow < 0) return new Float32Array(n * 3)
+          const [x, y, z] = STREAM(flow)
+          return blob(n, rng, [x, y, z], 0.1)
         },
       },
       // The two clinicians it lands with. The scene is called "handover", and a
@@ -1067,7 +1071,9 @@ const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarge
   // One keyframe per screening, so the marker walks the curve's own segments
   // instead of cutting the chord a two-frame morph would give it.
   timeline: (n, t) => buildTimeline(n, t),
-  // The current runs phone to dashboard and back again.
+  // One packet travels the current, phone to dashboard and back. Five frames:
+  // the path bends, and a straight morph between its ends would take the
+  // packet off the line it is supposed to be running along.
   clinician: (n, t) => buildClinician(n, t),
   // Horizon to zenith to horizon: three frames, so the disc travels an arc
   // rather than the straight chord two frames would give it.
@@ -1076,7 +1082,7 @@ const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarge
 }
 
 /** How many keyframes a composition needs to describe its motion. */
-export const KEYFRAMES: Partial<Record<TargetKey, number>> = { city: 3, timeline: 6 }
+export const KEYFRAMES: Partial<Record<TargetKey, number>> = { city: 3, timeline: 6, clinician: 5 }
 
 export function buildPhased(key: TargetKey, count: number, t: number): BuiltTarget | null {
   const make = PHASED[key]
