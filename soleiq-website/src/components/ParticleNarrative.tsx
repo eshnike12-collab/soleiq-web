@@ -293,6 +293,7 @@ export default function ParticleNarrative() {
         // than having to be inferred from how it looks.
         data-tier={caps.tier}
         data-particles={caps.particleCount}
+        className="relative"
         style={{ height }}
       >
         <div
@@ -419,6 +420,17 @@ export default function ParticleNarrative() {
             ))}
           </div>
         </div>
+
+        {/* Carries the dark sequence back out into the white page, the mirror
+            of the fade the hero uses on the way in. Sits at the foot of the
+            section, so it only meets the panel as the panel scrolls away. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[38vh]"
+          style={{
+            background: `linear-gradient(180deg, ${SCENES[SCENES.length - 1].bg[1]}00 0%, var(--clr-bg) 100%)`,
+          }}
+        />
       </section>
     </>
   )

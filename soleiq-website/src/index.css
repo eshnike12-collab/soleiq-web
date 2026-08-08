@@ -854,11 +854,18 @@ html.has-custom-cursor label {
   navy, where "darker" would mean harder to read.
 */
 .cursor-dim {
-  transition: filter 0.2s ease;
+  transition: filter 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Grows from its own left edge, so a paragraph swells in place rather than
+     drifting sideways out of its column. */
+  transform-origin: left center;
 }
 
 html:not([data-tone='dark']) .cursor-dim {
   filter: brightness(0.5);
+  /* Held to 6%. The ask was 10-20%, but a paragraph scaled that far overlaps
+     the line beneath it — transform does not reflow, so the neighbours do not
+     move out of the way. At 6% it reads as a lift without colliding. */
+  transform: scale(1.06);
 }
 
 /* A filter applies to everything inside, so any block carrying a portrait, an

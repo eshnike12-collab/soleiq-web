@@ -224,6 +224,18 @@ function Shape({
   const points = useRef<THREE.Points>(null)
   const { camera } = useThree()
   const mouse = useRef(new THREE.Vector3(0, 0, 999))
+  /** No dent until a real pointer has moved — see ParticleField for why. */
+  const pointerSeen = useRef(false)
+  const snapPointer = useRef(false)
+
+  useEffect(() => {
+    const seen = () => {
+      pointerSeen.current = true
+      snapPointer.current = true
+    }
+    window.addEventListener('pointermove', seen, { once: true, passive: true })
+    return () => window.removeEventListener('pointermove', seen)
+  }, [])
 
   const geometry = useMemo(() => {
     const rng = makeRng(17)
@@ -361,7 +373,7 @@ function Shape({
       camera.lookAt(0, 0, 0)
       // A constant-sized dent on screen, whatever distance the fit landed on.
       u.uMouseRadius.value = fit.halfH * 0.5
-      u.uMouseStrength.value = pushStrength(fit.halfH)
+      u.uMouseStrength.value = pointerSeen.current ? pushStrength(fit.halfH) : 0
 
       // A slow, shallow turn: enough to read as three-dimensional, not enough
       // to show the composition edge-on.
@@ -373,7 +385,12 @@ function Shape({
       scratch.target.copy(camera.position).addScaledVector(scratch.dir, dist)
       points.current.updateWorldMatrix(true, false)
       points.current.worldToLocal(scratch.target)
-      mouse.current.lerp(scratch.target, 1 - Math.pow(0.002, dt))
+      if (snapPointer.current) {
+        mouse.current.copy(scratch.target)
+        snapPointer.current = false
+      } else {
+        mouse.current.lerp(scratch.target, 1 - Math.pow(0.002, dt))
+      }
       u.uMouse.value.copy(mouse.current)
     }
 

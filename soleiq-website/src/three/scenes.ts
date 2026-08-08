@@ -13,6 +13,10 @@ export type TargetKey =
   | 'clinician'
   | 'timeline'
   | 'logo'
+  // Section compositions, outside the scroll narrative.
+  | 'village'
+  | 'city'
+  | 'paper'
 
 export interface Scene {
   id: string

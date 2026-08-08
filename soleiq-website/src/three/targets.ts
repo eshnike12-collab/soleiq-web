@@ -729,6 +729,286 @@ async function buildLogo(count: number): Promise<BuiltTarget> {
   )
 }
 
+
+/* ── Section compositions ─────────────────────────────────────────────────── */
+/*
+ * These three are not part of the scroll narrative. They sit beside the copy in
+ * the "In practice" and "Research" sections, each one a picture of the thing
+ * that section is about. Two of them animate, and both do it through the morph
+ * the shader already has: a target pair and a progress value, looped. Nothing
+ * new was added to the vertex shader for this.
+ */
+
+/** A cottage: pitched roof, chimney, door, one lit window. */
+function cottage(n: number, rng: () => number, at: [number, number]): Target {
+  const [cx, cy] = at
+  const out = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    const r = rng()
+    let x: number
+    let y: number
+    if (r < 0.34) {
+      // Walls, as an outline so the house reads as drawn rather than solid.
+      const t = rng() * 4
+      const w = 0.62
+      const h = 0.46
+      if (t < 1) { x = -w / 2 + (t % 1) * w; y = -h / 2 }
+      else if (t < 2) { x = -w / 2 + (t % 1) * w; y = h / 2 }
+      else if (t < 3) { x = -w / 2; y = -h / 2 + (t % 1) * h }
+      else { x = w / 2; y = -h / 2 + (t % 1) * h }
+    } else if (r < 0.6) {
+      // Roof: two slopes meeting at a ridge.
+      const t = rng()
+      const side = rng() < 0.5 ? -1 : 1
+      x = side * (0.38 - t * 0.38)
+      y = 0.23 + t * 0.3
+    } else if (r < 0.68) {
+      // Chimney.
+      x = 0.2 + (rng() - 0.5) * 0.07
+      y = 0.4 + rng() * 0.16
+    } else if (r < 0.82) {
+      // Door.
+      const t = rng() * 3
+      if (t < 1) { x = -0.1; y = -0.23 + (t % 1) * 0.24 }
+      else if (t < 2) { x = 0.02; y = -0.23 + (t % 1) * 0.24 }
+      else { x = -0.1 + (t % 1) * 0.12; y = 0.01 }
+    } else {
+      // Window, filled — the one lit thing in the picture.
+      x = 0.12 + (rng() - 0.5) * 0.16
+      y = -0.02 + (rng() - 0.5) * 0.16
+    }
+    out[i * 3] = cx + x
+    out[i * 3 + 1] = cy + y
+    out[i * 3 + 2] = (rng() - 0.5) * 0.05
+  }
+  return out
+}
+
+/** A bare tree beside the house: trunk and a few boughs. */
+function tree(n: number, rng: () => number, at: [number, number], scale = 1): Target {
+  const [cx, cy] = at
+  const out = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    const r = rng()
+    let x: number
+    let y: number
+    if (r < 0.34) {
+      x = (rng() - 0.5) * 0.03
+      y = -0.28 + rng() * 0.42
+    } else {
+      // Boughs fanning from the top of the trunk.
+      const branch = Math.floor(rng() * 5)
+      const angle = -0.9 + branch * 0.45
+      const t = rng()
+      x = Math.sin(angle) * t * 0.3
+      y = 0.14 + Math.cos(angle) * t * 0.32
+    }
+    out[i * 3] = cx + x * scale
+    out[i * 3 + 1] = cy + y * scale
+    out[i * 3 + 2] = (rng() - 0.5) * 0.06
+  }
+  return out
+}
+
+/** Leaves, scattered through a band of air. `drop` slides the whole fall down. */
+function leaves(n: number, rng: () => number, drop: number): Target {
+  const out = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    // Each leaf keeps its own column and its own phase, so the fall staggers
+    // instead of the whole set moving as one sheet.
+    const col = rng()
+    const phase = rng()
+    const fall = (phase + drop) % 1
+    const x = -0.95 + col * 1.9 + Math.sin((fall + phase) * Math.PI * 3) * 0.09
+    const y = 0.72 - fall * 1.5
+    // A leaf is a few particles clustered, not a point.
+    out[i * 3] = x + (rng() - 0.5) * 0.035
+    out[i * 3 + 1] = y + (rng() - 0.5) * 0.025
+    out[i * 3 + 2] = (rng() - 0.5) * 0.12
+  }
+  return out
+}
+
+/** The rural setting: a cottage, two trees, ground, and leaves coming down. */
+function buildVillage(count: number, drop = 0): BuiltTarget {
+  const rng = makeRng(311)
+  return normalize(
+    compose(count, [
+      { weight: 0.3, tone: 0.62, toneJitter: 0.18, build: (n) => cottage(n, rng, [0.12, -0.05]) },
+      { weight: 0.13, tone: 0.42, build: (n) => tree(n, rng, [-0.66, -0.06], 1.05) },
+      { weight: 0.1, tone: 0.38, build: (n) => tree(n, rng, [0.78, -0.14], 0.78) },
+      {
+        weight: 0.14,
+        tone: 0.3,
+        build: (n) =>
+          sampleCurve((t) => [(t - 0.5) * 2.1, -0.44 + Math.sin(t * 7) * 0.012, 0], n, {
+            rng,
+            radius: 0.014,
+          }),
+      },
+      { weight: 0.33, tone: 0.9, ai: 0.55, build: (n) => leaves(n, rng, drop) },
+    ]),
+    1.25
+  )
+}
+
+/** A skyline of towers with lit windows. */
+function skyline(n: number, rng: () => number): Target {
+  const towers = [
+    [-0.86, 0.44, 0.2],
+    [-0.58, 0.62, 0.22],
+    [-0.3, 0.34, 0.24],
+    [0.0, 0.78, 0.22],
+    [0.28, 0.5, 0.2],
+    [0.56, 0.66, 0.24],
+    [0.86, 0.38, 0.2],
+  ]
+  const out = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    const t = towers[(rng() * towers.length) | 0]
+    const [cx, h, w] = t
+    const base = -0.44
+    let x: number
+    let y: number
+    if (rng() < 0.45) {
+      // Outline: sides and roof, so the towers read as buildings not blocks.
+      const e = rng() * 3
+      if (e < 1) { x = cx - w / 2; y = base + (e % 1) * h }
+      else if (e < 2) { x = cx + w / 2; y = base + (e % 1) * h }
+      else { x = cx - w / 2 + (e % 1) * w; y = base + h }
+    } else {
+      // Windows on a grid inside the tower.
+      const cols = 3
+      const rowsN = Math.max(2, Math.round(h / 0.1))
+      const c = (rng() * cols) | 0
+      const r = (rng() * rowsN) | 0
+      x = cx - w / 2 + (w / cols) * (c + 0.5) + (rng() - 0.5) * 0.028
+      y = base + (h / rowsN) * (r + 0.5) + (rng() - 0.5) * 0.028
+    }
+    out[i * 3] = x
+    out[i * 3 + 1] = y
+    out[i * 3 + 2] = (rng() - 0.5) * 0.07
+  }
+  return out
+}
+
+/** Stars over the city, and the disc that rises through them. */
+function nightSky(n: number, rng: () => number, sunY: number): Target {
+  const out = new Float32Array(n * 3)
+  const disc = Math.floor(n * 0.4)
+  for (let i = 0; i < n; i++) {
+    if (i < disc) {
+      // The sun/moon, one filled circle that travels with the hour.
+      const a = rng() * Math.PI * 2
+      const r = 0.17 * Math.sqrt(rng())
+      out[i * 3] = 0.66 + Math.cos(a) * r
+      out[i * 3 + 1] = sunY + Math.sin(a) * r
+      out[i * 3 + 2] = (rng() - 0.5) * 0.05
+    } else {
+      out[i * 3] = -1 + rng() * 2
+      out[i * 3 + 1] = 0.42 + rng() * 0.52
+      out[i * 3 + 2] = (rng() - 0.5) * 0.16
+    }
+  }
+  return out
+}
+
+/** The urban setting: a skyline under a sky that keeps its own hours. */
+function buildCity(count: number, sunY = 0.8): BuiltTarget {
+  const rng = makeRng(733)
+  return normalize(
+    compose(count, [
+      { weight: 0.56, tone: 0.6, toneJitter: 0.3, build: (n) => skyline(n, rng) },
+      { weight: 0.26, tone: 0.95, ai: 0.5, build: (n) => nightSky(n, rng, sunY) },
+      {
+        weight: 0.18,
+        tone: 0.28,
+        build: (n) =>
+          sampleCurve((t) => [(t - 0.5) * 2.2, -0.46, 0], n, { rng, radius: 0.013 }),
+      },
+    ]),
+    1.25
+  )
+}
+
+/**
+ * A sheet of paper with a pen on it. `written` is how far down the page the
+ * ink has reached, 0 to 1: at 0 the sheet is blank and the pen is at the top.
+ *
+ * Lines that have not been written yet are parked underneath the pen nib
+ * rather than hidden, so the morph between two of these reads as ink leaving
+ * the pen and settling onto the page.
+ */
+function buildPaper(count: number, written = 0): BuiltTarget {
+  const rng = makeRng(419)
+  const SHEET_W = 1.06
+  const SHEET_H = 1.44
+  const LINES = 11
+  const top = SHEET_H / 2 - 0.16
+  const gap = (SHEET_H - 0.34) / (LINES - 1)
+  // The nib sits at the last line that has been written.
+  const nibY = top - written * (LINES - 1) * gap
+  const nibX = -SHEET_W / 2 + 0.12 + written * 0.1
+
+  return normalize(
+    compose(count, [
+      {
+        // The sheet edge.
+        weight: 0.2,
+        tone: 0.5,
+        build: (n) => frameOutline(n, rng, { w: SHEET_W, h: SHEET_H, position: [0, 0, 0], corner: 0.02 }),
+      },
+      {
+        // The ruled lines. Everything past the nib is still in the pen.
+        weight: 0.5,
+        tone: 0.16,
+        toneJitter: 0.06,
+        build: (n) => {
+          const out = new Float32Array(n * 3)
+          for (let i = 0; i < n; i++) {
+            const line = (rng() * LINES) | 0
+            const y = top - line * gap
+            const done = line / (LINES - 1) <= written
+            // Last line of a page is short, like a paragraph ending.
+            const full = line % 4 === 3 ? 0.58 : 0.82
+            if (done) {
+              out[i * 3] = -SHEET_W / 2 + 0.1 + rng() * SHEET_W * full
+              out[i * 3 + 1] = y + (rng() - 0.5) * 0.012
+              out[i * 3 + 2] = (rng() - 0.5) * 0.01
+            } else {
+              out[i * 3] = nibX + (rng() - 0.5) * 0.03
+              out[i * 3 + 1] = nibY + 0.05 + (rng() - 0.5) * 0.03
+              out[i * 3 + 2] = (rng() - 0.5) * 0.02
+            }
+          }
+          return out
+        },
+      },
+      {
+        // The pen, angled over the page, travelling down it as it writes.
+        weight: 0.3,
+        tone: 0.86,
+        ai: 0.4,
+        build: (n) => {
+          const out = new Float32Array(n * 3)
+          for (let i = 0; i < n; i++) {
+            const t = rng()
+            // Nib at the writing point, barrel up and to the right.
+            const x = nibX + t * 0.46
+            const y = nibY + t * 0.62
+            const taper = 0.006 + t * 0.022
+            out[i * 3] = x + (rng() - 0.5) * taper
+            out[i * 3 + 1] = y + (rng() - 0.5) * taper
+            out[i * 3 + 2] = 0.06 + (rng() - 0.5) * 0.04
+          }
+          return out
+        },
+      },
+    ]),
+    1.25
+  )
+}
+
 /* ── Public API ───────────────────────────────────────────────────────────── */
 
 const BUILDERS: Record<TargetKey, (count: number) => BuiltTarget | Promise<BuiltTarget>> = {
@@ -738,6 +1018,32 @@ const BUILDERS: Record<TargetKey, (count: number) => BuiltTarget | Promise<Built
   clinician: buildClinician,
   timeline: buildTimeline,
   logo: buildLogo,
+  village: (n) => buildVillage(n),
+  city: (n) => buildCity(n),
+  paper: (n) => buildPaper(n),
+}
+
+/**
+ * A keyframe of one of the animated section compositions.
+ *
+ * `t` is 0 or 1: the two ends the loop morphs between. Anything else falls
+ * back to the plain builder, which is the still version of the same picture.
+ */
+const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarget>> = {
+  // Leaves lower, and drifted sideways, at the far end of the swing.
+  village: (n, t) => buildVillage(n, t * 0.34),
+  // The sun crosses the sky and comes back: day into night into day.
+  city: (n, t) => buildCity(n, 0.86 - t * 1.45),
+  // A page fills with writing, then is a blank page again.
+  paper: (n, t) => buildPaper(n, t),
+}
+
+export function buildPhased(key: TargetKey, count: number, t: number): BuiltTarget | null {
+  const make = PHASED[key]
+  if (make) return make(count, t)
+  const plain = BUILDERS[key]
+  const built = plain ? plain(count) : null
+  return built instanceof Promise ? null : built
 }
 
 /**

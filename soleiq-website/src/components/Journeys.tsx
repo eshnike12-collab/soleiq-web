@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import SectionParticles from './visuals/SectionParticles'
 
 /**
  * The same condition, two settings, and what a home screening actually changes
@@ -121,15 +122,37 @@ export default function Journeys() {
       aria-labelledby="journeys-heading"
     >
       <div className="shell">
-        <p className="eyebrow">In practice</p>
-        <h2 id="journeys-heading" className="h-section mt-5 max-w-3xl">
-          The same feet, two settings, and what changes when the check happens at
-          home.
-        </h2>
-        <p className="lede mt-6 max-w-prose">
-          These are the pathways SoleIQ is designed around. They describe how the
-          product is used. They are not outcome claims.
-        </p>
+        {/* The intro and the setting's own picture, side by side: the copy has
+            never needed the full width here, and the space beside it was the
+            emptiest on the page. */}
+        <div className="grid items-start gap-12 lg:grid-cols-[1fr_26rem] lg:gap-16">
+          <div>
+            <p className="eyebrow">In practice</p>
+            <h2 id="journeys-heading" className="h-section mt-5 max-w-3xl">
+              The same feet, two settings, and what changes when the check
+              happens at home.
+            </h2>
+            <p className="lede mt-6 max-w-prose">
+              These are the pathways SoleIQ is designed around. They describe how
+              the product is used. They are not outcome claims.
+            </p>
+          </div>
+
+          <div className="hidden lg:block">
+            <SectionParticles
+              key={setting}
+              target={setting === 'rural' ? 'village' : 'city'}
+              loop="pingPong"
+              period={setting === 'rural' ? 7 : 11}
+              label={
+                setting === 'rural'
+                  ? 'A particle rendering of a cottage among trees, with leaves in the air.'
+                  : 'A particle rendering of a city skyline under a sky that moves from day to night.'
+              }
+              fallback={<div />}
+            />
+          </div>
+        </div>
 
         {/* Setting switch */}
         <div

@@ -134,6 +134,15 @@ export default function ParticleField({
   /** False until the framing has been solved once, so the first frame snaps. */
   const framedRef = useRef(false)
   const mouseWorld = useRef(new THREE.Vector3(0, 0, 0))
+  /**
+   * Whether a real pointer has ever moved.
+   *
+   * R3F reports the pointer as (0, 0) until one does — which is the middle of
+   * the canvas, not "nowhere". The cloud was being dented in its centre on
+   * first load, by a cursor that was not there.
+   */
+  const pointerSeen = useRef(false)
+  const snapPointer = useRef(false)
   /** Anchors for the current scene's labels, in shape space. */
   const anchorsRef = useRef<{ text: string; at: THREE.Vector3 }[]>([])
 
@@ -232,6 +241,15 @@ export default function ParticleField({
     material.uniforms.uOpacity.value = 0
     labelsRef.current.length = 0
   }, [rendering, material, labelsRef])
+
+  useEffect(() => {
+    const seen = () => {
+      pointerSeen.current = true
+      snapPointer.current = true
+    }
+    window.addEventListener('pointermove', seen, { once: true, passive: true })
+    return () => window.removeEventListener('pointermove', seen)
+  }, [])
 
   /* ── Reusable scratch objects — nothing is allocated per frame ─────────── */
   const scratch = useMemo(
@@ -448,7 +466,7 @@ export default function ParticleField({
     if (!caps.coarsePointer) {
       const halfH = Math.tan((view.fov * Math.PI) / 360) * camera.position.z
       u.uMouseRadius.value = halfH * 0.5
-      u.uMouseStrength.value = pushStrength(halfH)
+      u.uMouseStrength.value = pointerSeen.current ? pushStrength(halfH) : 0
     }
 
     /* Parallax. The cursor's repulsion point is resolved further down, after
@@ -496,7 +514,14 @@ export default function ParticleField({
       points.current.updateWorldMatrix(true, false)
       points.current.worldToLocal(scratch.target)
 
-      mouseWorld.current.lerp(scratch.target, 1 - Math.pow(0.0015, dt))
+      // Snapped on the first real move, so the dent appears where the pointer
+      // is rather than sweeping in from the middle of the canvas.
+      if (snapPointer.current) {
+        mouseWorld.current.copy(scratch.target)
+        snapPointer.current = false
+      } else {
+        mouseWorld.current.lerp(scratch.target, 1 - Math.pow(0.0015, dt))
+      }
       u.uMouse.value.copy(mouseWorld.current)
     }
 
