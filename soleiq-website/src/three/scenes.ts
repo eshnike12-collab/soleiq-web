@@ -50,6 +50,13 @@ export interface Scene {
    */
   aboveOnly?: boolean
   /**
+   * Starts this scene's band nearer the navbar than the default, which buys it
+   * height. Worth it only where the shape is wide and the band above the copy
+   * is what limits its size — a tall shape gains nothing and would just crowd
+   * the bar.
+   */
+  tallBand?: boolean
+  /**
    * Lets this scene's copy run past the usual reading column, on one line.
    *
    * The column exists so a paragraph is a comfortable width. A single short
@@ -166,9 +173,12 @@ export const SCENES: Scene[] = [
     length: 1.9,
     hold: 0.42,
     x: 0.6,
-    // Framed exactly like the handover scene before it: same band, same
-    // place across the page, so the pair reads as one movement.
+    // Framed like the handover scene before it: same band, same place across
+    // the page, so the pair reads as one movement. It takes the taller band
+    // because this composition is wide and short, and the height of the band
+    // is the only thing holding its size down.
     aboveOnly: true,
+    tallBand: true,
     bg: ['#0b1250', '#030625'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
     labels: [{ part: 'curve', text: 'Risk over time' }],

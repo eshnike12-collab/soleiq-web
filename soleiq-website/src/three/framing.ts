@@ -131,12 +131,21 @@ export function pushStrength(halfH: number): number {
  * would hold. Passing the measured number in is the only way the art can be
  * guaranteed to sit above the words at every size.
  */
-export function narrativeBox(width: number, height: number, copyTopPx?: number): SafeBox {
+export function narrativeBox(
+  width: number,
+  height: number,
+  copyTopPx?: number,
+  /** Lets a scene start nearer the bar than the default, buying it height. */
+  tallBand = false
+): SafeBox {
   const wide = width >= 1024
   const h = Math.max(1, height)
   // Below the bar, and never higher than the fraction the composition was
-  // designed around — whichever of the two is further down.
-  const top = Math.max(wide ? 0.17 : 0.15, (NAV_PX + NAV_GAP_PX) / h)
+  // designed around — whichever of the two is further down. A scene that has
+  // asked for the taller band keeps the pixel clearance and drops the
+  // fraction, which is a design preference rather than a requirement.
+  const floor = tallBand ? 0.145 : wide ? 0.17 : 0.15
+  const top = Math.max(floor, (NAV_PX + NAV_GAP_PX) / h)
   // The scene copy owns the bottom of the panel, and the scene rail the left.
   // Once the copy has been measured that line *is* the limit — the fractions
   // below are only the fallback for before it has been. Taking the smaller of

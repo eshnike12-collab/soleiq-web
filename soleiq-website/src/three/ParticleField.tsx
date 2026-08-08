@@ -408,7 +408,7 @@ export default function ParticleField({
     const copy = copyRectRef.current
 
     const placeFor = (sc: (typeof SCENES)[number], i: number) => {
-      const above = narrativeBox(state.size.width, state.size.height, copy.tops[i])
+      const above = narrativeBox(state.size.width, state.size.height, copy.tops[i], sc.tallBand)
       const beside = narrativeSideBox(state.size.width, state.size.height, copy.rights[i])
       return bestFrame(
         sc.target,
