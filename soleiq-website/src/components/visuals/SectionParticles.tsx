@@ -431,7 +431,9 @@ function Loop({
       u.uMouseRadius.value = fit.halfH * 0.5
       u.uMouseStrength.value = pointer.inside.current ? pushStrength(fit.halfH) : 0
 
-      points.current.rotation.y = Math.sin(u.uTime.value * 0.18) * 0.12
+      // Barely a sway. These compositions have one thing that is supposed to
+      // be moving, and a turning picture competes with it.
+      points.current.rotation.y = Math.sin(u.uTime.value * 0.14) * 0.04
 
       scratch.v.set(state.pointer.x, state.pointer.y, 0.5).unproject(camera)
       scratch.dir.copy(scratch.v).sub(camera.position).normalize()

@@ -532,6 +532,7 @@ function buildClinician(count: number, flow = -1): BuiltTarget {
         tone: 1,
         toneJitter: 0,
         ai: 0,
+        label: 'packet',
         build: (n) => {
           if (flow < 0) return new Float32Array(n * 3)
           const [x, y, z] = STREAM(flow)
@@ -554,7 +555,8 @@ function buildClinician(count: number, flow = -1): BuiltTarget {
           figureVolume(n, rng, { width: 1.0, offset: [-2.95, -0.3, -0.55] }),
       },
     ]),
-    1.95
+    1.95,
+    { ignore: 'packet' }
   )
 }
 
@@ -660,6 +662,7 @@ function buildTimeline(count: number, at = -1): BuiltTarget {
         tone: 1,
         toneJitter: 0,
         ai: 0,
+        label: 'marker',
         build: (n) => {
           if (at < 0) return new Float32Array(n * 3)
           const k = at * (STOPS - 1)
@@ -686,7 +689,8 @@ function buildTimeline(count: number, at = -1): BuiltTarget {
           }),
       },
     ]),
-    2.1
+    2.1,
+    { ignore: 'marker' }
   )
 }
 
@@ -898,9 +902,10 @@ function buildVillage(count: number, drop = 0): BuiltTarget {
           }),
       },
       // A fifth of what it was: the house is the subject, not the weather.
-      { weight: 0.2, tone: 0.92, ai: 0.45, build: (n) => flecks(n, rng, drop) },
+      { weight: 0.2, tone: 0.92, ai: 0.45, label: 'flecks', build: (n) => flecks(n, rng, drop) },
     ]),
-    1.25
+    1.25,
+    { ignore: 'flecks' }
   )
 }
 
@@ -980,7 +985,7 @@ function buildCity(count: number, t = 0): BuiltTarget {
     compose(count, [
       { weight: 0.62, tone: 0.6, toneJitter: 0.3, build: (n) => skyline(n, rng) },
       // Far fewer than before, and the disc is most of what is left.
-      { weight: 0.2, tone: 0.95, ai: 0.5, build: (n) => sky(n, rng, t) },
+      { weight: 0.2, tone: 0.95, ai: 0.5, label: 'sky', build: (n) => sky(n, rng, t) },
       {
         weight: 0.18,
         tone: 0.28,
@@ -988,7 +993,8 @@ function buildCity(count: number, t = 0): BuiltTarget {
           sampleCurve((tt) => [(tt - 0.5) * 2.2, -0.46, 0], n, { rng, radius: 0.013 }),
       },
     ]),
-    1.25
+    1.25,
+    { ignore: 'sky' }
   )
 }
 
@@ -1022,6 +1028,7 @@ function buildPaper(count: number, written = 0): BuiltTarget {
         weight: 0.76,
         tone: 0.95,
         toneJitter: 0.05,
+        label: 'ink',
         build: (n) => {
           const out = new Float32Array(n * 3)
           for (let i = 0; i < n; i++) {
@@ -1041,7 +1048,8 @@ function buildPaper(count: number, written = 0): BuiltTarget {
         },
       },
     ]),
-    1.25
+    1.25,
+    { ignore: 'ink' }
   )
 }
 

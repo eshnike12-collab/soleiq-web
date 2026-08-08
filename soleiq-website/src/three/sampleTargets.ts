@@ -487,31 +487,62 @@ export function compose(
 }
 
 /** Centres on the centroid and scales so the shape fits `radius`. */
-export function normalize(built: BuiltTarget, radius = 1): BuiltTarget {
+/**
+ * Centres on the centroid and scales so the shape fits `radius`.
+ *
+ * `ignore` names a part to leave out of that measurement — it is still moved
+ * with everything else, it just does not get a say in where the centre is or
+ * how big the shape is.
+ *
+ * That option is what makes an animated composition hold still. Without it,
+ * a keyframe with a marker further left has a centroid further left, so
+ * normalising slides the entire picture right to compensate: move one dot and
+ * the laptop, the record and the clinicians all shuffle after it. Measuring
+ * only the parts that never move keeps every keyframe on the same footing.
+ */
+export function normalize(
+  built: BuiltTarget,
+  radius = 1,
+  opts: { ignore?: string } = {}
+): BuiltTarget {
   const target = built.positions
   const n = target.length / 3
+
+  const skip = opts.ignore ? built.parts.find((p) => p.label === opts.ignore) : undefined
+  const counts = (fn: (i: number) => void) => {
+    for (let i = 0; i < n; i++) {
+      if (skip && i >= skip.start && i < skip.start + skip.count) continue
+      fn(i)
+    }
+  }
+
   let cx = 0
   let cy = 0
   let cz = 0
-  for (let i = 0; i < n; i++) {
+  let m = 0
+  counts((i) => {
     cx += target[i * 3]
     cy += target[i * 3 + 1]
     cz += target[i * 3 + 2]
-  }
-  cx /= n
-  cy /= n
-  cz /= n
+    m++
+  })
+  if (m === 0) return built
+  cx /= m
+  cy /= m
+  cz /= m
 
   let max = 0
-  for (let i = 0; i < n; i++) {
+  counts((i) => {
     const dx = target[i * 3] - cx
     const dy = target[i * 3 + 1] - cy
     const dz = target[i * 3 + 2] - cz
     const d = Math.sqrt(dx * dx + dy * dy + dz * dz)
     if (d > max) max = d
-  }
+  })
   if (max === 0) return built
 
+  // Every particle is transformed, including the ignored part — it is only
+  // excluded from deciding the transform, not from being subject to it.
   const s = radius / max
   for (let i = 0; i < n; i++) {
     target[i * 3] = (target[i * 3] - cx) * s
