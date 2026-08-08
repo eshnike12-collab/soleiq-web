@@ -40,7 +40,7 @@ interface Props {
    * the art clear of it. Empty until measured, which simply leaves the declared
    * bottom of the safe box in force.
    */
-  copyRectRef: MutableRefObject<{ tops: number[]; right: number }>
+  copyRectRef: MutableRefObject<{ tops: number[]; rights: number[] }>
   /** True while the panel is being looked at: the shape gathers, or comes apart. */
   forming: boolean
   /** False once the panel is far enough away that the canvas has stopped. */
@@ -83,10 +83,10 @@ const SPREAD = 0.55
  * on screen for real. Fitting the resting shape and ignoring them is exactly
  * how the art ended up over the navbar.
  */
-const PARALLAX_YAW = 0.13
-const PARALLAX_PITCH = 0.09
+const PARALLAX_YAW = 0.07
+const PARALLAX_PITCH = 0.05
 /** The opening scene turns through a wider arc than the rest. */
-const swingOf = (index: number) => (index === 0 ? 0.42 : 0.1)
+const swingOf = (index: number) => (index === 0 ? 0.2 : 0.05)
 
 /**
  * The scene background, drawn as a full-screen quad inside the canvas.
@@ -392,7 +392,12 @@ export default function ParticleField({
      * across the scene rather than a jump at the boundary. Nothing here is a
      * tuned constant, which is why it now frames correctly at window shapes it
      * was never looked at in. */
-    const e = smoother(local)
+    // Framing follows the *shape*, so it moves on the morph and not on the
+    // scene's own progress. Keyed to `local` it began travelling toward the
+    // next scene's camera the moment this one had formed — by the time the
+    // copy was readable the picture had shrunk to a fraction of the size it
+    // had been solved for, which is the whole reason these looked small.
+    const e = smoother(morph)
     const wide = state.size.width >= 1024
     const view = {
       aspect: state.size.width / Math.max(1, state.size.height),
@@ -401,16 +406,16 @@ export default function ParticleField({
     const pitch = caps.coarsePointer ? 0 : PARALLAX_PITCH
     const yaw = caps.coarsePointer ? 0 : PARALLAX_YAW
     const copy = copyRectRef.current
-    const beside = narrativeSideBox(state.size.width, state.size.height, copy.right)
 
     const placeFor = (sc: (typeof SCENES)[number], i: number) => {
       const above = narrativeBox(state.size.width, state.size.height, copy.tops[i])
+      const beside = narrativeSideBox(state.size.width, state.size.height, copy.rights[i])
       return bestFrame(
         sc.target,
         targets[sc.target]?.positions,
         [
           insetForPush(above, view.aspect),
-          sc.centred || !beside ? null : insetForPush(beside, view.aspect),
+          sc.aboveOnly || !beside ? null : insetForPush(beside, view.aspect),
         ],
         view,
         {

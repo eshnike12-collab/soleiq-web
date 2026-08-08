@@ -40,12 +40,15 @@ export interface Scene {
   /** Share of the safe box to fill. 1 by default; lower holds a scene back. */
   fill?: number
   /**
-   * Keeps the composition in the band above the copy, even when the column
-   * beside the copy would hold a bigger picture. For a scene that is a full
-   * stop rather than a diagram, being on the centre line matters more than
-   * being large.
+   * Frames this scene in the full-width band above the copy, rather than
+   * letting it also consider the narrower column beside the copy.
+   *
+   * A wide composition reads better across the whole width, and scenes that
+   * should look alike have to be solved against the same box — otherwise one
+   * lands in the column and its neighbour across the page, and they sit at
+   * different sizes for no reason a reader can see.
    */
-  centred?: boolean
+  aboveOnly?: boolean
   /**
    * Lets this scene's copy run past the usual reading column, on one line.
    *
@@ -162,7 +165,10 @@ export const SCENES: Scene[] = [
     note: 'Illustrative. Not patient data.',
     length: 1.9,
     hold: 0.42,
-    x: 0.56,
+    x: 0.6,
+    // Framed exactly like the handover scene before it: same band, same
+    // place across the page, so the pair reads as one movement.
+    aboveOnly: true,
     bg: ['#0b1250', '#030625'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
     labels: [{ part: 'curve', text: 'Risk over time' }],
@@ -179,7 +185,7 @@ export const SCENES: Scene[] = [
     length: 0.9,
     hold: 1,
     x: 0.5,
-    centred: true,
+    aboveOnly: true,
     wideCopy: true,
     bg: ['#090e44', '#020520'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#ffffff', hot: '#ffffff', ai: '#26f7fd' },

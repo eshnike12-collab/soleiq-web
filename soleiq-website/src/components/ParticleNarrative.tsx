@@ -35,14 +35,15 @@ export default function ParticleNarrative() {
   const countRef = useRef<HTMLParagraphElement>(null)
   /**
    * Where each scene's copy sits inside the panel, in pixels: the top of its
-   * own block, and how far right the column reaches. The framing uses this to
+   * own block, and how far right that block reaches. The framing uses this to
    * keep the art clear of the words — above them or beside them.
    *
-   * Per scene, not one figure for all six: the analysis headline runs to three
-   * lines where the closing line runs to one, and holding every composition
-   * above the tallest of them was throwing away most of the panel.
+   * Both are per scene, and the right edge learned that the hard way: taken as
+   * one figure across all six, the closing line — which is deliberately full
+   * width — pushed it past the whole panel, and every other scene lost the
+   * column beside its copy as a result.
    */
-  const copyRectRef = useRef<{ tops: number[]; right: number }>({ tops: [], right: 0 })
+  const copyRectRef = useRef<{ tops: number[]; rights: number[] }>({ tops: [], rights: [] })
   // Written by the canvas each frame, applied to the DOM by the ticker below.
   const labelsRef = useRef<LabelScreenPos[]>([])
   const labelElsRef = useRef<(HTMLDivElement | null)[]>([])
@@ -161,7 +162,7 @@ export default function ParticleNarrative() {
       if (!panel) return
       const panelRect = panel.getBoundingClientRect()
       const tops: number[] = []
-      let right = 0
+      const rights: number[] = []
       copyRefs.current.forEach((el, i) => {
         // The text block, not the full-width wrapper it is positioned by.
         const block = el?.firstElementChild as HTMLElement | null
@@ -170,9 +171,9 @@ export default function ParticleNarrative() {
         // copy can be measured without any of it being shown.
         const r = block.getBoundingClientRect()
         tops[i] = r.top - panelRect.top
-        right = Math.max(right, r.right - panelRect.left)
+        rights[i] = r.right - panelRect.left
       })
-      copyRectRef.current = { tops, right }
+      copyRectRef.current = { tops, rights }
     }
     const raf = requestAnimationFrame(measure)
     window.addEventListener('resize', measure)
