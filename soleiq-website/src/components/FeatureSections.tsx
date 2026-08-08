@@ -66,7 +66,8 @@ const FEATURES: Feature[] = [
     headline: 'One screening is a data point. A series is a direction.',
     body: 'Every check is kept as a dated set of photos and levels, so a change too slow to notice day to day is obvious side by side.',
     target: 'timeline',
-    labels: [{ part: 'curve', text: 'Risk over time' }],
+    // Lifted off the line: on the curve itself it sat across the reading.
+    labels: [{ part: 'curve', text: 'Risk over time', dy: -52 }],
     animated: true,
     visual: <ScreenTimeline />,
     visualLabel:

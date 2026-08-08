@@ -90,7 +90,7 @@ export interface Scene {
    * Only for things a viewer cannot name on sight. A foot is obvious; that a
    * particular slab is the phone running the app is not.
    */
-  labels?: { part: string; text: string }[]
+  labels?: { part: string; text: string; dy?: number }[]
   /** Additive blending only makes sense on the dark scenes. */
   additive: boolean
   /** Peak displacement during this scene's outgoing morph. */
@@ -185,7 +185,7 @@ export const SCENES: Scene[] = [
     tallBand: true,
     bg: ['#0b1250', '#030625'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
-    labels: [{ part: 'curve', text: 'Risk over time' }],
+    labels: [{ part: 'curve', text: 'Risk over time', dy: -52 }],
     additive: true,
     turbulence: 0.42,
     dayNight: true,

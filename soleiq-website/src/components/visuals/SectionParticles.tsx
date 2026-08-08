@@ -51,6 +51,12 @@ const PALETTE = {
 export interface PartLabel {
   part: string
   text: string
+  /**
+   * Nudge, in pixels, from the part's own centre. A label sits on the middle
+   * of what it names, which is right for a block and wrong for a line — on a
+   * thin curve it lands across the very thing it is pointing at.
+   */
+  dy?: number
 }
 
 interface ScreenLabel {
@@ -366,7 +372,7 @@ function Loop({
     const found = partAnchors(frames[0])
     return labels
       .filter((l) => found[l.part])
-      .map((l) => ({ text: l.text, at: new THREE.Vector3(...found[l.part]) }))
+      .map((l) => ({ text: l.text, dy: l.dy ?? 0, at: new THREE.Vector3(...found[l.part]) }))
   }, [frames, labels])
 
   const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
@@ -455,7 +461,7 @@ function Loop({
           out.push({
             text: anchor.text,
             x: (scratch.v.x * 0.5 + 0.5) * state.size.width,
-            y: (-scratch.v.y * 0.5 + 0.5) * state.size.height,
+            y: (-scratch.v.y * 0.5 + 0.5) * state.size.height + anchor.dy,
             opacity: Math.min(1, (settled - 0.35) / 0.4),
           })
         }
