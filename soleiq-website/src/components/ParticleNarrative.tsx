@@ -10,6 +10,7 @@ import { detectCapabilities, type Capabilities } from '../three/capabilities'
 import { buildAllTargets } from '../three/targets'
 import { copyOpacity, SCENE_BOUNDS, SCENES } from '../three/scenes'
 import { INITIAL_CAMERA } from '../three/framing'
+import { usePointerInside } from '../hooks/usePointerInside'
 import type { BuiltTarget } from '../three/sampleTargets'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -48,6 +49,8 @@ export default function ParticleNarrative() {
   const labelsRef = useRef<LabelScreenPos[]>([])
   const labelElsRef = useRef<(HTMLDivElement | null)[]>([])
   const [dpr, setDpr] = useState(() => Math.min(caps.dprCap, window.devicePixelRatio || 1))
+
+  const pointer = usePointerInside(stickyRef)
 
   const useCanvas = caps.webgl && !caps.reducedMotion
 
@@ -333,6 +336,7 @@ export default function ParticleNarrative() {
                 copyRectRef={copyRectRef}
                 forming={formed}
                 rendering={active}
+                pointer={pointer}
               />
             </Canvas>
           )}
@@ -422,11 +426,11 @@ export default function ParticleNarrative() {
         </div>
 
         {/* Carries the dark sequence back out into the white page, the mirror
-            of the fade the hero uses on the way in. Sits at the foot of the
-            section, so it only meets the panel as the panel scrolls away. */}
+            of the fade the hero uses on the way in. Kept short: at 38vh it
+            reached far enough up the panel to wash out the closing line. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[38vh]"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[20vh]"
           style={{
             background: `linear-gradient(180deg, ${SCENES[SCENES.length - 1].bg[1]}00 0%, var(--clr-bg) 100%)`,
           }}

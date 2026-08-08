@@ -810,35 +810,42 @@ function tree(n: number, rng: () => number, at: [number, number], scale = 1): Ta
   return out
 }
 
-/** Leaves, scattered through a band of air. `drop` slides the whole fall down. */
-function leaves(n: number, rng: () => number, drop: number): Target {
+/**
+ * Falling flecks, on a fixed lattice of columns and rows.
+ *
+ * `drop` slides every fleck down by a fraction of one row gap, and never more
+ * than one gap across the whole loop. That keeps the motion a slow steady
+ * descent with nothing jumping: a linear morph cannot express a fleck that
+ * leaves the bottom and reappears at the top, so it is never asked to.
+ */
+function flecks(n: number, rng: () => number, drop: number): Target {
+  const COLS = 13
+  const ROWS = 6
+  const TOP = 0.66
+  const GAP = 0.2
   const out = new Float32Array(n * 3)
   for (let i = 0; i < n; i++) {
-    // Each leaf keeps its own column and its own phase, so the fall staggers
-    // instead of the whole set moving as one sheet.
-    const col = rng()
-    const phase = rng()
-    const fall = (phase + drop) % 1
-    const x = -0.95 + col * 1.9 + Math.sin((fall + phase) * Math.PI * 3) * 0.09
-    const y = 0.72 - fall * 1.5
-    // A leaf is a few particles clustered, not a point.
-    out[i * 3] = x + (rng() - 0.5) * 0.035
-    out[i * 3 + 1] = y + (rng() - 0.5) * 0.025
-    out[i * 3 + 2] = (rng() - 0.5) * 0.12
+    const c = (rng() * COLS) | 0
+    const r = (rng() * ROWS) | 0
+    // A little per-column offset so the lattice never reads as a grid.
+    const skew = ((c * 37) % 10) / 10
+    out[i * 3] = -0.92 + (c / (COLS - 1)) * 1.84 + (rng() - 0.5) * 0.07
+    out[i * 3 + 1] = TOP - ((r + skew + drop) % ROWS) * GAP + (rng() - 0.5) * 0.02
+    out[i * 3 + 2] = (rng() - 0.5) * 0.1
   }
   return out
 }
 
-/** The rural setting: a cottage, two trees, ground, and leaves coming down. */
+/** The rural setting: a cottage, two trees, ground, and flecks coming down. */
 function buildVillage(count: number, drop = 0): BuiltTarget {
   const rng = makeRng(311)
   return normalize(
     compose(count, [
-      { weight: 0.3, tone: 0.62, toneJitter: 0.18, build: (n) => cottage(n, rng, [0.12, -0.05]) },
-      { weight: 0.13, tone: 0.42, build: (n) => tree(n, rng, [-0.66, -0.06], 1.05) },
-      { weight: 0.1, tone: 0.38, build: (n) => tree(n, rng, [0.78, -0.14], 0.78) },
+      { weight: 0.36, tone: 0.66, toneJitter: 0.18, build: (n) => cottage(n, rng, [0.12, -0.05]) },
+      { weight: 0.16, tone: 0.44, build: (n) => tree(n, rng, [-0.66, -0.06], 1.05) },
+      { weight: 0.12, tone: 0.4, build: (n) => tree(n, rng, [0.78, -0.14], 0.78) },
       {
-        weight: 0.14,
+        weight: 0.16,
         tone: 0.3,
         build: (n) =>
           sampleCurve((t) => [(t - 0.5) * 2.1, -0.44 + Math.sin(t * 7) * 0.012, 0], n, {
@@ -846,7 +853,8 @@ function buildVillage(count: number, drop = 0): BuiltTarget {
             radius: 0.014,
           }),
       },
-      { weight: 0.33, tone: 0.9, ai: 0.55, build: (n) => leaves(n, rng, drop) },
+      // A fifth of what it was: the house is the subject, not the weather.
+      { weight: 0.2, tone: 0.92, ai: 0.45, build: (n) => flecks(n, rng, drop) },
     ]),
     1.25
   )
@@ -871,13 +879,11 @@ function skyline(n: number, rng: () => number): Target {
     let x: number
     let y: number
     if (rng() < 0.45) {
-      // Outline: sides and roof, so the towers read as buildings not blocks.
       const e = rng() * 3
       if (e < 1) { x = cx - w / 2; y = base + (e % 1) * h }
       else if (e < 2) { x = cx + w / 2; y = base + (e % 1) * h }
       else { x = cx - w / 2 + (e % 1) * w; y = base + h }
     } else {
-      // Windows on a grid inside the tower.
       const cols = 3
       const rowsN = Math.max(2, Math.round(h / 0.1))
       const c = (rng() * cols) | 0
@@ -892,39 +898,50 @@ function skyline(n: number, rng: () => number): Target {
   return out
 }
 
-/** Stars over the city, and the disc that rises through them. */
-function nightSky(n: number, rng: () => number, sunY: number): Target {
+/**
+ * The sky: scattered stars, and the disc that crosses it.
+ *
+ * `t` is 0 at one horizon and 1 at the other, and the disc travels a real arc
+ * between them rather than the straight line a two-frame morph would give —
+ * the arc is sampled here, and the loop steps along it a keyframe at a time.
+ */
+function sky(n: number, rng: () => number, t: number): Target {
   const out = new Float32Array(n * 3)
-  const disc = Math.floor(n * 0.4)
+  const disc = Math.floor(n * 0.42)
+  const angle = Math.PI * (1 - t)
+  const cx = Math.cos(angle) * 0.78
+  const cy = -0.34 + Math.sin(angle) * 0.92
   for (let i = 0; i < n; i++) {
     if (i < disc) {
-      // The sun/moon, one filled circle that travels with the hour.
       const a = rng() * Math.PI * 2
-      const r = 0.17 * Math.sqrt(rng())
-      out[i * 3] = 0.66 + Math.cos(a) * r
-      out[i * 3 + 1] = sunY + Math.sin(a) * r
+      const r = 0.15 * Math.sqrt(rng())
+      out[i * 3] = cx + Math.cos(a) * r
+      out[i * 3 + 1] = cy + Math.sin(a) * r
       out[i * 3 + 2] = (rng() - 0.5) * 0.05
     } else {
-      out[i * 3] = -1 + rng() * 2
-      out[i * 3 + 1] = 0.42 + rng() * 0.52
-      out[i * 3 + 2] = (rng() - 0.5) * 0.16
+      // Spread over the whole field rather than a band, and held inside the
+      // frame so none of them sit on the panel's edge.
+      out[i * 3] = -0.84 + rng() * 1.68
+      out[i * 3 + 1] = -0.3 + rng() * 1.18
+      out[i * 3 + 2] = (rng() - 0.5) * 0.18
     }
   }
   return out
 }
 
 /** The urban setting: a skyline under a sky that keeps its own hours. */
-function buildCity(count: number, sunY = 0.8): BuiltTarget {
+function buildCity(count: number, t = 0): BuiltTarget {
   const rng = makeRng(733)
   return normalize(
     compose(count, [
-      { weight: 0.56, tone: 0.6, toneJitter: 0.3, build: (n) => skyline(n, rng) },
-      { weight: 0.26, tone: 0.95, ai: 0.5, build: (n) => nightSky(n, rng, sunY) },
+      { weight: 0.62, tone: 0.6, toneJitter: 0.3, build: (n) => skyline(n, rng) },
+      // Far fewer than before, and the disc is most of what is left.
+      { weight: 0.2, tone: 0.95, ai: 0.5, build: (n) => sky(n, rng, t) },
       {
         weight: 0.18,
         tone: 0.28,
         build: (n) =>
-          sampleCurve((t) => [(t - 0.5) * 2.2, -0.46, 0], n, { rng, radius: 0.013 }),
+          sampleCurve((tt) => [(tt - 0.5) * 2.2, -0.46, 0], n, { rng, radius: 0.013 }),
       },
     ]),
     1.25
@@ -932,74 +949,49 @@ function buildCity(count: number, sunY = 0.8): BuiltTarget {
 }
 
 /**
- * A sheet of paper with a pen on it. `written` is how far down the page the
- * ink has reached, 0 to 1: at 0 the sheet is blank and the pen is at the top.
+ * A sheet of paper filling with written lines.
  *
- * Lines that have not been written yet are parked underneath the pen nib
- * rather than hidden, so the morph between two of these reads as ink leaving
- * the pen and settling onto the page.
+ * `written` is how far down the page the ink has reached, 0 to 1. A line that
+ * has not been reached yet is collapsed at its own left margin rather than
+ * parked somewhere else on the sheet, so every particle only ever travels
+ * along its own line — the page writes itself without anything flying across
+ * it. There is no pen: the ink arriving is the whole of it.
  */
 function buildPaper(count: number, written = 0): BuiltTarget {
   const rng = makeRng(419)
-  const SHEET_W = 1.06
-  const SHEET_H = 1.44
-  const LINES = 11
-  const top = SHEET_H / 2 - 0.16
-  const gap = (SHEET_H - 0.34) / (LINES - 1)
-  // The nib sits at the last line that has been written.
-  const nibY = top - written * (LINES - 1) * gap
-  const nibX = -SHEET_W / 2 + 0.12 + written * 0.1
+  const SHEET_W = 1.02
+  const SHEET_H = 1.32
+  const LINES = 12
+  const top = SHEET_H / 2 - 0.14
+  const gap = (SHEET_H - 0.28) / (LINES - 1)
+  const left = -SHEET_W / 2 + 0.1
 
   return normalize(
     compose(count, [
       {
-        // The sheet edge.
-        weight: 0.2,
+        weight: 0.24,
         tone: 0.5,
-        build: (n) => frameOutline(n, rng, { w: SHEET_W, h: SHEET_H, position: [0, 0, 0], corner: 0.02 }),
+        build: (n) =>
+          frameOutline(n, rng, { w: SHEET_W, h: SHEET_H, position: [0, 0, 0], corner: 0.02 }),
       },
       {
-        // The ruled lines. Everything past the nib is still in the pen.
-        weight: 0.5,
-        tone: 0.16,
-        toneJitter: 0.06,
+        weight: 0.76,
+        tone: 0.95,
+        toneJitter: 0.05,
         build: (n) => {
           const out = new Float32Array(n * 3)
           for (let i = 0; i < n; i++) {
             const line = (rng() * LINES) | 0
             const y = top - line * gap
-            const done = line / (LINES - 1) <= written
-            // Last line of a page is short, like a paragraph ending.
-            const full = line % 4 === 3 ? 0.58 : 0.82
-            if (done) {
-              out[i * 3] = -SHEET_W / 2 + 0.1 + rng() * SHEET_W * full
-              out[i * 3 + 1] = y + (rng() - 0.5) * 0.012
-              out[i * 3 + 2] = (rng() - 0.5) * 0.01
-            } else {
-              out[i * 3] = nibX + (rng() - 0.5) * 0.03
-              out[i * 3 + 1] = nibY + 0.05 + (rng() - 0.5) * 0.03
-              out[i * 3 + 2] = (rng() - 0.5) * 0.02
-            }
-          }
-          return out
-        },
-      },
-      {
-        // The pen, angled over the page, travelling down it as it writes.
-        weight: 0.3,
-        tone: 0.86,
-        ai: 0.4,
-        build: (n) => {
-          const out = new Float32Array(n * 3)
-          for (let i = 0; i < n; i++) {
-            const t = rng()
-            // Nib at the writing point, barrel up and to the right.
-            const x = nibX + t * 0.46
-            const y = nibY + t * 0.62
-            const taper = 0.006 + t * 0.022
-            out[i * 3] = x + (rng() - 0.5) * taper
-            out[i * 3 + 1] = y + (rng() - 0.5) * taper
-            out[i * 3 + 2] = 0.06 + (rng() - 0.5) * 0.04
+            // Each line starts as the pen reaches it and finishes a fifth of
+            // the way later, so the page fills top to bottom.
+            const startsAt = line / LINES
+            const grown = Math.min(1, Math.max(0, (written - startsAt) / 0.2))
+            const full = line % 4 === 3 ? 0.56 : 0.8
+            const span = SHEET_W * full * grown
+            out[i * 3] = left + rng() * span
+            out[i * 3 + 1] = y + (rng() - 0.5) * 0.01
+            out[i * 3 + 2] = (rng() - 0.5) * 0.008
           }
           return out
         },
@@ -1030,13 +1022,16 @@ const BUILDERS: Record<TargetKey, (count: number) => BuiltTarget | Promise<Built
  * back to the plain builder, which is the still version of the same picture.
  */
 const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarget>> = {
-  // Leaves lower, and drifted sideways, at the far end of the swing.
-  village: (n, t) => buildVillage(n, t * 0.34),
-  // The sun crosses the sky and comes back: day into night into day.
-  city: (n, t) => buildCity(n, 0.86 - t * 1.45),
-  // A page fills with writing, then is a blank page again.
+  // One row gap of descent across the whole loop, and no more.
+  village: (n, t) => buildVillage(n, t),
+  // Horizon to zenith to horizon: three frames, so the disc travels an arc
+  // rather than the straight chord two frames would give it.
+  city: (n, t) => buildCity(n, t),
   paper: (n, t) => buildPaper(n, t),
 }
+
+/** How many keyframes a composition needs to describe its motion. */
+export const KEYFRAMES: Partial<Record<TargetKey, number>> = { city: 3 }
 
 export function buildPhased(key: TargetKey, count: number, t: number): BuiltTarget | null {
   const make = PHASED[key]

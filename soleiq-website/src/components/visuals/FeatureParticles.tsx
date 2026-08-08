@@ -11,6 +11,7 @@ import {
   INITIAL_CAMERA,
 } from '../../three/framing'
 import { detectCapabilities } from '../../three/capabilities'
+import { usePointerInside } from '../../hooks/usePointerInside'
 import { makeRng, partAnchors, sampleCloud, type BuiltTarget } from '../../three/sampleTargets'
 import type { TargetKey } from '../../three/scenes'
 
@@ -76,6 +77,7 @@ export default function FeatureParticles({
   const [visible, setVisible] = useState(false)
   const [built, setBuilt] = useState<BuiltTarget | null>(null)
 
+  const pointer = usePointerInside(hostRef)
   const count = caps.tier === 'high' ? 30_000 : 14_000
   const enabled = caps.webgl && !caps.reducedMotion
 
@@ -174,6 +176,7 @@ export default function FeatureParticles({
             forming={visible}
             labels={labels}
             labelsRef={labelsRef}
+            pointer={pointer}
           />
         </Canvas>
       )}
@@ -202,6 +205,7 @@ function Shape({
   forming,
   labels,
   labelsRef,
+  pointer,
 }: {
   /** Identifies this composition in the framing solver's result cache. */
   cacheKey: string
@@ -220,22 +224,11 @@ function Shape({
   forming: boolean
   labels: PartLabel[]
   labelsRef: React.MutableRefObject<ScreenLabel[]>
+  pointer: { inside: React.MutableRefObject<boolean>; justEntered: React.MutableRefObject<boolean> }
 }) {
   const points = useRef<THREE.Points>(null)
   const { camera } = useThree()
   const mouse = useRef(new THREE.Vector3(0, 0, 999))
-  /** No dent until a real pointer has moved — see ParticleField for why. */
-  const pointerSeen = useRef(false)
-  const snapPointer = useRef(false)
-
-  useEffect(() => {
-    const seen = () => {
-      pointerSeen.current = true
-      snapPointer.current = true
-    }
-    window.addEventListener('pointermove', seen, { once: true, passive: true })
-    return () => window.removeEventListener('pointermove', seen)
-  }, [])
 
   const geometry = useMemo(() => {
     const rng = makeRng(17)
@@ -373,7 +366,7 @@ function Shape({
       camera.lookAt(0, 0, 0)
       // A constant-sized dent on screen, whatever distance the fit landed on.
       u.uMouseRadius.value = fit.halfH * 0.5
-      u.uMouseStrength.value = pointerSeen.current ? pushStrength(fit.halfH) : 0
+      u.uMouseStrength.value = pointer.inside.current ? pushStrength(fit.halfH) : 0
 
       // A slow, shallow turn: enough to read as three-dimensional, not enough
       // to show the composition edge-on.
@@ -385,9 +378,9 @@ function Shape({
       scratch.target.copy(camera.position).addScaledVector(scratch.dir, dist)
       points.current.updateWorldMatrix(true, false)
       points.current.worldToLocal(scratch.target)
-      if (snapPointer.current) {
+      if (pointer.justEntered.current) {
         mouse.current.copy(scratch.target)
-        snapPointer.current = false
+        pointer.justEntered.current = false
       } else {
         mouse.current.lerp(scratch.target, 1 - Math.pow(0.002, dt))
       }

@@ -107,8 +107,20 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
     const clearNudge = () => {
       const el = nudgedRef.current
       if (!el) return
-      el.style.transform = ''
-      const settle = window.setTimeout(() => el.classList.remove('cursor-nudge', 'cursor-dim'), 320)
+      // Undone immediately, not when the class is dropped. Holding the effect
+      // for the length of the transition meant the paragraph you had just left
+      // stayed lit while the next one lit up, so two were on at once.
+      // Leaves faster than it arrives, so moving between two paragraphs does
+      // not leave both of them lit while one catches up with the other.
+      el.style.transitionDuration = '0.1s'
+      el.style.transform = 'none'
+      el.style.filter = 'none'
+      const settle = window.setTimeout(() => {
+        el.classList.remove('cursor-nudge', 'cursor-dim')
+        el.style.transform = ''
+        el.style.filter = ''
+        el.style.transitionDuration = ''
+      }, 320)
       pendingRef.current.set(el, settle)
       nudgedRef.current = null
     }
@@ -120,6 +132,9 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
         pendingRef.current.delete(el)
       }
       nudgedRef.current = el
+      el.style.transform = ''
+      el.style.filter = ''
+      el.style.transitionDuration = ''
       el.classList.add(className)
     }
 
@@ -173,7 +188,11 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
       const text = el.closest(TEXT_SELECTOR) as HTMLElement | null
       if (text) {
         apply('text')
-        setDim(text)
+        // Only ever the innermost block. A list item that holds two paragraphs
+        // is still a match for the selector, and lighting it lights both of
+        // them — one string of text at a time means the leaf, not its parent.
+        if (!text.querySelector(TEXT_SELECTOR)) setDim(text)
+        else clearNudge()
         return
       }
       apply('default')

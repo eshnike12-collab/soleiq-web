@@ -80,12 +80,15 @@ export default function Hero() {
         transition={{ duration: 0.6, delay: 0.35 }}
         className="relative z-10 shell mt-16 md:mt-24"
       >
-        <a href="#narrative" className="scroll-cue tap" data-cursor-label="Scroll">
+        {/* Not a link and not a button — it only says which way the page goes.
+            As a control it promised a jump nobody needed, and the cursor put a
+            word next to it saying so. */}
+        <p className="scroll-cue">
           <span className="scroll-cue-arrow" aria-hidden="true">
             <ArrowDown size={22} strokeWidth={2} />
           </span>
           See how it works
-        </a>
+        </p>
       </motion.div>
     </section>
   )

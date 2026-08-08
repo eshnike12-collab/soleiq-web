@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { PARTICLE_FRAG, PARTICLE_VERT } from '../../three/shaders'
-import { buildPhased } from '../../three/targets'
+import { buildPhased, KEYFRAMES } from '../../three/targets'
 import {
   solveFrame,
   insetForPush,
@@ -11,6 +11,7 @@ import {
   INITIAL_CAMERA,
 } from '../../three/framing'
 import { detectCapabilities } from '../../three/capabilities'
+import { usePointerInside } from '../../hooks/usePointerInside'
 import { makeRng, sampleCloud, type BuiltTarget } from '../../three/sampleTargets'
 import type { TargetKey } from '../../three/scenes'
 
@@ -55,8 +56,9 @@ export default function SectionParticles({ target, loop, period, label, fallback
   const hostRef = useRef<HTMLDivElement>(null)
   const [near, setNear] = useState(false)
   const [visible, setVisible] = useState(false)
-  const [pair, setPair] = useState<[BuiltTarget, BuiltTarget] | null>(null)
+  const [frames, setFrames] = useState<BuiltTarget[] | null>(null)
 
+  const pointer = usePointerInside(hostRef)
   const count = caps.tier === 'high' ? 22_000 : 11_000
   const enabled = caps.webgl && !caps.reducedMotion
 
@@ -79,18 +81,25 @@ export default function SectionParticles({ target, loop, period, label, fallback
   }, [enabled])
 
   useEffect(() => {
-    if (!near || pair) return
+    if (!near || frames) return
     let alive = true
     Promise.resolve()
-      .then(() => [buildPhased(target, count, 0), buildPhased(target, count, 1)] as const)
-      .then((p) => alive && p[0] && p[1] && setPair([p[0], p[1]]))
+      .then(() => {
+        // One keyframe per stop on the walk. Two for most, three where the
+        // motion has to bend rather than run straight between its ends.
+        const n = KEYFRAMES[target] ?? 2
+        return Array.from({ length: n }, (_, i) => buildPhased(target, count, i / (n - 1)))
+      })
+      .then((f) => {
+        if (alive && f.every(Boolean)) setFrames(f as BuiltTarget[])
+      })
       .catch(() => {
         /* Leaves the panel empty rather than breaking the section. */
       })
     return () => {
       alive = false
     }
-  }, [near, pair, target, count])
+  }, [near, frames, target, count])
 
   if (!enabled) return <>{fallback}</>
 
@@ -106,7 +115,7 @@ export default function SectionParticles({ target, loop, period, label, fallback
       aria-label={label}
       data-cursor="canvas"
     >
-      {pair && (
+      {frames && (
         <Canvas
           className="absolute inset-0"
           frameloop={near ? 'always' : 'never'}
@@ -118,7 +127,7 @@ export default function SectionParticles({ target, loop, period, label, fallback
         >
           <Loop
             cacheKey={`section:${target}`}
-            pair={pair}
+            frames={frames}
             count={count}
             pointSize={caps.tier === 'high' ? 4 : 5.5}
             simpleNoise={caps.simpleNoise}
@@ -126,6 +135,7 @@ export default function SectionParticles({ target, loop, period, label, fallback
             rendering={near}
             loop={loop}
             period={period}
+            pointer={pointer}
           />
         </Canvas>
       )}
@@ -135,7 +145,7 @@ export default function SectionParticles({ target, loop, period, label, fallback
 
 function Loop({
   cacheKey,
-  pair,
+  frames,
   count,
   pointSize,
   simpleNoise,
@@ -143,9 +153,10 @@ function Loop({
   rendering,
   loop,
   period,
+  pointer,
 }: {
   cacheKey: string
-  pair: [BuiltTarget, BuiltTarget]
+  frames: BuiltTarget[]
   count: number
   pointSize: number
   simpleNoise: boolean
@@ -153,36 +164,49 @@ function Loop({
   rendering: boolean
   loop: 'cycle' | 'pingPong'
   period: number
+  pointer: { inside: React.MutableRefObject<boolean>; justEntered: React.MutableRefObject<boolean> }
 }) {
   const points = useRef<THREE.Points>(null)
   const { camera } = useThree()
   const clock = useRef(0)
   const mouse = useRef(new THREE.Vector3(0, 0, 999))
-  const pointerSeen = useRef(false)
-  const snapPointer = useRef(false)
 
-  useEffect(() => {
-    const seen = () => {
-      pointerSeen.current = true
-      snapPointer.current = true
-    }
-    window.addEventListener('pointermove', seen, { once: true, passive: true })
-    return () => window.removeEventListener('pointermove', seen)
-  }, [])
+  /**
+   * The order the keyframes are walked in.
+   *
+   * `cycle` runs the list once and starts over from the top, which is the hard
+   * reset a page of writing wants. `pingPong` runs down the list and back up,
+   * which is how a disc gets from one horizon to the other and home again
+   * along a real arc: three frames, two segments each way.
+   */
+  const segments = useMemo(() => {
+    const n = frames.length
+    const up: [number, number][] = Array.from({ length: n - 1 }, (_, i) => [i, i + 1])
+    if (loop === 'cycle') return up
+    const down: [number, number][] = Array.from({ length: n - 1 }, (_, i) => [n - 1 - i, n - 2 - i])
+    return [...up, ...down]
+  }, [frames, loop])
 
-  const geometry = useMemo(() => {
-    const rng = makeRng(41)
-    const geo = new THREE.BufferGeometry()
-    const [a, b] = pair
+  const segRef = useRef(-1)
 
-    const shade = (t: BuiltTarget) => {
+  const shadeOf = useMemo(
+    () => (t: BuiltTarget) => {
       const out = new Float32Array(count * 2)
       for (let i = 0; i < count; i++) {
         out[i * 2] = t.tones[i] ?? 0.5
         out[i * 2 + 1] = t.ai[i] ?? 0
       }
       return out
-    }
+    },
+    [count]
+  )
+
+  const geometry = useMemo(() => {
+    const rng = makeRng(41)
+    const geo = new THREE.BufferGeometry()
+    const a = frames[0]
+    const b = frames[Math.min(1, frames.length - 1)]
+    const shade = shadeOf
 
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(a.positions), 3))
     geo.setAttribute('positionA', new THREE.BufferAttribute(new Float32Array(a.positions), 3))
@@ -205,7 +229,7 @@ function Loop({
     geo.setAttribute('aDelay', new THREE.BufferAttribute(delay, 1))
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 24)
     return geo
-  }, [pair, count])
+  }, [frames, count, shadeOf])
 
   const material = useMemo(
     () =>
@@ -280,17 +304,28 @@ function Loop({
     // thing anyone sees is the shape rather than the middle of its animation.
     if (u.uDissolve.value < 0.2) clock.current += dt / Math.max(0.2, period)
 
-    if (loop === 'cycle') {
-      const t = clock.current % 1
-      u.uProgress.value = smoother(t)
-      // A hair of turbulence at the wrap, so the reset reads as the page being
-      // taken away rather than the ink jumping back up it.
-      u.uFlight.value = t > 0.94 ? (t - 0.94) / 0.06 : 0
-    } else {
-      const t = clock.current % 2
-      u.uProgress.value = smoother(t < 1 ? t : 2 - t)
-      u.uFlight.value = 0
+    // Which segment of the walk we are on, and how far along it.
+    const total = segments.length
+    const pos = ((clock.current % total) + total) % total
+    const seg = Math.min(total - 1, Math.floor(pos))
+    if (seg !== segRef.current) {
+      segRef.current = seg
+      const [ai, bi] = segments[seg]
+      const attrA = geometry.getAttribute('positionA') as THREE.BufferAttribute
+      const attrB = geometry.getAttribute('positionB') as THREE.BufferAttribute
+      attrA.copyArray(frames[ai].positions)
+      attrB.copyArray(frames[bi].positions)
+      attrA.needsUpdate = true
+      attrB.needsUpdate = true
+      const sA = geometry.getAttribute('aShadeA') as THREE.BufferAttribute
+      const sB = geometry.getAttribute('aShadeB') as THREE.BufferAttribute
+      sA.copyArray(shadeOf(frames[ai]))
+      sB.copyArray(shadeOf(frames[bi]))
+      sA.needsUpdate = true
+      sB.needsUpdate = true
     }
+    u.uProgress.value = smoother(pos - seg)
+    u.uFlight.value = 0
 
     if (points.current) {
       const view = {
@@ -299,7 +334,7 @@ function Loop({
       }
       const fit = solveFrame(
         cacheKey,
-        pair[0].positions,
+        frames[0].positions,
         insetForPush(FEATURE_BOX, view.aspect),
         view,
         { xFraction: 0.5, yaw: 0.12 }
@@ -308,7 +343,7 @@ function Loop({
       camera.position.set(0, 0, fit.distance)
       camera.lookAt(0, 0, 0)
       u.uMouseRadius.value = fit.halfH * 0.5
-      u.uMouseStrength.value = pointerSeen.current ? pushStrength(fit.halfH) : 0
+      u.uMouseStrength.value = pointer.inside.current ? pushStrength(fit.halfH) : 0
 
       points.current.rotation.y = Math.sin(u.uTime.value * 0.18) * 0.12
 
@@ -318,9 +353,9 @@ function Loop({
       scratch.target.copy(camera.position).addScaledVector(scratch.dir, dist)
       points.current.updateWorldMatrix(true, false)
       points.current.worldToLocal(scratch.target)
-      if (snapPointer.current) {
+      if (pointer.justEntered.current) {
         mouse.current.copy(scratch.target)
-        snapPointer.current = false
+        pointer.justEntered.current = false
       } else {
         mouse.current.lerp(scratch.target, 1 - Math.pow(0.002, dt))
       }

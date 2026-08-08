@@ -207,9 +207,6 @@ p {
     transition: color 0.2s ease;
   }
 
-  .scroll-cue:hover {
-    color: var(--clr-accent-2);
-  }
 
   /*
     A finger is not a mouse pointer.
