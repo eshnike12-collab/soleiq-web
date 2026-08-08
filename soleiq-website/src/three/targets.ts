@@ -171,7 +171,14 @@ function slab(
 function frameOutline(
   n: number,
   rng: () => number,
-  opts: { w: number; h: number; position: [number, number, number]; corner?: number }
+  opts: {
+    w: number
+    h: number
+    position: [number, number, number]
+    corner?: number
+    /** Half-width of the drawn edge. The default is a hairline. */
+    stroke?: number
+  }
 ): Target {
   const [ox, oy, oz] = opts.position
   const out = new Float32Array(n * 3)
@@ -209,9 +216,10 @@ function frameOutline(
       x = -w / 2
       y = h / 2 - t
     }
-    out[i * 3] = x + ox + (rng() - 0.5) * 0.008
-    out[i * 3 + 1] = y + oy + (rng() - 0.5) * 0.008
-    out[i * 3 + 2] = oz + (rng() - 0.5) * 0.01
+    const stroke = opts.stroke ?? 0.008
+    out[i * 3] = x + ox + (rng() - 0.5) * stroke
+    out[i * 3 + 1] = y + oy + (rng() - 0.5) * stroke
+    out[i * 3 + 2] = oz + (rng() - 0.5) * Math.max(0.01, stroke * 0.5)
   }
   return out
 }
@@ -335,14 +343,28 @@ function buildCapture(count: number, shot = -1): BuiltTarget {
         [0.28, PHONE_Y + 0.42],
         [-0.28, PHONE_Y - 0.38],
         [0.28, PHONE_Y - 0.38],
-      ].map(([x, y], i) => ({
-        weight: 0.055,
-        tone: shot === i ? 1 : 0.9,
-        toneJitter: shot === i ? 0.02 : 0.08,
-        ai: shot === i ? 0 : 0.95,
-        build: (n: number) =>
-          frameOutline(n, rng, { w: 0.44, h: 0.6, corner: 0.14, position: [x, y, 0.79] }),
-      })),
+      ].map(([x, y], i) => {
+        const lit = shot === i
+        return {
+          // The share of particles has to be the same in every keyframe: it is
+          // what decides which particle belongs to which frame, and shifting it
+          // would have them jumping between frames instead of the light moving.
+          // So the lit one is drawn bolder rather than denser — a thicker edge,
+          // a fraction larger, and white against the others' accent blue.
+          weight: 0.055,
+          tone: lit ? 1 : 0.86,
+          toneJitter: lit ? 0.02 : 0.1,
+          ai: lit ? 0 : 0.95,
+          build: (n: number) =>
+            frameOutline(n, rng, {
+              w: lit ? 0.48 : 0.44,
+              h: lit ? 0.655 : 0.6,
+              corner: lit ? 0.2 : 0.14,
+              stroke: lit ? 0.05 : 0.008,
+              position: [x, y, lit ? 0.82 : 0.79],
+            }),
+        }
+      }),
       // The beam from the phone down to the foot.
       {
         weight: 0.09,
