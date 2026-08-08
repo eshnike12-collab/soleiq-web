@@ -162,7 +162,7 @@ export const SCENES: Scene[] = [
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
     labels: [
       { part: 'doctors', text: 'Your care team' },
-      { part: 'record', text: 'Patient record' },
+      { part: 'record', text: 'Patient record', dy: -78 },
     ],
     additive: true,
     turbulence: 0.52,

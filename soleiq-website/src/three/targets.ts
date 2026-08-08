@@ -431,7 +431,15 @@ function buildAnalysis(count: number): BuiltTarget {
   )
 }
 
-function buildClinician(count: number): BuiltTarget {
+/**
+ * `flow` slides the data current along its own path, 0 to 1.
+ *
+ * Each particle keeps its place in the queue and moves forward by one gap over
+ * the loop, so the current travels without any of them jumping the line. As
+ * with the timeline, every other part is built from the same seed in the same
+ * order and so does not move at all between keyframes.
+ */
+function buildClinician(count: number, flow = 0): BuiltTarget {
   const rng = makeRng(53)
   return normalize(
     compose(count, [
@@ -506,18 +514,25 @@ function buildClinician(count: number): BuiltTarget {
         weight: 0.18,
         tone: 0.9,
         ai: 1,
-        build: (n) =>
-          sampleCurve(
-            (t) => {
-              const u = t
-              const x = 1.95 - 2.5 * u
-              const y = -0.35 + 1.4 * Math.pow(u, 1.6)
-              const z = 0.35 + Math.sin(u * Math.PI) * 0.55
-              return [x, y, z]
-            },
-            n,
-            { rng, radius: 0.16 }
-          ),
+        build: (n) => {
+          // Packets on a fixed queue rather than a scatter along the path: one
+          // gap of travel over the whole loop keeps the current moving without
+          // any particle overtaking the one in front.
+          const PACKETS = 26
+          const GAP = 1 / PACKETS
+          const out = new Float32Array(n * 3)
+          for (let i = 0; i < n; i++) {
+            const slot = (rng() * PACKETS) | 0
+            const u = (slot * GAP + flow * GAP) % 1
+            const x = 1.95 - 2.5 * u
+            const y = -0.35 + 1.4 * Math.pow(u, 1.6)
+            const z = 0.35 + Math.sin(u * Math.PI) * 0.55
+            out[i * 3] = x + (rng() - 0.5) * 0.16
+            out[i * 3 + 1] = y + (rng() - 0.5) * 0.16
+            out[i * 3 + 2] = z + (rng() - 0.5) * 0.16
+          }
+          return out
+        },
       },
       // The two clinicians it lands with. The scene is called "handover", and a
       // handover with nobody in it is just a laptop.
@@ -1052,6 +1067,8 @@ const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarge
   // One keyframe per screening, so the marker walks the curve's own segments
   // instead of cutting the chord a two-frame morph would give it.
   timeline: (n, t) => buildTimeline(n, t),
+  // The current runs phone to dashboard and back again.
+  clinician: (n, t) => buildClinician(n, t),
   // Horizon to zenith to horizon: three frames, so the disc travels an arc
   // rather than the straight chord two frames would give it.
   city: (n, t) => buildCity(n, t),

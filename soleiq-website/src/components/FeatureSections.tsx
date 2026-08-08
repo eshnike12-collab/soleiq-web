@@ -53,8 +53,10 @@ const FEATURES: Feature[] = [
     target: 'clinician',
     labels: [
       { part: 'doctors', text: 'Your care team' },
-      { part: 'record', text: 'Patient record' },
+      // Lifted clear of the rows it names, which it was sitting across.
+      { part: 'record', text: 'Patient record', dy: -78 },
     ],
+    animated: true,
     visual: <ScreenShare />,
     visualLabel:
       'A particle rendering of the clinical report: a dashboard receiving the record, with the findings mapped onto the patient photograph.',
