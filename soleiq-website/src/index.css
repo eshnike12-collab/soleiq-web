@@ -858,7 +858,7 @@ html.has-custom-cursor label {
 }
 
 html:not([data-tone='dark']) .cursor-dim {
-  filter: brightness(0.72);
+  filter: brightness(0.5);
 }
 
 /* A filter applies to everything inside, so any block carrying a portrait, an
