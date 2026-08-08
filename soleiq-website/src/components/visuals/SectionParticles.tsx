@@ -25,10 +25,11 @@ THREE.ColorManagement.enabled = false
  * and `positionB`, and a looping progress value walks between them.
  *
  * Two ways round the loop:
- *   `cycle`     — runs to the end and starts over. The reset is the point, for
- *                 a page that fills with writing and is then a blank page again.
- *   `pingPong`  — runs there and back. For anything whose motion has to reverse
- *                 to make sense: a sun that sets has to rise.
+ *   `pingPong`  — runs there and back, so the return is animated rather than a
+ *                 cut. A sun that sets has to rise; a page that has filled with
+ *                 writing empties again by unwriting, not by blinking blank.
+ *   `cycle`     — runs to the end and starts over, for motion that only ever
+ *                 goes one way and whose ends match.
  */
 
 const PALETTE = {

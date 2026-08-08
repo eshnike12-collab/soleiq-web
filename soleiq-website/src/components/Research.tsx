@@ -38,8 +38,10 @@ export default function Research() {
           <div className="hidden lg:block">
             <SectionParticles
               target="paper"
-              loop="cycle"
-              period={9}
+              // Writes down the page and then unwrites back up it, rather than
+              // snapping to blank. The reset was a cut; this is a return.
+              loop="pingPong"
+              period={7}
               label="A particle rendering of a page being written, line by line, and then blank again."
               fallback={<div />}
             />
