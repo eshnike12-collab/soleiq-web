@@ -141,7 +141,7 @@ export default function ParticleField({
   const framedRef = useRef(false)
   const mouseWorld = useRef(new THREE.Vector3(0, 0, 0))
   /** Anchors for the current scene's labels, in shape space. */
-  const anchorsRef = useRef<{ text: string; dy: number; at: THREE.Vector3 }[]>([])
+  const anchorsRef = useRef<{ text: string; dx: number; dy: number; at: THREE.Vector3 }[]>([])
 
   /* ── Geometry: allocated once, never reallocated ───────────────────────── */
   const geometry = useMemo(() => {
@@ -324,7 +324,7 @@ export default function ParticleField({
       const anchors = partAnchors(a)
       anchorsRef.current = (scene.labels ?? [])
         .filter((l) => anchors[l.part])
-        .map((l) => ({ text: l.text, dy: l.dy ?? 0, at: new THREE.Vector3(...anchors[l.part]) }))
+        .map((l) => ({ text: l.text, dx: l.dx ?? 0, dy: l.dy ?? 0, at: new THREE.Vector3(...anchors[l.part]) }))
       sceneIndexRef.current = index
     }
 
@@ -533,7 +533,7 @@ export default function ParticleField({
         if (scratch.v.z > 1) continue
         out.push({
           text: anchor.text,
-          x: (scratch.v.x * 0.5 + 0.5) * state.size.width,
+          x: (scratch.v.x * 0.5 + 0.5) * state.size.width + anchor.dx,
           y: (-scratch.v.y * 0.5 + 0.5) * state.size.height + anchor.dy,
           opacity: hold,
         })

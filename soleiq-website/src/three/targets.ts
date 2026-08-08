@@ -288,7 +288,15 @@ function buildFoot(count: number): BuiltTarget {
   )
 }
 
-function buildCapture(count: number): BuiltTarget {
+/**
+ * `shot` is which of the four captures is being taken right now, 0 to 3, or -1
+ * for the still version with none of them lit.
+ *
+ * Only the lit frame's colour changes between keyframes — every particle stays
+ * exactly where it is, and the highlight travels by the tone and accent being
+ * interpolated rather than by anything moving.
+ */
+function buildCapture(count: number, shot = -1): BuiltTarget {
   const rng = makeRng(23)
   // The phone is held above the foot; the four captures land inside its screen
   // as a 2 x 2 set — right top, right sole, left top, left sole.
@@ -319,30 +327,22 @@ function buildCapture(count: number): BuiltTarget {
           }),
       },
       // The four capture frames, on the screen.
+      // Taken in the order the app asks for them: right foot top, right sole,
+      // left top, left sole. The one being taken goes white; the rest stay the
+      // accent colour, waiting their turn.
       ...[
         [-0.28, PHONE_Y + 0.42],
         [0.28, PHONE_Y + 0.42],
         [-0.28, PHONE_Y - 0.38],
         [0.28, PHONE_Y - 0.38],
-      ].map(([x, y]) => ({
+      ].map(([x, y], i) => ({
         weight: 0.055,
-        tone: 0.97,
-        ai: 0.95,
+        tone: shot === i ? 1 : 0.9,
+        toneJitter: shot === i ? 0.02 : 0.08,
+        ai: shot === i ? 0 : 0.95,
         build: (n: number) =>
           frameOutline(n, rng, { w: 0.44, h: 0.6, corner: 0.14, position: [x, y, 0.79] }),
       })),
-      // The scanning sweep crossing the foot.
-      {
-        weight: 0.13,
-        tone: 0.88,
-        ai: 1,
-        build: (n) =>
-          sampleCurve(
-            (t) => [(t - 0.5) * 1.7, -0.95, -0.35 + Math.sin(t * Math.PI) * 0.2],
-            n,
-            { rng, radius: 0.022 }
-          ),
-      },
       // The beam from the phone down to the foot.
       {
         weight: 0.09,
@@ -1083,6 +1083,9 @@ const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarge
   // the path bends, and a straight morph between its ends would take the
   // packet off the line it is supposed to be running along.
   clinician: (n, t) => buildClinician(n, t),
+  // Five frames for four photographs: the last repeats the first, so the
+  // sequence starts over without a cut where it wraps.
+  capture: (n, t) => buildCapture(n, Math.round(t * 4) % 4),
   // Horizon to zenith to horizon: three frames, so the disc travels an arc
   // rather than the straight chord two frames would give it.
   city: (n, t) => buildCity(n, t),
@@ -1090,7 +1093,12 @@ const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarge
 }
 
 /** How many keyframes a composition needs to describe its motion. */
-export const KEYFRAMES: Partial<Record<TargetKey, number>> = { city: 3, timeline: 6, clinician: 5 }
+export const KEYFRAMES: Partial<Record<TargetKey, number>> = {
+  city: 3,
+  timeline: 6,
+  clinician: 5,
+  capture: 5,
+}
 
 export function buildPhased(key: TargetKey, count: number, t: number): BuiltTarget | null {
   const make = PHASED[key]

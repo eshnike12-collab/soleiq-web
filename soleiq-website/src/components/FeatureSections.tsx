@@ -29,8 +29,10 @@ interface Feature {
   visual: ReactNode
   visualLabel: string
   flip?: boolean
-  /** Runs a loop rather than settling: the marker walking the risk curve. */
+  /** Runs a loop rather than settling. */
   animated?: boolean
+  /** How that loop turns over. Ping-pong unless a sequence should repeat. */
+  loop?: 'cycle' | 'pingPong'
 }
 
 const FEATURES: Feature[] = [
@@ -40,7 +42,12 @@ const FEATURES: Feature[] = [
     headline: 'The hard part is taking a usable photograph. So the app does it.',
     body: 'Framing, steadiness, and lighting are checked on the device before anything is uploaded. If one of the four is unusable, you retake only that one.',
     target: 'capture',
-    labels: [{ part: 'phone', text: 'App' }],
+    // Moved beside the phone, not above it: the phone is tall and narrow, so
+    // there is no room over it, and dead centre it covered the very frames
+    // whose turn the animation is showing.
+    labels: [{ part: 'phone', text: 'App', dx: -150 }],
+    animated: true,
+    loop: 'cycle',
     visual: <ScreenCapture />,
     visualLabel:
       'A particle rendering of guided capture: a phone held above a foot, with the four photographs landing on its screen.',
@@ -125,8 +132,8 @@ export default function FeatureSections() {
                 <SectionParticles
                   target={f.target}
                   labels={f.labels}
-                  loop="pingPong"
-                  period={2.4}
+                  loop={f.loop ?? 'pingPong'}
+                  period={f.loop === 'cycle' ? 1.5 : 2.4}
                   label={f.visualLabel}
                   fallback={<PhoneFrame label={f.visualLabel}>{f.visual}</PhoneFrame>}
                 />
