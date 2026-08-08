@@ -91,7 +91,7 @@ export default function FeatureSections() {
       </div>
 
       {FEATURES.map((f, i) => (
-        <div key={f.id} className="shell py-20 md:min-h-[125vh] md:py-28">
+        <div key={f.id} className="shell py-14 md:min-h-[76vh] md:py-16">
           <motion.div
             {...reveal}
             transition={{ duration: 0.55, ease: EASE }}
@@ -99,7 +99,7 @@ export default function FeatureSections() {
           >
             {/* The copy rises; the picture stays put. */}
             <div
-              className={`md:pt-[26vh] ${f.flip ? 'md:order-2' : ''}`}
+              className={`md:pt-[10vh] ${f.flip ? 'md:order-2' : ''}`}
             >
               <p className="eyebrow">{f.kicker}</p>
               <h3 className="h-sub mt-4 max-w-lg text-[clamp(1.5rem,2.7vw,2.1rem)]">
@@ -110,7 +110,7 @@ export default function FeatureSections() {
               </p>
             </div>
             <div
-              className={`md:sticky md:top-[14vh] ${f.flip ? 'md:order-1' : ''}`}
+              className={`md:sticky md:top-[10vh] ${f.flip ? 'md:order-1' : ''}`}
             >
               {/* The particle composition when the device can run it; the flat
                   screen illustration when it cannot. Only one ever mounts. */}
@@ -122,26 +122,13 @@ export default function FeatureSections() {
               />
             </div>
           </motion.div>
-          {i < FEATURES.length - 1 && <hr className="mt-20 border-clr-border md:mt-28" />}
+          {i < FEATURES.length - 1 && <hr className="mt-14 border-clr-border md:mt-16" />}
         </div>
       ))}
 
-      {/* The limits, stated where they can be read rather than in the footer. */}
-      <div className="shell pb-20 md:pb-28">
-        <div className="border-t border-clr-border pt-10">
-          <div className="grid gap-6 md:grid-cols-[14rem_1fr] md:gap-12">
-            <p className="eyebrow">What SoleIQ is not</p>
-            <p className="max-w-2xl text-[1.0625rem] leading-relaxed text-clr-text">
-              SoleIQ is a screening and decision-support tool. It does not
-              diagnose, it is not a substitute for examination by a clinician,
-              and a “clear” result is not a guarantee that nothing is wrong. If
-              you have a wound, an infection, sudden pain, or a foot that has
-              changed colour or temperature, seek care now rather than waiting
-              for a screening.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* The limits are stated once, in the footer. Saying the same thing twice
+          on one page reads as a disclaimer being repeated at you rather than
+          told to you. */}
     </section>
   )
 }

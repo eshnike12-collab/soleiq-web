@@ -27,7 +27,8 @@ function leavesTheSite(el: HTMLElement): boolean {
 const LERP = 0.15
 /** Diameter of the lit patch of grid, in px. */
 const LIGHT = 620
-const NUDGE_PX = 2
+/** How far a control lifts under the pointer. */
+const LIFT_PX = 3
 
 /**
  * A small white square that follows the pointer, lights up the background grid
@@ -49,6 +50,8 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
   const labelRef = useRef<HTMLSpanElement>(null)
   const stateRef = useRef<CursorState | null>(null)
   const nudgedRef = useRef<HTMLElement | null>(null)
+  /** Elements still animating back, so re-hovering can cancel the cleanup. */
+  const pendingRef = useRef(new Map<HTMLElement, number>())
 
   useEffect(() => {
     if (!enabled) return
@@ -93,22 +96,53 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
       if (labelRef.current && state !== 'link') labelRef.current.style.opacity = '0'
     }
 
+    /**
+     * Undoes whatever the last hovered element was given.
+     *
+     * The class carries the transition, so it has to outlive the value it is
+     * animating back to — removed a frame later and the element would snap
+     * home instead of settling. It is cleared after the transition instead,
+     * and re-hovering in the meantime cancels the pending removal.
+     */
     const clearNudge = () => {
       const el = nudgedRef.current
       if (!el) return
       el.style.transform = ''
-      el.classList.remove('cursor-nudge')
+      const settle = window.setTimeout(() => el.classList.remove('cursor-nudge', 'cursor-dim'), 320)
+      pendingRef.current.set(el, settle)
       nudgedRef.current = null
     }
 
-    const setNudge = (el: HTMLElement) => {
+    const hold = (el: HTMLElement, className: 'cursor-nudge' | 'cursor-dim') => {
+      const pending = pendingRef.current.get(el)
+      if (pending !== undefined) {
+        window.clearTimeout(pending)
+        pendingRef.current.delete(el)
+      }
+      nudgedRef.current = el
+      el.classList.add(className)
+    }
+
+    /** A control lifts under the pointer. */
+    const setLift = (el: HTMLElement) => {
       if (nudgedRef.current === el) return
       clearNudge()
-      // Never shove a whole layout block around — only leaf-ish text and controls.
+      // Never shove a whole layout block around — only leaf-ish controls.
       if (el.getBoundingClientRect().height > window.innerHeight * 0.7) return
-      nudgedRef.current = el
-      el.classList.add('cursor-nudge')
-      el.style.transform = `translate3d(${NUDGE_PX}px, -${NUDGE_PX}px, 0)`
+      hold(el, 'cursor-nudge')
+      el.style.transform = `translate3d(0, -${LIFT_PX}px, 0)`
+    }
+
+    /**
+     * Text that goes nowhere does not move. Moving it says "this does
+     * something", which is a promise the paragraph cannot keep — so it only
+     * deepens in colour, and the class does that with no transform at all.
+     */
+    const setDim = (el: HTMLElement) => {
+      if (nudgedRef.current === el) return
+      clearNudge()
+      if (el.getBoundingClientRect().height > window.innerHeight * 0.7) return
+      hold(el, 'cursor-dim')
     }
 
     const resolve = (el: HTMLElement | null) => {
@@ -119,7 +153,7 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
       const link = el.closest(LINK_SELECTOR) as HTMLElement | null
       if (link) {
         apply('link')
-        setNudge(link)
+        setLift(link)
         if (labelRef.current) {
           const custom = link.dataset.cursorLabel ?? ''
           labelRef.current.textContent = custom
@@ -139,7 +173,7 @@ export default function Cursor({ enabled }: { enabled: boolean }) {
       const text = el.closest(TEXT_SELECTOR) as HTMLElement | null
       if (text) {
         apply('text')
-        setNudge(text)
+        setDim(text)
         return
       }
       apply('default')

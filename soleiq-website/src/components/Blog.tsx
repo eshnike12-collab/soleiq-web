@@ -58,7 +58,6 @@ export default function Blog() {
     <section
       id="blog"
       className="section-pad"
-      style={{ background: 'var(--clr-surface)' }}
       aria-labelledby="blog-heading"
     >
       <div className="shell">

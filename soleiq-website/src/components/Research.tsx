@@ -32,9 +32,10 @@ export default function Research() {
         <FeaturedPaper />
       </div>
 
-      {/* Third-party literature — tinted band, its own heading and provenance. */}
-      <div style={{ background: 'var(--clr-surface)' }}>
-        <div className="shell py-20 md:py-28">
+      {/* Third-party literature — its own heading and provenance, separated by
+          a rule rather than a tint. */}
+      <div>
+        <div className="shell border-t border-clr-border py-20 md:py-28">
           <h3 className="h-sub">Search the literature</h3>
           <p className="mt-4 max-w-prose text-[0.9375rem] leading-relaxed text-clr-muted">
             The published record on diabetic foot disease, screening, and

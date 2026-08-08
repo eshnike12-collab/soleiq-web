@@ -833,9 +833,38 @@ html.has-custom-cursor label {
   content: none;
 }
 
-/* The nudge hovered text takes. Transform only — no layout is affected. */
+/* The lift a control takes under the pointer, and the settle back down.
+   Transform only — no layout is affected, and nothing below it moves. */
 .cursor-nudge {
   transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/*
+  Text that is not a link only deepens in colour.
+
+  Nothing moves, because movement is a promise that something happens when you
+  click, and a paragraph has nothing to give.
+
+  Darkened proportionally rather than set to a fixed colour: the copy on this
+  page runs from muted grey to near-black, and one hover colour cannot serve
+  both — it would haul the grey most of the way to black while leaving anything
+  already dark visibly unchanged.
+
+  Held to the light ground: over the particle scenes the copy is near-white on
+  navy, where "darker" would mean harder to read.
+*/
+.cursor-dim {
+  transition: filter 0.2s ease;
+}
+
+html:not([data-tone='dark']) .cursor-dim {
+  filter: brightness(0.72);
+}
+
+/* A filter applies to everything inside, so any block carrying a portrait, an
+   icon or a canvas opts out rather than having its picture dimmed too. */
+html:not([data-tone='dark']) .cursor-dim:has(img, svg, canvas, video, picture) {
+  filter: none;
 }
 
 /* Touch devices never get any of this. */

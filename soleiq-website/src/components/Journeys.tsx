@@ -118,7 +118,6 @@ export default function Journeys() {
     <section
       id="journeys"
       className="section-pad"
-      style={{ background: 'var(--clr-surface)' }}
       aria-labelledby="journeys-heading"
     >
       <div className="shell">
