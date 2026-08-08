@@ -12,7 +12,7 @@ import {
 } from '../../three/framing'
 import { detectCapabilities } from '../../three/capabilities'
 import { usePointerInside } from '../../hooks/usePointerInside'
-import { makeRng, sampleCloud, type BuiltTarget } from '../../three/sampleTargets'
+import { makeRng, partAnchors, sampleCloud, type BuiltTarget } from '../../three/sampleTargets'
 import type { TargetKey } from '../../three/scenes'
 
 THREE.ColorManagement.enabled = false
@@ -32,16 +32,38 @@ THREE.ColorManagement.enabled = false
  *                 goes one way and whose ends match.
  */
 
+/**
+ * White at the top of the ramp, not lilac.
+ *
+ * These compositions each have one thing that has to read as white — the
+ * written line, the marker on the curve — and the narrative's ramp topped out
+ * at a light purple, so "tone 1" came out lilac and the marker was just
+ * another coloured dot among the nodes.
+ */
 const PALETTE = {
   deep: '#7c46c4',
   core: '#a45fe8',
-  hi: '#cf9dff',
+  hi: '#ffffff',
   hot: '#ffffff',
   ai: '#26f7fd',
 }
 
+export interface PartLabel {
+  part: string
+  text: string
+}
+
+interface ScreenLabel {
+  text: string
+  x: number
+  y: number
+  opacity: number
+}
+
 interface Props {
   target: TargetKey
+  /** Named parts of the shape, labelled the way the narrative labels them. */
+  labels?: PartLabel[]
   /** How the loop turns over. */
   loop: 'cycle' | 'pingPong'
   /** Seconds for one pass between the two keyframes. */
@@ -52,12 +74,21 @@ interface Props {
   fallback: ReactNode
 }
 
-export default function SectionParticles({ target, loop, period, label, fallback }: Props) {
+export default function SectionParticles({
+  target,
+  labels = [],
+  loop,
+  period,
+  label,
+  fallback,
+}: Props) {
   const caps = useMemo(detectCapabilities, [])
   const hostRef = useRef<HTMLDivElement>(null)
   const [near, setNear] = useState(false)
   const [visible, setVisible] = useState(false)
   const [frames, setFrames] = useState<BuiltTarget[] | null>(null)
+  const labelElsRef = useRef<(HTMLSpanElement | null)[]>([])
+  const labelsRef = useRef<ScreenLabel[]>([])
 
   const pointer = usePointerInside(hostRef)
   const count = caps.tier === 'high' ? 22_000 : 11_000
@@ -102,6 +133,29 @@ export default function SectionParticles({ target, loop, period, label, fallback
     }
   }, [near, frames, target, count])
 
+  /* Written straight to a fixed pool of elements, never re-rendered. */
+  useEffect(() => {
+    if (!enabled || !frames) return
+    let raf = 0
+    const tick = () => {
+      const items = labelsRef.current
+      labelElsRef.current.forEach((el, i) => {
+        if (!el) return
+        const item = items[i]
+        if (!item) {
+          if (el.style.opacity !== '0') el.style.opacity = '0'
+          return
+        }
+        if (el.textContent !== item.text) el.textContent = item.text
+        el.style.transform = `translate3d(${Math.round(item.x)}px, ${Math.round(item.y)}px, 0) translate(-50%, -50%)`
+        el.style.opacity = String(Math.round(item.opacity * 100) / 100)
+      })
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [enabled, frames])
+
   if (!enabled) return <>{fallback}</>
 
   return (
@@ -137,9 +191,22 @@ export default function SectionParticles({ target, loop, period, label, fallback
             loop={loop}
             period={period}
             pointer={pointer}
+            labels={labels}
+            labelsRef={labelsRef}
           />
         </Canvas>
       )}
+
+      <div className="pointer-events-none absolute inset-0">
+        {labels.map((l, i) => (
+          <span
+            key={l.part}
+            ref={(el) => (labelElsRef.current[i] = el)}
+            className="scene-label absolute left-0 top-0"
+            style={{ opacity: 0 }}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -155,6 +222,8 @@ function Loop({
   loop,
   period,
   pointer,
+  labels,
+  labelsRef,
 }: {
   cacheKey: string
   frames: BuiltTarget[]
@@ -166,6 +235,8 @@ function Loop({
   loop: 'cycle' | 'pingPong'
   period: number
   pointer: { inside: React.MutableRefObject<boolean>; justEntered: React.MutableRefObject<boolean> }
+  labels: PartLabel[]
+  labelsRef: React.MutableRefObject<ScreenLabel[]>
 }) {
   const points = useRef<THREE.Points>(null)
   const { camera } = useThree()
@@ -290,6 +361,14 @@ function Loop({
     []
   )
 
+  /* Anchors come from the first keyframe: the labelled parts do not move. */
+  const anchors = useMemo(() => {
+    const found = partAnchors(frames[0])
+    return labels
+      .filter((l) => found[l.part])
+      .map((l) => ({ text: l.text, at: new THREE.Vector3(...found[l.part]) }))
+  }, [frames, labels])
+
   const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
 
   useFrame((state, delta) => {
@@ -361,6 +440,26 @@ function Loop({
         mouse.current.lerp(scratch.target, 1 - Math.pow(0.002, dt))
       }
       u.uMouse.value.copy(mouse.current)
+
+      /* Labels ride the settled shape, so they fade in with it. */
+      const out = labelsRef.current
+      out.length = 0
+      const settled = 1 - u.uDissolve.value
+      if (settled > 0.35) {
+        points.current.updateWorldMatrix(true, false)
+        for (const anchor of anchors) {
+          scratch.v.copy(anchor.at)
+          points.current.localToWorld(scratch.v)
+          scratch.v.project(camera)
+          if (scratch.v.z > 1) continue
+          out.push({
+            text: anchor.text,
+            x: (scratch.v.x * 0.5 + 0.5) * state.size.width,
+            y: (-scratch.v.y * 0.5 + 0.5) * state.size.height,
+            opacity: Math.min(1, (settled - 0.35) / 0.4),
+          })
+        }
+      }
     }
   })
 

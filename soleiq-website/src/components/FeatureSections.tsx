@@ -7,6 +7,7 @@ import {
   ScreenTimeline,
 } from './visuals/ProductScreens'
 import FeatureParticles, { type PartLabel } from './visuals/FeatureParticles'
+import SectionParticles from './visuals/SectionParticles'
 import type { TargetKey } from '../three/scenes'
 
 /**
@@ -28,6 +29,8 @@ interface Feature {
   visual: ReactNode
   visualLabel: string
   flip?: boolean
+  /** Runs a loop rather than settling: the marker walking the risk curve. */
+  animated?: boolean
 }
 
 const FEATURES: Feature[] = [
@@ -64,9 +67,10 @@ const FEATURES: Feature[] = [
     body: 'Every check is kept as a dated set of photos and levels, so a change too slow to notice day to day is obvious side by side.',
     target: 'timeline',
     labels: [{ part: 'curve', text: 'Risk over time' }],
+    animated: true,
     visual: <ScreenTimeline />,
     visualLabel:
-      'A particle rendering of the shared timeline: dated screenings along an axis, with the risk curve descending across them.',
+      'A particle rendering of the shared timeline: dated screenings along an axis, with a marker walking down the descending risk curve and back.',
   },
 ]
 
@@ -114,12 +118,23 @@ export default function FeatureSections() {
             >
               {/* The particle composition when the device can run it; the flat
                   screen illustration when it cannot. Only one ever mounts. */}
-              <FeatureParticles
-                target={f.target}
-                labels={f.labels}
-                label={f.visualLabel}
-                fallback={<PhoneFrame label={f.visualLabel}>{f.visual}</PhoneFrame>}
-              />
+              {f.animated ? (
+                <SectionParticles
+                  target={f.target}
+                  labels={f.labels}
+                  loop="pingPong"
+                  period={2.4}
+                  label={f.visualLabel}
+                  fallback={<PhoneFrame label={f.visualLabel}>{f.visual}</PhoneFrame>}
+                />
+              ) : (
+                <FeatureParticles
+                  target={f.target}
+                  labels={f.labels}
+                  label={f.visualLabel}
+                  fallback={<PhoneFrame label={f.visualLabel}>{f.visual}</PhoneFrame>}
+                />
+              )}
             </div>
           </motion.div>
           {i < FEATURES.length - 1 && <hr className="mt-14 border-clr-border md:mt-16" />}

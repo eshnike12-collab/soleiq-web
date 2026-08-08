@@ -539,7 +539,14 @@ function buildClinician(count: number): BuiltTarget {
   )
 }
 
-function buildTimeline(count: number): BuiltTarget {
+/**
+ * `at` is which screening the marker is sitting on, 0 to 1 across the series.
+ *
+ * Only the marker moves between keyframes: every other part is built from the
+ * same seed in the same order, so its particles land on identical coordinates
+ * each time and the morph leaves them exactly where they are.
+ */
+function buildTimeline(count: number, at = -1): BuiltTarget {
   const rng = makeRng(71)
   const STOPS = 6
   const SPAN = 4.2
@@ -624,6 +631,24 @@ function buildTimeline(count: number): BuiltTarget {
             out[i * 3 + 2] = b[2]
           }
           return out
+        },
+      },
+      // The marker, walking the curve from the first screening to the last.
+      // Off the page entirely when nothing asked for it, so the still version
+      // of this composition is unchanged.
+      {
+        weight: at < 0 ? 0.0001 : 0.05,
+        tone: 1,
+        toneJitter: 0,
+        ai: 0,
+        build: (n) => {
+          if (at < 0) return new Float32Array(n * 3)
+          const k = at * (STOPS - 1)
+          const i = Math.min(STOPS - 2, Math.floor(k))
+          const f = k - i
+          const x = (at - 0.5) * SPAN
+          const y = 0.55 + (level(i) * (1 - f) + level(i + 1) * f) * 0.95
+          return blob(n, rng, [x, y, 0.05], 0.1)
         },
       },
       // A faint horizon, which the day/night cycle lights.
@@ -1024,6 +1049,9 @@ const BUILDERS: Record<TargetKey, (count: number) => BuiltTarget | Promise<Built
 const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarget>> = {
   // One row gap of descent across the whole loop, and no more.
   village: (n, t) => buildVillage(n, t),
+  // One keyframe per screening, so the marker walks the curve's own segments
+  // instead of cutting the chord a two-frame morph would give it.
+  timeline: (n, t) => buildTimeline(n, t),
   // Horizon to zenith to horizon: three frames, so the disc travels an arc
   // rather than the straight chord two frames would give it.
   city: (n, t) => buildCity(n, t),
@@ -1031,7 +1059,7 @@ const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarge
 }
 
 /** How many keyframes a composition needs to describe its motion. */
-export const KEYFRAMES: Partial<Record<TargetKey, number>> = { city: 3 }
+export const KEYFRAMES: Partial<Record<TargetKey, number>> = { city: 3, timeline: 6 }
 
 export function buildPhased(key: TargetKey, count: number, t: number): BuiltTarget | null {
   const make = PHASED[key]
