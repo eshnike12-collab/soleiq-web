@@ -661,16 +661,27 @@ function buildTimeline(count: number, at = -1): BuiltTarget {
         },
       },
       // A foot snapshot at each stop, each one a little further along.
-      ...Array.from({ length: STOPS }, (_, i) => ({
-        weight: 0.075,
-        tone: 0.4,
-        build: (n: number) =>
-          footVolume(n, rng, {
-            width: 0.5,
-            depth: 0.16,
-            offset: [(i / (STOPS - 1) - 0.5) * SPAN, -0.55, 0],
-          }),
-      })),
+      //
+      // The one the marker is standing over lifts to near-white, so the reading
+      // on the curve and the screening it came from are visibly the same
+      // moment. Only the tone changes; each foot keeps its own particles, so
+      // the glow crosses from one to the next as the marker travels rather
+      // than any particle moving between them.
+      ...Array.from({ length: STOPS }, (_, i) => {
+        const lit = at >= 0 && Math.round(at * (STOPS - 1)) === i
+        return {
+          weight: 0.075,
+          tone: lit ? 0.86 : 0.4,
+          toneJitter: lit ? 0.06 : 0.08,
+          ai: lit ? 0.15 : 0,
+          build: (n: number) =>
+            footVolume(n, rng, {
+              width: 0.5,
+              depth: 0.16,
+              offset: [(i / (STOPS - 1) - 0.5) * SPAN, -0.55, 0],
+            }),
+        }
+      }),
       // The descending curve, drawn through the level at each stop.
       {
         weight: 0.3,
