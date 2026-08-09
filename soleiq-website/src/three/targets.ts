@@ -7,6 +7,7 @@ import {
   maskFromImage,
   maskFromText,
   normalize,
+  applyTransform,
   sampleCurve,
   sampleLattice,
   sampleCloud,
@@ -271,40 +272,111 @@ function rows(
 
 /* ── Scene targets ────────────────────────────────────────────────────────── */
 
-function buildFoot(count: number): BuiltTarget {
-  const rng = makeRng(11)
-  return normalize(
-    compose(count, [
-      { weight: 0.94, tone: 0.72, build: (n) => footVolume(n, rng, { width: 2.0, depth: 0.34 }) },
-      // A faint ground haze so the foot reads as sitting in space, not floating.
-      {
-        weight: 0.06,
-        tone: 0.1,
-        build: (n) =>
-          sampleLattice(n, {
-            rng,
-            width: 3.4,
-            height: 0.02,
-            cols: 1,
-            rows: 1,
-            lineOnly: false,
-            offset: [0, -1.35, 0],
-          }),
-      },
-    ]),
-    1.75
-  )
+/**
+ * The lesion on the sole: a crack with a blister swelling around it.
+ *
+ * `spin` turns the whole patch about its own centre. Walked through a loop it
+ * churns the white points over each other without the patch itself going
+ * anywhere, which is the only way to say "something is happening here" on a
+ * shape that is otherwise held still — a foot that pulsed or grew would be
+ * claiming a measurement the scene has not made.
+ *
+ * Its own rng, seeded here rather than threaded in, so the same keyframe can
+ * be rebuilt on its own at runtime and land on the same points.
+ */
+// On the ball of the foot, just proud of the surface — the scene turns through
+// a shallow arc, and a patch floating clear of the sole separates as it does.
+const LESION_AT: [number, number, number] = [0.24, 0.2, 0.19]
+function lesion(n: number, spin: number): Target {
+  const rng = makeRng(1101)
+  const out = new Float32Array(n * 3)
+  const cos = Math.cos(spin)
+  const sin = Math.sin(spin)
+  for (let i = 0; i < n; i++) {
+    let x: number
+    let y: number
+    if (i % 5 < 2) {
+      // The fissure: a short ragged split through the middle of the patch.
+      const t = rng() * 2 - 1
+      x = t * 0.115
+      y = Math.sin(t * 4.1) * 0.022 + (rng() - 0.5) * 0.016
+    } else {
+      // The blister around it: a ring, denser at the rim than the centre.
+      const th = rng() * Math.PI * 2
+      const r = 0.055 + 0.062 * Math.sqrt(rng())
+      x = Math.cos(th) * r
+      y = Math.sin(th) * r * 0.82
+    }
+    out[i * 3] = LESION_AT[0] + x * cos - y * sin
+    out[i * 3 + 1] = LESION_AT[1] + x * sin + y * cos
+    out[i * 3 + 2] = LESION_AT[2] + (rng() - 0.5) * 0.03
+  }
+  return out
 }
 
 /**
- * `shot` is which of the four captures is being taken right now, 0 to 3, or -1
- * for the still version with none of them lit.
+ * `spin` is where the lesion has turned to, 0 to 1 over a full revolution.
+ */
+function buildFoot(count: number, spin = 0): BuiltTarget {
+  const rng = makeRng(11)
+  return normalize(
+    compose(count, [
+      { weight: 0.97, tone: 0.72, build: (n) => footVolume(n, rng, { width: 2.0, depth: 0.34 }) },
+      // The one thing on this foot that a person with neuropathy would not
+      // feel. It moves, so it is kept out of the normalise measurement.
+      {
+        weight: 0.03,
+        tone: 1,
+        toneJitter: 0.05,
+        ai: 0,
+        label: 'lesion',
+        build: (n) => lesion(n, spin * Math.PI * 2),
+      },
+    ]),
+    1.75,
+    { ignore: 'lesion' }
+  )
+}
+
+/** Where the four capture frames sit on the phone screen. */
+const SHOT_AT: [number, number][] = [
+  [-0.28, 1.2],
+  [0.28, 1.2],
+  [-0.28, 0.4],
+  [0.28, 0.4],
+]
+
+/**
+ * The white outline laid over whichever frame is being taken.
+ *
+ * Its own rng so a keyframe can be rebuilt standalone at runtime — the shared
+ * one has been advanced by every part before it, and that state is not
+ * something anything outside this function can reproduce.
+ */
+function captureFlash(n: number, shot: number): Target {
+  const rng = makeRng(2301)
+  const [fx, fy] = SHOT_AT[((shot % 4) + 4) % 4]
+  // Thick and a size larger than the frame beneath it. The lit frame used to
+  // be redrawn bolder in place, which meant its particles jumped every time
+  // the light moved on. All of that boldness lives here now, in the one part
+  // that is supposed to be travelling.
+  return frameOutline(n, rng, {
+    w: 0.5,
+    h: 0.675,
+    corner: 0.2,
+    stroke: 0.05,
+    position: [fx, fy, 0.84],
+  })
+}
+
+/**
+ * `shot` is which of the four captures is being taken right now, 0 to 3.
  *
  * Only the lit frame's colour changes between keyframes — every particle stays
  * exactly where it is, and the highlight travels by the tone and accent being
  * interpolated rather than by anything moving.
  */
-function buildCapture(count: number, shot = -1): BuiltTarget {
+function buildCapture(count: number, shot = 0): BuiltTarget {
   const rng = makeRng(23)
   // The phone is held above the foot; the four captures land inside its screen
   // as a 2 x 2 set — right top, right sole, left top, left sole.
@@ -340,37 +412,24 @@ function buildCapture(count: number, shot = -1): BuiltTarget {
             rotation: [-0.16, 0, 0],
           }),
       },
-      // The four capture frames, on the screen.
-      // Taken in the order the app asks for them: right foot top, right sole,
-      // left top, left sole. The one being taken goes white; the rest stay the
-      // accent colour, waiting their turn.
-      ...[
-        [-0.28, PHONE_Y + 0.42],
-        [0.28, PHONE_Y + 0.42],
-        [-0.28, PHONE_Y - 0.38],
-        [0.28, PHONE_Y - 0.38],
-      ].map(([x, y], i) => {
-        const lit = shot === i
-        return {
-          // The share of particles has to be the same in every keyframe: it is
-          // what decides which particle belongs to which frame, and shifting it
-          // would have them jumping between frames instead of the light moving.
-          // So the lit one is drawn bolder rather than denser — a thicker edge,
-          // a fraction larger, and white against the others' accent blue.
-          weight: 0.055,
-          tone: lit ? 1 : 0.86,
-          toneJitter: lit ? 0.02 : 0.1,
-          ai: lit ? 0 : 0.95,
-          build: (n: number) =>
-            frameOutline(n, rng, {
-              w: lit ? 0.48 : 0.44,
-              h: lit ? 0.655 : 0.6,
-              corner: lit ? 0.2 : 0.14,
-              stroke: lit ? 0.05 : 0.008,
-              position: [x, y, lit ? 0.82 : 0.79],
-            }),
-        }
-      }),
+      // The four capture frames, on the screen: right foot top, right sole,
+      // left top, left sole, in the order the app asks for them. They never
+      // change. Which one is being taken is said entirely by the white
+      // outline that travels between them.
+      ...SHOT_AT.map(([x, y]) => ({
+        weight: 0.055,
+        tone: 0.86,
+        toneJitter: 0.1,
+        ai: 0.95,
+        build: (n: number) =>
+          frameOutline(n, rng, {
+            w: 0.44,
+            h: 0.6,
+            corner: 0.14,
+            stroke: 0.008,
+            position: [x, y, 0.79] as [number, number, number],
+          }),
+      })),
       // The flash on whichever frame is being taken.
       //
       // Brightness under additive blending is density, and the four frames
@@ -381,27 +440,12 @@ function buildCapture(count: number, shot = -1): BuiltTarget {
       // normalise measurement; otherwise the whole picture would shuffle
       // after it every time the light changed frames.
       {
-        weight: shot < 0 ? 0.0001 : 0.1,
+        weight: 0.1,
         tone: 1,
         toneJitter: 0,
         ai: 0,
         label: 'flash',
-        build: (n) => {
-          if (shot < 0) return new Float32Array(n * 3)
-          const [fx, fy] = [
-            [-0.28, PHONE_Y + 0.42],
-            [0.28, PHONE_Y + 0.42],
-            [-0.28, PHONE_Y - 0.38],
-            [0.28, PHONE_Y - 0.38],
-          ][shot]
-          return frameOutline(n, rng, {
-            w: 0.48,
-            h: 0.655,
-            corner: 0.2,
-            stroke: 0.016,
-            position: [fx, fy, 0.84],
-          })
-        },
+        build: (n) => captureFlash(n, shot),
       },
       // The beam from the phone down to the foot.
       {
@@ -425,7 +469,28 @@ function buildCapture(count: number, shot = -1): BuiltTarget {
   )
 }
 
-function buildAnalysis(count: number): BuiltTarget {
+/**
+ * The three finding sites, all of them on the foot.
+ *
+ * The third used to sit at x 0.5, which at that height is about seven tenths
+ * of a foot-width clear of the silhouette — the sole only reaches x 0.24 at
+ * the arch. It is now on the first metatarsal head, which is both inside the
+ * shape and the site these actually turn up on.
+ */
+const FINDINGS: [number, number, number][] = [
+  [0.42, 0.86, 0.16], // hallux
+  [-0.05, -0.92, 0.13], // heel
+  [0.21, 0.16, 0.1], // first metatarsal head
+]
+
+/** The dot that travels the findings, lighting each one as it arrives. */
+function findingPulse(n: number, at: number): Target {
+  const rng = makeRng(3701)
+  const [x, y, r] = FINDINGS[((at % FINDINGS.length) + FINDINGS.length) % FINDINGS.length]
+  return blob(n, rng, [x, y, 0.4], r * 0.62)
+}
+
+function buildAnalysis(count: number, at = 0): BuiltTarget {
   const rng = makeRng(37)
   const mask = footMask()
 
@@ -459,17 +524,25 @@ function buildAnalysis(count: number): BuiltTarget {
           }),
       },
       // Finding markers, at plausible high-pressure sites.
-      ...[
-        [0.42, 0.86, 0.16],
-        [-0.05, -0.92, 0.13],
-        [0.5, -0.2, 0.1],
-      ].map(([x, y, r]) => ({
+      ...FINDINGS.map(([x, y, r]) => ({
         weight: 0.06,
         tone: 1,
         toneJitter: 0.02,
         ai: 1,
         build: (n: number) => blob(n, rng, [x, y, 0.32], r),
       })),
+      // The read travelling between them. A separate part of fixed size that
+      // simply moves, for the same reason the capture flash is one: a marker
+      // cannot brighten by taking particles from its neighbours without those
+      // particles jumping across the foot to get there.
+      {
+        weight: 0.05,
+        tone: 1,
+        toneJitter: 0,
+        ai: 0,
+        label: 'pulse',
+        build: (n: number) => findingPulse(n, at),
+      },
       // The screening level resolving as a bar with four segments.
       {
         weight: 0.18,
@@ -488,7 +561,8 @@ function buildAnalysis(count: number): BuiltTarget {
           }),
       },
     ]),
-    1.7
+    1.7,
+    { ignore: 'pulse' }
   )
 }
 
@@ -499,15 +573,21 @@ const STREAM = (u: number): [number, number, number] => [
   0.35 + Math.sin(u * Math.PI) * 0.55,
 ]
 
+/** The courier on the current. Its own rng, so it can be rebuilt standalone. */
+function streamPacket(n: number, flow: number): Target {
+  const rng = makeRng(5301)
+  const [x, y, z] = STREAM(Math.min(1, Math.max(0, flow)))
+  return blob(n, rng, [x, y, z], 0.1)
+}
+
 /**
- * `flow` is where the travelling packet has got to along the current, 0 to 1,
- * or -1 for the still version with no packet at all.
+ * `flow` is where the travelling packet has got to along the current, 0 to 1.
  *
  * Only the packet moves. Every other part is built from the same seed in the
  * same order across keyframes, so the laptop, the record, the current itself
  * and the two clinicians land on identical coordinates and stay put.
  */
-function buildClinician(count: number, flow = -1): BuiltTarget {
+function buildClinician(count: number, flow = 0): BuiltTarget {
   const rng = makeRng(53)
   return normalize(
     compose(count, [
@@ -589,16 +669,12 @@ function buildClinician(count: number, flow = -1): BuiltTarget {
       // than the current's blue, so it reads as a thing travelling the line
       // instead of a brighter piece of the line.
       {
-        weight: flow < 0 ? 0.0001 : 0.035,
+        weight: 0.035,
         tone: 1,
         toneJitter: 0,
         ai: 0,
         label: 'packet',
-        build: (n) => {
-          if (flow < 0) return new Float32Array(n * 3)
-          const [x, y, z] = STREAM(flow)
-          return blob(n, rng, [x, y, z], 0.1)
-        },
+        build: (n) => streamPacket(n, flow),
       },
       // The two clinicians it lands with. The scene is called "handover", and a
       // handover with nobody in it is just a laptop.
@@ -621,6 +697,28 @@ function buildClinician(count: number, flow = -1): BuiltTarget {
   )
 }
 
+/* The series the timeline plots. Module scope so the marker can be rebuilt on
+   its own at runtime and still land on the curve. */
+const STOPS = 6
+const SPAN = 4.2
+/** A risk score coming down over the series — illustrative, and labelled as such. */
+const level = (i: number) => 0.95 - 0.135 * i - 0.02 * Math.sin(i * 2.1)
+
+/** Height of the curve at `at`, 0 to 1 across the series. */
+function curveY(at: number): number {
+  const k = Math.min(1, Math.max(0, at)) * (STOPS - 1)
+  const i = Math.min(STOPS - 2, Math.floor(k))
+  const f = k - i
+  return 0.55 + (level(i) * (1 - f) + level(i + 1) * f) * 0.95
+}
+
+/** The reading walking the curve. Its own rng, so it can be rebuilt alone. */
+function curveMarker(n: number, at: number): Target {
+  const rng = makeRng(7101)
+  const t = Math.min(1, Math.max(0, at))
+  return blob(n, rng, [(t - 0.5) * SPAN, curveY(t), 0.05], 0.1)
+}
+
 /**
  * `at` is which screening the marker is sitting on, 0 to 1 across the series.
  *
@@ -628,12 +726,8 @@ function buildClinician(count: number, flow = -1): BuiltTarget {
  * same seed in the same order, so its particles land on identical coordinates
  * each time and the morph leaves them exactly where they are.
  */
-function buildTimeline(count: number, at = -1): BuiltTarget {
+function buildTimeline(count: number, at = 0): BuiltTarget {
   const rng = makeRng(71)
-  const STOPS = 6
-  const SPAN = 4.2
-  // A risk score coming down over the series — illustrative, and labelled as such.
-  const level = (i: number) => 0.95 - 0.135 * i - 0.02 * Math.sin(i * 2.1)
 
   return normalize(
     compose(count, [
@@ -660,28 +754,25 @@ function buildTimeline(count: number, at = -1): BuiltTarget {
           return out
         },
       },
-      // A foot snapshot at each stop, each one a little further along.
-      //
-      // The one the marker is standing over lifts to near-white, so the reading
-      // on the curve and the screening it came from are visibly the same
-      // moment. Only the tone changes; each foot keeps its own particles, so
-      // the glow crosses from one to the next as the marker travels rather
-      // than any particle moving between them.
-      ...Array.from({ length: STOPS }, (_, i) => {
-        const lit = at >= 0 && Math.round(at * (STOPS - 1)) === i
-        return {
-          weight: 0.075,
-          tone: lit ? 0.86 : 0.4,
-          toneJitter: lit ? 0.06 : 0.08,
-          ai: lit ? 0.15 : 0,
-          build: (n: number) =>
-            footVolume(n, rng, {
-              width: 0.5,
-              depth: 0.16,
-              offset: [(i / (STOPS - 1) - 0.5) * SPAN, -0.55, 0],
-            }),
-        }
-      }),
+      // A foot snapshot at each stop, each one a little further along. They
+      // are identical in every keyframe — the lit one is lit by the overlay
+      // below, not by being redrawn.
+      ...Array.from({ length: STOPS }, (_, i) => ({
+        weight: 0.075,
+        tone: 0.4,
+        toneJitter: 0.08,
+        ai: 0,
+        // Labelled so the marker's own keyframe can brighten this foot in
+        // place. Brightness is not movement, and it is the only way to say
+        // "this screening" without a second thing crossing the frame.
+        label: `stop${i}`,
+        build: (n: number) =>
+          footVolume(n, rng, {
+            width: 0.5,
+            depth: 0.16,
+            offset: [(i / (STOPS - 1) - 0.5) * SPAN, -0.55, 0],
+          }),
+      })),
       // The descending curve, drawn through the level at each stop.
       {
         weight: 0.3,
@@ -727,23 +818,13 @@ function buildTimeline(count: number, at = -1): BuiltTarget {
         },
       },
       // The marker, walking the curve from the first screening to the last.
-      // Off the page entirely when nothing asked for it, so the still version
-      // of this composition is unchanged.
       {
-        weight: at < 0 ? 0.0001 : 0.05,
+        weight: 0.05,
         tone: 1,
         toneJitter: 0,
         ai: 0,
         label: 'marker',
-        build: (n) => {
-          if (at < 0) return new Float32Array(n * 3)
-          const k = at * (STOPS - 1)
-          const i = Math.min(STOPS - 2, Math.floor(k))
-          const f = k - i
-          const x = (at - 0.5) * SPAN
-          const y = 0.55 + (level(i) * (1 - f) + level(i + 1) * f) * 0.95
-          return blob(n, rng, [x, y, 0.05], 0.1)
-        },
+        build: (n) => curveMarker(n, at),
       },
       // A faint horizon, which the day/night cycle lights.
       {
@@ -957,6 +1038,11 @@ function flecks(n: number, rng: () => number, drop: number): Target {
 }
 
 /** The rural setting: a cottage, two trees, ground, and flecks coming down. */
+/** The snow, on its own clock. */
+function villageFlecks(n: number, drop: number): Target {
+  return flecks(n, makeRng(9101), drop)
+}
+
 function buildVillage(count: number, drop = 0): BuiltTarget {
   const rng = makeRng(311)
   return normalize(
@@ -974,7 +1060,7 @@ function buildVillage(count: number, drop = 0): BuiltTarget {
           }),
       },
       // A fifth of what it was: the house is the subject, not the weather.
-      { weight: 0.2, tone: 0.92, ai: 0.45, label: 'flecks', build: (n) => flecks(n, rng, drop) },
+      { weight: 0.2, tone: 0.92, ai: 0.45, label: 'flecks', build: (n) => villageFlecks(n, drop) },
     ]),
     1.25,
     { ignore: 'flecks' }
@@ -1051,13 +1137,18 @@ function sky(n: number, rng: () => number, t: number): Target {
 }
 
 /** The urban setting: a skyline under a sky that keeps its own hours. */
+/** The disc and its stars, on their own clock. */
+function citySky(n: number, t: number): Target {
+  return sky(n, makeRng(9201), t)
+}
+
 function buildCity(count: number, t = 0): BuiltTarget {
   const rng = makeRng(733)
   return normalize(
     compose(count, [
       { weight: 0.62, tone: 0.6, toneJitter: 0.3, build: (n) => skyline(n, rng) },
       // Far fewer than before, and the disc is most of what is left.
-      { weight: 0.2, tone: 0.95, ai: 0.5, label: 'sky', build: (n) => sky(n, rng, t) },
+      { weight: 0.2, tone: 0.95, ai: 0.5, label: 'sky', build: (n) => citySky(n, t) },
       {
         weight: 0.18,
         tone: 0.28,
@@ -1079,14 +1170,35 @@ function buildCity(count: number, t = 0): BuiltTarget {
  * along its own line — the page writes itself without anything flying across
  * it. There is no pen: the ink arriving is the whole of it.
  */
-function buildPaper(count: number, written = 0): BuiltTarget {
-  const rng = makeRng(419)
-  const SHEET_W = 1.02
-  const SHEET_H = 1.32
-  const LINES = 12
+const SHEET_W = 1.02
+const SHEET_H = 1.32
+const LINES = 12
+
+/** The writing, on its own clock. */
+function paperInk(n: number, written: number): Target {
+  const rng = makeRng(9301)
   const top = SHEET_H / 2 - 0.14
   const gap = (SHEET_H - 0.28) / (LINES - 1)
   const left = -SHEET_W / 2 + 0.1
+  const out = new Float32Array(n * 3)
+  for (let i = 0; i < n; i++) {
+    const line = (rng() * LINES) | 0
+    const y = top - line * gap
+    // Each line starts as the writing reaches it and finishes a fifth of the
+    // way later, so the page fills top to bottom.
+    const startsAt = line / LINES
+    const grown = Math.min(1, Math.max(0, (written - startsAt) / 0.2))
+    const full = line % 4 === 3 ? 0.56 : 0.8
+    const span = SHEET_W * full * grown
+    out[i * 3] = left + rng() * span
+    out[i * 3 + 1] = y + (rng() - 0.5) * 0.01
+    out[i * 3 + 2] = (rng() - 0.5) * 0.008
+  }
+  return out
+}
+
+function buildPaper(count: number, written = 0): BuiltTarget {
+  const rng = makeRng(419)
 
   return normalize(
     compose(count, [
@@ -1101,23 +1213,7 @@ function buildPaper(count: number, written = 0): BuiltTarget {
         tone: 0.95,
         toneJitter: 0.05,
         label: 'ink',
-        build: (n) => {
-          const out = new Float32Array(n * 3)
-          for (let i = 0; i < n; i++) {
-            const line = (rng() * LINES) | 0
-            const y = top - line * gap
-            // Each line starts as the pen reaches it and finishes a fifth of
-            // the way later, so the page fills top to bottom.
-            const startsAt = line / LINES
-            const grown = Math.min(1, Math.max(0, (written - startsAt) / 0.2))
-            const full = line % 4 === 3 ? 0.56 : 0.8
-            const span = SHEET_W * full * grown
-            out[i * 3] = left + rng() * span
-            out[i * 3 + 1] = y + (rng() - 0.5) * 0.01
-            out[i * 3 + 2] = (rng() - 0.5) * 0.008
-          }
-          return out
-        },
+        build: (n) => paperInk(n, written),
       },
     ]),
     1.25,
@@ -1127,12 +1223,21 @@ function buildPaper(count: number, written = 0): BuiltTarget {
 
 /* ── Public API ───────────────────────────────────────────────────────────── */
 
+/**
+ * The narrative builds the first keyframe of each scene, not a separate still.
+ *
+ * `glow` off for the two scenes that have one: in the section panels the whole
+ * composition is rebuilt per keyframe, so a foot or a frame can brighten as the
+ * marker reaches it. In the narrative only the moving part is rebuilt — a glow
+ * would light whichever stop keyframe zero happened to name and then stay
+ * there while the marker walked away from it.
+ */
 const BUILDERS: Record<TargetKey, (count: number) => BuiltTarget | Promise<BuiltTarget>> = {
-  foot: buildFoot,
-  capture: buildCapture,
-  analysis: buildAnalysis,
-  clinician: buildClinician,
-  timeline: buildTimeline,
+  foot: (n) => buildFoot(n, 0),
+  capture: (n) => buildCapture(n, 0),
+  analysis: (n) => buildAnalysis(n, 0),
+  clinician: (n) => buildClinician(n, 0),
+  timeline: (n) => buildTimeline(n, 0),
   logo: buildLogo,
   village: (n) => buildVillage(n),
   city: (n) => buildCity(n),
@@ -1140,44 +1245,248 @@ const BUILDERS: Record<TargetKey, (count: number) => BuiltTarget | Promise<Built
 }
 
 /**
- * A keyframe of one of the animated section compositions.
+ * The held build of one composition — the frame everything else moves against.
  *
- * `t` is 0 or 1: the two ends the loop morphs between. Anything else falls
- * back to the plain builder, which is the still version of the same picture.
+ * The section panels and the scroll narrative both start here, so a panel and
+ * the scene it echoes are literally the same picture.
  */
-const PHASED: Partial<Record<TargetKey, (count: number, t: number) => BuiltTarget>> = {
-  // One row gap of descent across the whole loop, and no more.
-  village: (n, t) => buildVillage(n, t),
-  // One keyframe per screening, so the marker walks the curve's own segments
-  // instead of cutting the chord a two-frame morph would give it.
-  timeline: (n, t) => buildTimeline(n, t),
-  // One packet travels the current, phone to dashboard and back. Five frames:
-  // the path bends, and a straight morph between its ends would take the
-  // packet off the line it is supposed to be running along.
-  clinician: (n, t) => buildClinician(n, t),
-  // Five frames for four photographs: the last repeats the first, so the
-  // sequence starts over without a cut where it wraps.
-  capture: (n, t) => buildCapture(n, Math.round(t * 4) % 4),
-  // Horizon to zenith to horizon: three frames, so the disc travels an arc
-  // rather than the straight chord two frames would give it.
-  city: (n, t) => buildCity(n, t),
-  paper: (n, t) => buildPaper(n, t),
-}
-
-/** How many keyframes a composition needs to describe its motion. */
-export const KEYFRAMES: Partial<Record<TargetKey, number>> = {
-  city: 3,
-  timeline: 6,
-  clinician: 5,
-  capture: 5,
-}
-
-export function buildPhased(key: TargetKey, count: number, t: number): BuiltTarget | null {
-  const make = PHASED[key]
-  if (make) return make(count, t)
-  const plain = BUILDERS[key]
-  const built = plain ? plain(count) : null
+export function buildStill(key: TargetKey, count: number): BuiltTarget | null {
+  const make = BUILDERS[key]
+  const built = make ? make(count) : null
   return built instanceof Promise ? null : built
+}
+
+/* ── In-scene motion ──────────────────────────────────────────────────────── */
+
+/**
+ * What moves inside a narrative scene while it is being held.
+ *
+ * The section panels animate by rebuilding the whole composition once per
+ * keyframe. The narrative cannot: it runs at up to a hundred and twenty
+ * thousand points, and twenty full re-samples is a loading screen nobody sits
+ * through, plus tens of megabytes to keep them in.
+ *
+ * So only the part that moves is rebuilt. Every builder here is standalone —
+ * its own seeded rng, no dependence on how far the composition's shared rng
+ * had been advanced — which is what lets a keyframe be reproduced outside the
+ * function that first made it.
+ */
+export interface SceneMotion {
+  /** How many keyframes describe one pass. */
+  frames: number
+  /** Seconds for that pass. */
+  period: number
+  /**
+   * `cycle` returns to the first keyframe; `pingPong` walks back through them.
+   * Anything travelling a path that does not close wants pingPong — otherwise
+   * the last frame cuts the chord home.
+   */
+  loop: 'cycle' | 'pingPong'
+  /**
+   * The labelled parts that move, and their raw pre-normalise positions at
+   * keyframe `i`. More than one where a composition has two things to say at
+   * once — the timeline's reading and the screening it is standing over.
+   */
+  parts: { part: string; build: (n: number, i: number) => Target }[]
+  /**
+   * Parts that brighten rather than move: one per keyframe, lit when its
+   * keyframe comes round. A tone change is not motion, so it costs nothing
+   * against the rule these compositions are built on — that the only thing
+   * travelling across the picture is the one thing meant to be.
+   */
+  glow?: { parts: string[]; lit: [number, number]; dim: [number, number] }
+}
+
+const SCENE_MOTION: Partial<Record<TargetKey, SceneMotion>> = {
+  // The lesion turns on its own centre. Eight keyframes for a revolution: the
+  // morph between two of them cuts the chord, and at forty-five degrees that
+  // pulls the rim in by under eight percent, which reads as churn rather than
+  // as the patch breathing.
+  foot: {
+    frames: 8,
+    period: 9,
+    loop: 'cycle',
+    parts: [{ part: 'lesion', build: (n, i) => lesion(n, (i / 8) * Math.PI * 2) }],
+  },
+  // One keyframe per photograph. Cycles, because the fourth shot is followed
+  // by the first again — that is the sequence, not a there-and-back.
+  capture: {
+    frames: 4,
+    period: 6.4,
+    loop: 'cycle',
+    parts: [{ part: 'flash', build: (n, i) => captureFlash(n, i) }],
+  },
+  // Three findings, and the read runs back down them rather than jumping from
+  // the last to the first across the whole foot.
+  analysis: {
+    frames: 3,
+    period: 5.4,
+    loop: 'pingPong',
+    parts: [{ part: 'pulse', build: (n, i) => findingPulse(n, i) }],
+  },
+  // The current bends, so the packet needs enough keyframes to follow it
+  // rather than cutting across. There and back: it is a round trip.
+  clinician: {
+    frames: 5,
+    period: 5.6,
+    loop: 'pingPong',
+    parts: [{ part: 'packet', build: (n, i) => streamPacket(n, i / 4) }],
+  },
+  // One keyframe per screening, so the marker walks the curve's own segments.
+  // The lit foot travels with it, as a second moving part rather than as six
+  // feet taking turns to change colour.
+  timeline: {
+    frames: STOPS,
+    period: 7.5,
+    loop: 'pingPong',
+    parts: [{ part: 'marker', build: (n, i) => curveMarker(n, i / (STOPS - 1)) }],
+    // Keyframe i lights stop i. Nothing moves to do it.
+    glow: {
+      parts: Array.from({ length: STOPS }, (_, i) => `stop${i}`),
+      lit: [0.92, 0.2],
+      dim: [0.4, 0],
+    },
+  },
+  // One row gap of descent across the whole loop, and no more.
+  village: {
+    frames: 2,
+    period: 7,
+    loop: 'pingPong',
+    parts: [{ part: 'flecks', build: (n, i) => villageFlecks(n, i) }],
+  },
+  // Horizon to zenith to horizon: three keyframes, so the disc travels an arc
+  // rather than the straight chord two would give it.
+  city: {
+    frames: 3,
+    period: 11,
+    loop: 'pingPong',
+    parts: [{ part: 'sky', build: (n, i) => citySky(n, i / 2) }],
+  },
+  // Written down the page and then unwritten back up it.
+  paper: {
+    frames: 2,
+    period: 7,
+    loop: 'pingPong',
+    parts: [{ part: 'ink', build: (n, i) => paperInk(n, i) }],
+  },
+}
+
+/** A scene's motion, resolved against a built target. */
+export interface MotionTrack {
+  period: number
+  loop: 'cycle' | 'pingPong'
+  /** One entry per moving part: where it sits, and where it goes. */
+  parts: {
+    /** Index of the first particle that moves, and how many of them. */
+    start: number
+    count: number
+    /** Positions for those particles, one array per keyframe, normalised. */
+    frames: Float32Array[]
+  }[]
+  /** Ranges that brighten in turn, one per keyframe, and the two shades. */
+  glow?: { ranges: { start: number; count: number }[]; lit: [number, number]; dim: [number, number] }
+}
+
+/**
+ * Resolves the motion for one composition, or null if it has none.
+ *
+ * Cheap by construction: it samples each moving part's own particle count per
+ * keyframe, never the whole cloud. A full keyframe of a scene costs a complete
+ * re-sample, and at a hundred and twenty thousand points a set of them is both
+ * a loading screen nobody waits through and tens of megabytes to hold.
+ *
+ * It is also the only way to animate one thing without moving everything else.
+ * Morphing between two whole keyframes runs every particle through the
+ * shader's travel term, so a marker crossing the frame made the laptop, the
+ * feet and the axis all boil along with it — even though their two positions
+ * were identical.
+ */
+export function motionTrack(key: TargetKey, base: BuiltTarget): MotionTrack | null {
+  const spec = SCENE_MOTION[key]
+  if (!spec) return null
+
+  const parts: MotionTrack['parts'] = []
+  for (const moving of spec.parts) {
+    const part = base.parts.find((p) => p.label === moving.part)
+    if (!part || part.count === 0) continue
+    const frames: Float32Array[] = []
+    for (let i = 0; i < spec.frames; i++) {
+      frames.push(applyTransform(moving.build(part.count, i), base.transform))
+    }
+    parts.push({ start: part.start, count: part.count, frames })
+  }
+  if (!parts.length) return null
+
+  let glow: MotionTrack['glow']
+  if (spec.glow) {
+    const ranges = spec.glow.parts
+      .map((label) => base.parts.find((p) => p.label === label))
+      .filter((p): p is NonNullable<typeof p> => !!p)
+      .map((p) => ({ start: p.start, count: p.count }))
+    if (ranges.length) glow = { ranges, lit: spec.glow.lit, dim: spec.glow.dim }
+  }
+
+  return { period: spec.period, loop: spec.loop, parts, glow }
+}
+
+const smoothstep5 = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
+
+/**
+ * Walks a track to `seconds` and writes the result into a positions array.
+ *
+ * Returns the ranges it touched, so the caller can upload those and leave the
+ * rest of the buffer alone. `period` overrides the track's own, for callers
+ * that set their own pace.
+ */
+export function applyMotion(
+  track: MotionTrack,
+  arr: Float32Array,
+  seconds: number,
+  period = track.period,
+  /** Tone/AI pairs, written only where the track declares a glow. */
+  shades?: Float32Array
+): { pos: { from: number; span: number }[]; shade: { from: number; span: number }[] } {
+  const n = track.parts[0].frames.length
+  // pingPong walks 0..n-1 and back down to 1, so the return trip retraces the
+  // keyframes instead of cutting the chord home.
+  const steps = track.loop === 'pingPong' ? Math.max(1, (n - 1) * 2) : n
+  const phase = ((((seconds / Math.max(0.05, period)) % 1) + 1) % 1) * steps
+  const step = Math.floor(phase) % steps
+  const f = smoothstep5(phase - Math.floor(phase))
+  const pick = (k: number) => (track.loop === 'pingPong' && k >= n ? steps - k : k % n)
+  const ai = pick(step)
+  const bi = pick((step + 1) % steps)
+
+  const pos: { from: number; span: number }[] = []
+  for (const moving of track.parts) {
+    const a = moving.frames[ai]
+    const b = moving.frames[bi]
+    const from = moving.start * 3
+    const span = moving.count * 3
+    for (let k = 0; k < span; k++) arr[from + k] = a[k] + (b[k] - a[k]) * f
+    pos.push({ from, span })
+  }
+
+  /* The lit part crossfades from the outgoing keyframe's to the incoming
+     one's, so the brightness travels the row at the same rate the marker
+     does — without a single particle changing places to do it. */
+  const shade: { from: number; span: number }[] = []
+  if (track.glow && shades) {
+    const { ranges, lit, dim } = track.glow
+    for (let r = 0; r < ranges.length; r++) {
+      const mix = (r === ai ? 1 - f : 0) + (r === bi ? f : 0)
+      const tone = dim[0] + (lit[0] - dim[0]) * mix
+      const accent = dim[1] + (lit[1] - dim[1]) * mix
+      const from = ranges[r].start * 2
+      const span = ranges[r].count * 2
+      for (let k = 0; k < span; k += 2) {
+        shades[from + k] = tone
+        shades[from + k + 1] = accent
+      }
+      shade.push({ from, span })
+    }
+  }
+  return { pos, shade }
 }
 
 /**

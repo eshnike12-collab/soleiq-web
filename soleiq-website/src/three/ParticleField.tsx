@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { PARTICLE_FRAG, PARTICLE_VERT } from './shaders'
 import { SCENES, sceneAt } from './scenes'
+import { applyMotion, motionTrack, type MotionTrack } from './targets'
 import { bestFrame, insetForPush, narrativeBox, narrativeSideBox, pushStrength } from './framing'
 import type { Capabilities } from './capabilities'
 import { makeRng, partAnchors, sampleCloud, type BuiltTarget } from './sampleTargets'
@@ -135,6 +136,23 @@ export default function ParticleField({
   const points = useRef<THREE.Points>(null)
   const group = useRef<THREE.Group>(null)
   const { camera } = useThree()
+
+  /**
+   * What moves inside each scene while it is held.
+   *
+   * Resolved once, off the built targets. Each track carries only the moving
+   * part's own particles, so this is kilobytes rather than the tens of
+   * megabytes a set of full keyframes at this particle count would be.
+   */
+  const motions = useMemo(() => {
+    const out: Record<string, MotionTrack | null> = {}
+    for (const scene of SCENES) {
+      if (scene.target in out) continue
+      const base = targets[scene.target]
+      out[scene.target] = base ? motionTrack(scene.target, base) : null
+    }
+    return out
+  }, [targets])
 
   const sceneIndexRef = useRef(-1)
   /** False until the framing has been solved once, so the first frame snaps. */
@@ -304,13 +322,15 @@ export default function ParticleField({
     const next = SCENES[Math.min(SCENES.length - 1, index + 1)]
 
     /* Scene change: swap the morph pair. One upload per transition, five total. */
-    if (index !== sceneIndexRef.current) {
+    const sceneChanged = index !== sceneIndexRef.current
+    if (sceneChanged) {
       const a = targets[scene.target]
       const b = targets[next.target] ?? a
       const attrA = geometry.getAttribute('positionA') as THREE.BufferAttribute
       const attrB = geometry.getAttribute('positionB') as THREE.BufferAttribute
       attrA.copyArray(a.positions)
       attrB.copyArray(b.positions)
+      attrA.clearUpdateRanges()
       attrA.needsUpdate = true
       attrB.needsUpdate = true
 
@@ -326,6 +346,49 @@ export default function ParticleField({
         .filter((l) => anchors[l.part])
         .map((l) => ({ text: l.text, dx: l.dx ?? 0, dy: l.dy ?? 0, at: new THREE.Vector3(...anchors[l.part]) }))
       sceneIndexRef.current = index
+    }
+
+    /* ── In-scene motion ──────────────────────────────────────────────────
+     *
+     * The one part of the scene that moves, walked through its keyframes and
+     * written straight into positionA. Only while the shape is held: once the
+     * morph starts, positionA is what the cloud is leaving, and something that
+     * kept moving underneath a departing shape would drag it sideways.
+     *
+     * A sub-range upload, so a moving marker costs its own particles and not
+     * the whole cloud's worth of bus traffic every frame. */
+    const track = motions[scene.target]
+    if (track && morph <= 0.001) {
+      const attrA = geometry.getAttribute('positionA') as THREE.BufferAttribute
+      const shadeA = geometry.getAttribute('aShadeA') as THREE.BufferAttribute
+      const moved = applyMotion(
+        track,
+        attrA.array as Float32Array,
+        u.uTime.value,
+        track.period,
+        shadeA.array as Float32Array
+      )
+      if (moved.shade.length) {
+        if (!sceneChanged) {
+          shadeA.clearUpdateRanges()
+          for (const r of moved.shade) shadeA.addUpdateRange(r.from, r.span)
+        }
+        shadeA.needsUpdate = true
+      }
+
+      /* Never narrow the upload on the frame the scene changed.
+       *
+       * three uploads the whole buffer only while `updateRanges` is empty; name
+       * even one range and that is all that reaches the GPU, and the renderer
+       * clears the list afterwards so the full copy never gets a second chance.
+       * Adding the marker's range on top of the scene swap therefore sent the
+       * marker and nothing else — every scene after the first drew the previous
+       * scene's shape with one correct dot moving over it. */
+      if (!sceneChanged) {
+        attrA.clearUpdateRanges()
+        for (const r of moved.pos) attrA.addUpdateRange(r.from, r.span)
+      }
+      attrA.needsUpdate = true
     }
 
     // The closing logo runs a wave of brand colour through the mark.

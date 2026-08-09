@@ -4,6 +4,7 @@ import Hero from './components/Hero'
 import FeatureSections from './components/FeatureSections'
 import Journeys from './components/Journeys'
 import Research from './components/Research'
+import Progression from './components/Progression'
 import About from './components/About'
 import Blog from './components/Blog'
 import Contact from './components/Contact'
@@ -44,6 +45,7 @@ export default function App() {
         <FeatureSections />
         <Journeys />
         <Research />
+        <Progression />
         <About />
         <Blog />
         <Contact />

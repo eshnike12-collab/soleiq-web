@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { PARTICLE_FRAG, PARTICLE_VERT } from '../../three/shaders'
-import { buildPhased, KEYFRAMES } from '../../three/targets'
+import { applyMotion, buildStill, motionTrack } from '../../three/targets'
 import {
   solveFrame,
   insetForPush,
@@ -94,7 +94,7 @@ export default function SectionParticles({
   const hostRef = useRef<HTMLDivElement>(null)
   const [near, setNear] = useState(false)
   const [visible, setVisible] = useState(false)
-  const [frames, setFrames] = useState<BuiltTarget[] | null>(null)
+  const [base, setBase] = useState<BuiltTarget | null>(null)
   const labelElsRef = useRef<(HTMLSpanElement | null)[]>([])
   const labelsRef = useRef<ScreenLabel[]>([])
 
@@ -120,18 +120,15 @@ export default function SectionParticles({
     }
   }, [enabled])
 
+  /* One build, held still. What moves is resolved off it as a set of small
+     per-part keyframes — see `motionTrack`. */
   useEffect(() => {
-    if (!near || frames) return
+    if (!near || base) return
     let alive = true
     Promise.resolve()
-      .then(() => {
-        // One keyframe per stop on the walk. Two for most, three where the
-        // motion has to bend rather than run straight between its ends.
-        const n = KEYFRAMES[target] ?? 2
-        return Array.from({ length: n }, (_, i) => buildPhased(target, count, i / (n - 1)))
-      })
-      .then((f) => {
-        if (alive && f.every(Boolean)) setFrames(f as BuiltTarget[])
+      .then(() => buildStill(target, count))
+      .then((b) => {
+        if (alive && b) setBase(b)
       })
       .catch(() => {
         /* Leaves the panel empty rather than breaking the section. */
@@ -139,11 +136,11 @@ export default function SectionParticles({
     return () => {
       alive = false
     }
-  }, [near, frames, target, count])
+  }, [near, base, target, count])
 
   /* Written straight to a fixed pool of elements, never re-rendered. */
   useEffect(() => {
-    if (!enabled || !frames) return
+    if (!enabled || !base) return
     let raf = 0
     const tick = () => {
       const items = labelsRef.current
@@ -162,7 +159,7 @@ export default function SectionParticles({
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [enabled, frames])
+  }, [enabled, base])
 
   if (!enabled) return <>{fallback}</>
 
@@ -178,7 +175,7 @@ export default function SectionParticles({
       aria-label={label}
       data-cursor="canvas"
     >
-      {frames && (
+      {base && (
         <Canvas
           className="absolute inset-0"
           frameloop={near ? 'always' : 'never'}
@@ -190,7 +187,8 @@ export default function SectionParticles({
         >
           <Loop
             cacheKey={`section:${target}`}
-            frames={frames}
+            target={target}
+            base={base}
             count={count}
             pointSize={caps.tier === 'high' ? 4 : 5.5}
             simpleNoise={caps.simpleNoise}
@@ -221,7 +219,8 @@ export default function SectionParticles({
 
 function Loop({
   cacheKey,
-  frames,
+  target,
+  base,
   count,
   pointSize,
   simpleNoise,
@@ -234,7 +233,8 @@ function Loop({
   labelsRef,
 }: {
   cacheKey: string
-  frames: BuiltTarget[]
+  target: TargetKey
+  base: BuiltTarget
   count: number
   pointSize: number
   simpleNoise: boolean
@@ -252,47 +252,41 @@ function Loop({
   const mouse = useRef(new THREE.Vector3(0, 0, 999))
 
   /**
-   * The order the keyframes are walked in.
+   * The one part of this composition that moves.
    *
-   * `cycle` runs the list once and starts over from the top, which is the hard
-   * reset a page of writing wants. `pingPong` runs down the list and back up,
-   * which is how a disc gets from one horizon to the other and home again
-   * along a real arc: three frames, two segments each way.
+   * These panels used to animate by morphing between whole keyframes of the
+   * scene. Even where two keyframes were identical for a particle, the morph
+   * still ran it through the shader's turbulence term, so a marker crossing
+   * the frame made the laptop, the feet and the axis boil along with it. Now
+   * the composition is built once and held, and only the moving part's own
+   * particles are rewritten — which is exactly what the scroll narrative does.
    */
-  const segments = useMemo(() => {
-    const n = frames.length
-    const up: [number, number][] = Array.from({ length: n - 1 }, (_, i) => [i, i + 1])
-    if (loop === 'cycle') return up
-    const down: [number, number][] = Array.from({ length: n - 1 }, (_, i) => [n - 1 - i, n - 2 - i])
-    return [...up, ...down]
-  }, [frames, loop])
+  const track = useMemo(() => motionTrack(target, base), [target, base])
 
-  const segRef = useRef(-1)
-
-  const shadeOf = useMemo(
-    () => (t: BuiltTarget) => {
-      const out = new Float32Array(count * 2)
-      for (let i = 0; i < count; i++) {
-        out[i * 2] = t.tones[i] ?? 0.5
-        out[i * 2 + 1] = t.ai[i] ?? 0
-      }
-      return out
-    },
-    [count]
-  )
+  /* One pass through the keyframes, at the pace the section asked for. The
+     prop is seconds per step; a full pass is however many steps the walk has. */
+  const fullPeriod = useMemo(() => {
+    const n = track?.parts[0].frames.length ?? 2
+    const steps = loop === 'pingPong' ? Math.max(1, (n - 1) * 2) : n
+    return period * steps
+  }, [track, loop, period])
 
   const geometry = useMemo(() => {
     const rng = makeRng(41)
     const geo = new THREE.BufferGeometry()
-    const a = frames[0]
-    const b = frames[Math.min(1, frames.length - 1)]
-    const shade = shadeOf
+    const shade = new Float32Array(count * 2)
+    for (let i = 0; i < count; i++) {
+      shade[i * 2] = base.tones[i] ?? 0.5
+      shade[i * 2 + 1] = base.ai[i] ?? 0
+    }
 
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(a.positions), 3))
-    geo.setAttribute('positionA', new THREE.BufferAttribute(new Float32Array(a.positions), 3))
-    geo.setAttribute('positionB', new THREE.BufferAttribute(new Float32Array(b.positions), 3))
-    geo.setAttribute('aShadeA', new THREE.BufferAttribute(shade(a), 2))
-    geo.setAttribute('aShadeB', new THREE.BufferAttribute(shade(b), 2))
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(base.positions), 3))
+    // Both ends of the morph are the same shape: nothing in this panel morphs
+    // any more, so `uProgress` stays at zero and positionA is what is drawn.
+    geo.setAttribute('positionA', new THREE.BufferAttribute(new Float32Array(base.positions), 3))
+    geo.setAttribute('positionB', new THREE.BufferAttribute(new Float32Array(base.positions), 3))
+    geo.setAttribute('aShadeA', new THREE.BufferAttribute(shade, 2))
+    geo.setAttribute('aShadeB', new THREE.BufferAttribute(new Float32Array(shade), 2))
     geo.setAttribute('aScatter', new THREE.BufferAttribute(sampleCloud(count, 3.2, rng), 3))
 
     const random = new Float32Array(count)
@@ -301,7 +295,7 @@ function Loop({
     for (let i = 0; i < count; i++) {
       random[i] = rng()
       size[i] = 0.5 + Math.pow(rng(), 4) * 1.5
-      // Staggered, so the page fills line by line instead of all at once.
+      // Staggered, so the panel fills in rather than all at once.
       delay[i] = rng() * 0.45
     }
     geo.setAttribute('aRandom', new THREE.BufferAttribute(random, 1))
@@ -309,7 +303,7 @@ function Loop({
     geo.setAttribute('aDelay', new THREE.BufferAttribute(delay, 1))
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 24)
     return geo
-  }, [frames, count, shadeOf])
+  }, [base, count])
 
   const material = useMemo(
     () =>
@@ -325,7 +319,9 @@ function Loop({
           uTime: { value: 0 },
           uProgress: { value: 0 },
           uSpread: { value: 0.45 },
-          uTurbulence: { value: 0.05 },
+          // No morph, so no burst. The idle drift is all the motion the held
+          // shape is entitled to.
+          uTurbulence: { value: 0 },
           uNoiseScale: { value: 0.5 },
           uDrift: { value: 0.007 },
           uSize: { value: pointSize },
@@ -369,15 +365,13 @@ function Loop({
     []
   )
 
-  /* Anchors come from the first keyframe: the labelled parts do not move. */
+  /* Anchors come from the held shape: the labelled parts do not move. */
   const anchors = useMemo(() => {
-    const found = partAnchors(frames[0])
+    const found = partAnchors(base)
     return labels
       .filter((l) => found[l.part])
       .map((l) => ({ text: l.text, dx: l.dx ?? 0, dy: l.dy ?? 0, at: new THREE.Vector3(...found[l.part]) }))
-  }, [frames, labels])
-
-  const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
+  }, [base, labels])
 
   useFrame((state, delta) => {
     const u = material.uniforms
@@ -388,32 +382,29 @@ function Loop({
     u.uDissolve.value = Math.min(1, Math.max(0, u.uDissolve.value - dt * rate))
     u.uOpacity.value = Math.min(1, Math.max(0, u.uOpacity.value + dt * (forming ? 1.2 : -1.6)))
 
-    // Only run the loop once the shape has actually gathered, so the first
-    // thing anyone sees is the shape rather than the middle of its animation.
-    if (u.uDissolve.value < 0.2) clock.current += dt / Math.max(0.2, period)
+    // Only start the walk once the shape has gathered, so the first thing
+    // anyone sees is the shape and not the middle of its animation.
+    if (u.uDissolve.value < 0.2) clock.current += dt
 
-    // Which segment of the walk we are on, and how far along it.
-    const total = segments.length
-    const pos = ((clock.current % total) + total) % total
-    const seg = Math.min(total - 1, Math.floor(pos))
-    if (seg !== segRef.current) {
-      segRef.current = seg
-      const [ai, bi] = segments[seg]
+    if (track) {
       const attrA = geometry.getAttribute('positionA') as THREE.BufferAttribute
-      const attrB = geometry.getAttribute('positionB') as THREE.BufferAttribute
-      attrA.copyArray(frames[ai].positions)
-      attrB.copyArray(frames[bi].positions)
+      const shadeA = geometry.getAttribute('aShadeA') as THREE.BufferAttribute
+      const moved = applyMotion(
+        track,
+        attrA.array as Float32Array,
+        clock.current,
+        fullPeriod,
+        shadeA.array as Float32Array
+      )
+      attrA.clearUpdateRanges()
+      for (const r of moved.pos) attrA.addUpdateRange(r.from, r.span)
       attrA.needsUpdate = true
-      attrB.needsUpdate = true
-      const sA = geometry.getAttribute('aShadeA') as THREE.BufferAttribute
-      const sB = geometry.getAttribute('aShadeB') as THREE.BufferAttribute
-      sA.copyArray(shadeOf(frames[ai]))
-      sB.copyArray(shadeOf(frames[bi]))
-      sA.needsUpdate = true
-      sB.needsUpdate = true
+      if (moved.shade.length) {
+        shadeA.clearUpdateRanges()
+        for (const r of moved.shade) shadeA.addUpdateRange(r.from, r.span)
+        shadeA.needsUpdate = true
+      }
     }
-    u.uProgress.value = smoother(pos - seg)
-    u.uFlight.value = 0
 
     if (points.current) {
       const view = {
@@ -422,7 +413,7 @@ function Loop({
       }
       const fit = solveFrame(
         cacheKey,
-        frames[0].positions,
+        base.positions,
         insetForPush(FEATURE_BOX, view.aspect),
         view,
         { xFraction: 0.5, yaw: 0.12 }

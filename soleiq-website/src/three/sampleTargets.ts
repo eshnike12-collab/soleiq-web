@@ -30,6 +30,17 @@ export interface BuiltTarget {
   ai: Float32Array
   /** Index ranges of the named parts, for anchoring on-screen labels. */
   parts: { label: string; start: number; count: number }[]
+  /**
+   * The centre and scale `normalize` applied, if it was applied.
+   *
+   * Kept so a single moving part can be rebuilt at runtime without rebuilding
+   * the composition around it. A keyframe of the whole scene costs a full
+   * re-sample — at a hundred and twenty thousand points, twenty of those is a
+   * loading screen nobody waits through. Rebuilding just the part that moves
+   * costs its own share of that, and this is the transform needed to land it
+   * back in the same space as everything holding still.
+   */
+  transform?: { cx: number; cy: number; cz: number; scale: number }
 }
 
 /**
@@ -503,15 +514,20 @@ export function compose(
 export function normalize(
   built: BuiltTarget,
   radius = 1,
-  opts: { ignore?: string } = {}
+  opts: { ignore?: string | string[] } = {}
 ): BuiltTarget {
   const target = built.positions
   const n = target.length / 3
 
-  const skip = opts.ignore ? built.parts.find((p) => p.label === opts.ignore) : undefined
+  const names = opts.ignore
+    ? Array.isArray(opts.ignore)
+      ? opts.ignore
+      : [opts.ignore]
+    : []
+  const skips = built.parts.filter((p) => names.includes(p.label))
   const counts = (fn: (i: number) => void) => {
     for (let i = 0; i < n; i++) {
-      if (skip && i >= skip.start && i < skip.start + skip.count) continue
+      if (skips.some((s) => i >= s.start && i < s.start + s.count)) continue
       fn(i)
     }
   }
@@ -549,7 +565,22 @@ export function normalize(
     target[i * 3 + 1] = (target[i * 3 + 1] - cy) * s
     target[i * 3 + 2] = (target[i * 3 + 2] - cz) * s
   }
+  built.transform = { cx, cy, cz, scale: s }
   return built
+}
+
+/** Applies a recorded normalise transform to raw positions, in place. */
+export function applyTransform(
+  raw: Float32Array,
+  t: BuiltTarget['transform']
+): Float32Array {
+  if (!t) return raw
+  for (let i = 0; i < raw.length; i += 3) {
+    raw[i] = (raw[i] - t.cx) * t.scale
+    raw[i + 1] = (raw[i + 1] - t.cy) * t.scale
+    raw[i + 2] = (raw[i + 2] - t.cz) * t.scale
+  }
+  return raw
 }
 
 /** A loose sphere of noise — the state the cloud loads in from. */

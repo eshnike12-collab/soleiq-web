@@ -3,6 +3,14 @@
  * own photograph in every product visual on this site — we never show a stock
  * or synthetic "clinical photo", because the real screen only ever shows the
  * patient's own image.
+ *
+ * The geometry is anatomical rather than decorative: the medial border carries
+ * a deeper waist than the lateral one, the ball is widest at the first and
+ * fifth metatarsal heads, the heel is about two thirds the width of the ball,
+ * and the toes fan outward from the ball with the hallux longest. Those are the
+ * landmarks a reader uses to recognise a foot, and they are also the landmarks
+ * the Wagner grades are described against — the lesion sits on the first
+ * metatarsal head because that is where it usually sits.
  */
 
 export interface FootMarker {
@@ -20,18 +28,70 @@ const TONE_COLOR: Record<NonNullable<FootMarker['tone']>, string> = {
   urgent: 'var(--clr-level-urgent)',
 }
 
-const TOES = [
-  { cx: 84, cy: 42, rx: 10, ry: 13, rot: -14 },
-  { cx: 66, cy: 32, rx: 8, ry: 10.5, rot: -8 },
-  { cx: 51, cy: 30, rx: 7, ry: 9.5, rot: 0 },
-  { cx: 38, cy: 33, rx: 6.5, ry: 8.5, rot: 8 },
-  { cx: 27, cy: 41, rx: 6, ry: 7.5, rot: 16 },
+export interface Toe {
+  cx: number
+  cy: number
+  rx: number
+  ry: number
+  rot: number
+}
+
+/**
+ * The five toes, hallux first. `rot` fans them outward from the ball the way
+ * real toes splay — the hallux tip leans medially, the fifth toe laterally.
+ * Every pad's base sits a few units *inside* the sole's top edge, so the toes
+ * read as attached to the forefoot rather than floating above it.
+ */
+export const TOES: Toe[] = [
+  { cx: 87, cy: 39, rx: 11, ry: 17, rot: 10 },
+  { cx: 68, cy: 36.5, rx: 8.6, ry: 12.5, rot: 4 },
+  { cx: 54, cy: 38.5, rx: 7.6, ry: 11.5, rot: -1 },
+  { cx: 41.5, cy: 42, rx: 6.8, ry: 10, rot: -7 },
+  { cx: 31, cy: 50, rx: 6, ry: 8.5, rot: -15 },
 ]
 
-const SOLE_PATH =
-  'M 30 70 C 30 50 92 50 92 76 C 92 96 80 106 76 122 C 72 140 80 152 78 162 ' +
-  'C 76 180 64 188 52 188 C 38 188 28 178 28 162 C 28 146 36 138 36 120 ' +
-  'C 36 100 30 90 30 70 Z'
+/**
+ * A toe as a pad rather than an ellipse: rounded at the tip, tapered where it
+ * meets the ball. An ellipse reads as a bubble; the taper is most of what makes
+ * five shapes in a row read as toes.
+ */
+export function toePath({ cx, cy, rx, ry }: Toe) {
+  return (
+    `M ${cx} ${cy - ry} ` +
+    `C ${cx + rx * 1.04} ${cy - ry * 0.86} ${cx + rx} ${cy - ry * 0.04} ${cx + rx * 0.84} ${cy + ry * 0.66} ` +
+    `C ${cx + rx * 0.7} ${cy + ry * 1.05} ${cx - rx * 0.7} ${cy + ry * 1.05} ${cx - rx * 0.84} ${cy + ry * 0.66} ` +
+    `C ${cx - rx} ${cy - ry * 0.04} ${cx - rx * 1.04} ${cy - ry * 0.86} ${cx} ${cy - ry} Z`
+  )
+}
+
+export const toeTransform = (t: Toe) => `rotate(${t.rot} ${t.cx} ${t.cy})`
+
+/** The sole, drawn clockwise from the medial edge of the ball. */
+export const SOLE_PATH =
+  'M 92 52 ' +
+  'C 97 60 99 70 97 82 ' + // first metatarsal head — the widest point medially
+  'C 95 98 81 104 77 121 ' + // the arch, cut in hard on the medial side
+  'C 75 138 85 146 84 158 ' +
+  'C 83 176 73 188 58 188 ' + // heel
+  'C 43 188 33 176 33 158 ' +
+  'C 33 146 30 136 31 121 ' + // the lateral border barely waists at all
+  'C 31 106 25 97 27 82 ' + // fifth metatarsal head
+  'C 28 70 28 62 30 58 ' +
+  'C 40 46 75 40 92 52 Z' // the sulcus the toes sit into
+
+/**
+ * Interior creases. Faint on purpose: they are what stops the outline reading
+ * as a flat blob, and they stop being legible below about forty pixels, at
+ * which point they should disappear into the line weight rather than fight it.
+ */
+export const DETAIL_PATHS = [
+  'M 31 78 C 47 68 74 66 91 76', // the crease under the ball
+  // The arch, held a few units inside the medial border and stopped at the
+  // waist. Run any further and it stops tracking the edge, at which point it
+  // reads as a scar down the middle of the foot rather than as an instep.
+  'M 91 88 C 87 100 81 108 77 118',
+  'M 37 150 C 34 172 44 182 58 182 C 72 182 81 172 78 150', // the heel pad
+]
 
 interface FootOutlineProps {
   markers?: FootMarker[]
@@ -55,32 +115,34 @@ export default function FootOutline({
       aria-hidden="true"
       focusable="false"
     >
-      <path
-        d={SOLE_PATH}
+      <g
         stroke="var(--clr-accent)"
         strokeWidth={strokeWidth}
         strokeLinejoin="round"
         opacity="0.55"
-      />
-      {TOES.map((t, i) => (
-        <ellipse
-          key={i}
-          cx={t.cx}
-          cy={t.cy}
-          rx={t.rx}
-          ry={t.ry}
-          transform={`rotate(${t.rot} ${t.cx} ${t.cy})`}
-          stroke="var(--clr-accent)"
-          strokeWidth={strokeWidth}
-          opacity="0.55"
-        />
-      ))}
+      >
+        <path d={SOLE_PATH} />
+        {TOES.map((t, i) => (
+          <path key={i} d={toePath(t)} transform={toeTransform(t)} />
+        ))}
+      </g>
+
+      <g
+        stroke="var(--clr-accent)"
+        strokeWidth={strokeWidth * 0.6}
+        strokeLinecap="round"
+        opacity="0.28"
+      >
+        {DETAIL_PATHS.map((d, i) => (
+          <path key={i} d={d} />
+        ))}
+      </g>
 
       {grid && (
         <g stroke="var(--clr-accent)" strokeWidth="1" opacity="0.18">
-          <line x1="28" y1="96" x2="92" y2="96" strokeDasharray="3 4" />
-          <line x1="30" y1="130" x2="80" y2="130" strokeDasharray="3 4" />
-          <line x1="56" y1="52" x2="52" y2="186" strokeDasharray="3 4" />
+          <line x1="28" y1="88" x2="96" y2="88" strokeDasharray="3 4" />
+          <line x1="32" y1="132" x2="78" y2="132" strokeDasharray="3 4" />
+          <line x1="60" y1="46" x2="57" y2="186" strokeDasharray="3 4" />
         </g>
       )}
 
