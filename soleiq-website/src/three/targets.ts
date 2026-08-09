@@ -311,11 +311,17 @@ function buildCapture(count: number, shot = -1): BuiltTarget {
   const PHONE_Y = 0.78
   return normalize(
     compose(count, [
-      // The foot below, pushed back so the phone reads as being over it.
+      // The foot below, still behind the phone but not by as much.
+      //
+      // It was losing on three counts at once: low on the tone ramp, thinly
+      // populated, and far enough back that the depth fade took nearly half
+      // its brightness. All three are eased — it stays behind the phone, it
+      // just is not swallowed by the dark any more.
       {
-        weight: 0.3,
-        tone: 0.34,
-        build: (n) => footVolume(n, rng, { width: 1.2, depth: 0.2, offset: [0, -1.2, -0.35] }),
+        weight: 0.44,
+        tone: 0.74,
+        toneJitter: 0.14,
+        build: (n) => footVolume(n, rng, { width: 1.3, depth: 0.18, offset: [0, -1.2, 0.02] }),
       },
       // The phone.
       {
