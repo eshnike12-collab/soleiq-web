@@ -10,7 +10,7 @@ export default async function PatientAccessPage() {
     getPatientAccessSummary(crypto.randomUUID())
   );
   return (
-    <div className="min-h-screen bg-surface px-5 py-8">
+    <div className="min-h-screen px-5 py-8">
       <main className="mx-auto max-w-3xl">
         <Link href="/home" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">← My foot health</Link>
         <header className="my-5">

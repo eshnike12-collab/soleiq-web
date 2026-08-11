@@ -15,6 +15,7 @@ import { HealthLifestyle } from "@/components/screens/09-HealthLifestyle";
 import { ShoeSize } from "@/components/screens/10-ShoeSize";
 import { PainAssessment } from "@/components/screens/11-PainAssessment";
 import { CapturePrep } from "@/components/screens/12-CapturePrep";
+import { FootPerfusion } from "@/components/screens/12b-FootPerfusion";
 import { RightFoot } from "@/components/screens/13-RightFoot";
 import { Processing } from "@/components/screens/17-Processing";
 import { Results } from "@/components/screens/18-Results";
@@ -71,6 +72,9 @@ export const SCREEN_ORDER: ScreenDef[] = [
   { id: "health_lifestyle", component: HealthLifestyle, showInProgress: true },
   { id: "shoe_size", component: ShoeSize, showInProgress: true },
   { id: "pain_assessment", component: PainAssessment, showInProgress: true },
+  // Optional camera circulation check (lib/perfusion). Skippable, and not
+  // counted in questionnaire progress.
+  { id: "foot_perfusion", component: FootPerfusion },
   { id: "capture_prep", component: CapturePrep },
   { id: "right_foot", component: RightFoot },
   { id: "processing", component: Processing },

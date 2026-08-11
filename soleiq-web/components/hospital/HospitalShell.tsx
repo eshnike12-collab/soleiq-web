@@ -28,7 +28,7 @@ export function HospitalShell({
         ]
       : [{ href: base, label: "Worklist", icon: ClipboardList }];
   return (
-    <div className="min-h-screen bg-surface text-slate-900">
+    <div className="min-h-screen text-slate-900">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">

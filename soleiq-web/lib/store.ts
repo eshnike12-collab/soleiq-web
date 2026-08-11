@@ -12,6 +12,8 @@ import type {
   FootSide,
   CaptureView,
 } from "./types";
+import type { PersonalizationProfile } from "./vitals";
+import type { FootPerfusionAssessment } from "./perfusion";
 import { MOCK_PRIOR_VISITS } from "./mock/priorScans";
 import { saveCanonicalScreening } from "./canonicalScreenings";
 import { isSupabaseConfigured } from "./supabase";
@@ -46,6 +48,21 @@ interface SoleiqStore {
   ) => void;
   addMesh: (mesh: FootMesh) => void;
   setResult: (result: AnalysisResult) => void;
+  /**
+   * Attach the circulation check to the visit. It runs before the foot photos
+   * — and therefore before startVisit() — so a reading taken early is held
+   * here and folded into the visit when it opens.
+   */
+  setPerfusion: (perfusion: FootPerfusionAssessment | null) => void;
+  pendingPerfusion: FootPerfusionAssessment | null;
+
+  /**
+   * MetaPhys personalisation for this patient, fitted from their first
+   * calibration clip and reused at every later visit — that reuse is the whole
+   * point of few-shot adaptation, so it is persisted alongside the profile.
+   */
+  vitalsProfile: PersonalizationProfile | null;
+  setVitalsProfile: (profile: PersonalizationProfile | null) => void;
   completeVisit: () => Promise<{
     status: "saved" | "local" | "failed";
     reason?: string;
@@ -142,14 +159,17 @@ export const useSoleiqStore = create<SoleiqStore>()(
 
       currentVisit: null,
       startVisit: () =>
-        set({
+        set((s) => ({
           currentVisit: {
             id: `visit_${Date.now()}`,
             startedAt: Date.now(),
             images: [],
             meshes: [],
+            // A circulation check taken before the photos belongs to this visit.
+            perfusion: s.pendingPerfusion,
           },
-        }),
+          pendingPerfusion: null,
+        })),
       addImage: (img) =>
         set((s) =>
           s.currentVisit
@@ -201,6 +221,19 @@ export const useSoleiqStore = create<SoleiqStore>()(
             ? { currentVisit: { ...s.currentVisit, result } }
             : {}
         ),
+      pendingPerfusion: null,
+      setPerfusion: (perfusion) =>
+        set((s) =>
+          s.currentVisit
+            ? {
+                currentVisit: { ...s.currentVisit, perfusion },
+                pendingPerfusion: null,
+              }
+            : { pendingPerfusion: perfusion }
+        ),
+
+      vitalsProfile: null,
+      setVitalsProfile: (profile) => set({ vitalsProfile: profile }),
       completeVisit: async () => {
         const state = get();
         if (!state.currentVisit) {
@@ -272,6 +305,7 @@ export const useSoleiqStore = create<SoleiqStore>()(
           // (photos, result) starts fresh. New photos are always required.
           profile: s.profile,
           currentVisit: null,
+          pendingPerfusion: null,
           priorVisits: s.priorVisits,
           isProcessing: false,
           scanPath: pickScanPath(),
@@ -288,6 +322,10 @@ export const useSoleiqStore = create<SoleiqStore>()(
       partialize: (state) => ({
         profile: state.profile,
         patientDbId: state.patientDbId,
+        // Six projection coefficients fitted to this person's skin tone and
+        // lighting. Carries no image data — it is what saves them from
+        // re-calibrating at every visit.
+        vitalsProfile: state.vitalsProfile,
       }),
     }
   )

@@ -89,6 +89,23 @@ export interface PatientSummary {
     images: number;
     meanImageConfidence: number;
   };
+  /** Circulation check (lib/perfusion), when it was taken. */
+  perfusion?: {
+    concern: string;
+    reasons: string[];
+    actions: string[];
+  };
+  /** Measured wound areas (lib/wound), when any were measured. */
+  ulcers?: {
+    side: string;
+    view: string;
+    areaMm2: number | null;
+    areaFootPct: number;
+    granulationPct: number;
+    sloughPct: number;
+    escharPct: number;
+    periwoundErythemaSigma: number;
+  }[];
   /** The raw captured photos (data URLs) for print/PDF embedding. Stripped
    *  before URL encoding — photos never travel in a link. */
   photos: { side: string; view: string; dataUrl: string }[];
@@ -188,6 +205,23 @@ export function buildPatientSummary(
         ? imgConfs.reduce((a, b) => a + b, 0) / imgConfs.length
         : 0,
     },
+    perfusion: visit.perfusion
+      ? {
+          concern: visit.perfusion.concern,
+          reasons: visit.perfusion.reasons,
+          actions: visit.perfusion.actions,
+        }
+      : undefined,
+    ulcers: (result?.ulcers ?? []).map((ulcer) => ({
+      side: ulcer.side,
+      view: ulcer.view,
+      areaMm2: ulcer.measurement.areaMm2,
+      areaFootPct: ulcer.measurement.areaFootPct,
+      granulationPct: ulcer.measurement.tissue.granulationPct,
+      sloughPct: ulcer.measurement.tissue.sloughPct,
+      escharPct: ulcer.measurement.tissue.escharPct,
+      periwoundErythemaSigma: ulcer.measurement.periwoundErythemaSigma,
+    })),
     photos: visit.images.map((image) => ({
       side: image.side,
       view: image.view,

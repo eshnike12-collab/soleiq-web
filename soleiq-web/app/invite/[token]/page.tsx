@@ -7,7 +7,7 @@ export default async function MembershipInvitePage({
 }) {
   const { token } = await params;
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface px-5">
+    <div className="flex min-h-screen items-center justify-center px-5">
       <main className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand">Hospital invitation</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-950">Join SoleIQ securely</h1>

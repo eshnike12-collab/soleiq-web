@@ -43,6 +43,26 @@ export function VascularPAD() {
   const [abi, setAbi] = useState(() =>
     profile.pad?.abi != null ? String(profile.pad.abi) : ""
   );
+  const [abiLeft, setAbiLeft] = useState(() =>
+    profile.pad?.abiLeft != null ? String(profile.pad.abiLeft) : ""
+  );
+  const [abiRight, setAbiRight] = useState(() =>
+    profile.pad?.abiRight != null ? String(profile.pad.abiRight) : ""
+  );
+  const [toeLeft, setToeLeft] = useState(() =>
+    profile.pad?.toePressureLeftMmHg != null
+      ? String(profile.pad.toePressureLeftMmHg)
+      : ""
+  );
+  const [toeRight, setToeRight] = useState(() =>
+    profile.pad?.toePressureRightMmHg != null
+      ? String(profile.pad.toePressureRightMmHg)
+      : ""
+  );
+  const parseOptional = (raw: string): number | undefined => {
+    const value = Number(raw);
+    return raw.trim() && Number.isFinite(value) ? value : undefined;
+  };
 
   const toggleSign = (s: string) => {
     const next = new Set(signs);
@@ -134,6 +154,62 @@ export function VascularPAD() {
             Optional. Leave blank if not measured.
           </p>
         </div>
+
+        {/* Per-side pressures. Peripheral arterial disease is frequently
+            one-sided, and a single number for "the patient" hides the leg in
+            trouble. These are cuff/Doppler measurements — the app never
+            estimates them from the camera. */}
+        <div>
+          <label className="field-label">Per-side ABI, if measured</label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <span className="mb-1 block text-[13px] text-ink-faint">Left</span>
+              <Input
+                inputMode="decimal"
+                value={abiLeft}
+                onChange={(e) => setAbiLeft(e.target.value.replace(/[^\d.]/g, ""))}
+                placeholder="0.90"
+              />
+            </div>
+            <div>
+              <span className="mb-1 block text-[13px] text-ink-faint">Right</span>
+              <Input
+                inputMode="decimal"
+                value={abiRight}
+                onChange={(e) => setAbiRight(e.target.value.replace(/[^\d.]/g, ""))}
+                placeholder="0.90"
+              />
+            </div>
+          </div>
+          <p className="mt-1 text-[13px] text-ink-faint">
+            An ABI above 1.4 usually means calcified arteries and cannot be
+            interpreted — record a toe pressure instead.
+          </p>
+        </div>
+
+        <div>
+          <label className="field-label">Toe pressure (mmHg), if measured</label>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <span className="mb-1 block text-[13px] text-ink-faint">Left</span>
+              <Input
+                inputMode="numeric"
+                value={toeLeft}
+                onChange={(e) => setToeLeft(e.target.value.replace(/\D/g, ""))}
+                placeholder="60"
+              />
+            </div>
+            <div>
+              <span className="mb-1 block text-[13px] text-ink-faint">Right</span>
+              <Input
+                inputMode="numeric"
+                value={toeRight}
+                onChange={(e) => setToeRight(e.target.value.replace(/\D/g, ""))}
+                placeholder="60"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="pt-3">
@@ -148,6 +224,10 @@ export function VascularPAD() {
                 restPain,
                 signs,
                 abi: abi ? abiNum : undefined,
+                abiLeft: parseOptional(abiLeft),
+                abiRight: parseOptional(abiRight),
+                toePressureLeftMmHg: parseOptional(toeLeft),
+                toePressureRightMmHg: parseOptional(toeRight),
               },
             });
             goNext();

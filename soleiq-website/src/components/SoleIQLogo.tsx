@@ -1,5 +1,5 @@
 interface SoleIQLogoProps {
-  /** Size of the square mark, in px. */
+  /** Height of the mark, in px. Its width follows its own proportions. */
   size?: number
   /** Render the wordmark next to the mark. */
   wordmark?: boolean
@@ -24,17 +24,21 @@ export default function SoleIQLogo({
 }: SoleIQLogoProps) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className ?? ''}`}>
+      {/* The mark on its own, with no tile behind it.
+          Sized by height with the width left to follow: it is taller than it
+          is wide, so forcing it into the square the old app-icon tile occupied
+          would crop it. `soleiq-mark.png` stays where an opaque square is what
+          is wanted — the touch icon, the share card, and the particle logo,
+          which samples that artwork by luminance and has no alpha to read. */}
       <img
-        src="/soleiq-mark.png"
+        src="/soleiq-mark-transparent.png"
         alt=""
         aria-hidden="true"
-        width={size}
         height={size}
         style={{
-          width: size,
           height: size,
-          borderRadius: size * 0.26,
-          objectFit: 'cover',
+          width: 'auto',
+          objectFit: 'contain',
           display: 'block',
           flexShrink: 0,
         }}

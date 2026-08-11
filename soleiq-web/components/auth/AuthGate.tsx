@@ -37,7 +37,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (loading || !userId) {
     return (
-      <div className="flex h-full min-h-screen items-center justify-center gap-2 bg-surface text-[15px] text-ink-soft">
+      <div className="flex h-full min-h-screen items-center justify-center gap-2 text-[15px] text-ink-soft">
         <Loader2 className="h-5 w-5 animate-spin text-primary" /> Loading…
       </div>
     );

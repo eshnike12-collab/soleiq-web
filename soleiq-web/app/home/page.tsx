@@ -26,7 +26,7 @@ export default async function PatientHomePage() {
   const latest = data.reports[0] as any;
   const latestSummary = latest?.patient_summary as any;
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen ">
       <header className="border-b border-slate-200 bg-surface-raised">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
           <div className="flex items-center gap-3">

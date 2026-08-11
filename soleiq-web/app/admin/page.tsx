@@ -23,5 +23,5 @@ export default function LegacyAdminPage() {
   if (auth.configurationError) {
     return <AuthConfigurationError message={auth.configurationError} />;
   }
-  return <div className="flex min-h-screen items-center justify-center bg-surface text-[15px] text-ink-soft">Resolving hospital…</div>;
+  return <div className="flex min-h-screen items-center justify-center text-[15px] text-ink-soft">Resolving hospital…</div>;
 }

@@ -24,7 +24,7 @@ export default async function PatientReportPage({
   );
   const summary = report.patient_summary as any;
   return (
-    <div className="min-h-screen bg-surface px-5 py-8">
+    <div className="min-h-screen px-5 py-8">
       <main className="mx-auto max-w-3xl">
         <Link href="/home" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">← My results</Link>
         <article className="mt-4 rounded-3xl border border-slate-200 bg-surface-raised p-7 shadow-card">

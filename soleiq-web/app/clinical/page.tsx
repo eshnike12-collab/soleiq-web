@@ -6,7 +6,7 @@ import Link from "next/link";
  */
 export default function RetiredClinicalLinkPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-5">
+    <div className="flex min-h-screen items-center justify-center px-5">
       <main className="max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center">
         <h1 className="text-xl font-semibold text-slate-950">Clinical links have changed</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">

@@ -48,14 +48,14 @@ function SharedReportContent() {
 
   if (share === undefined || (share && !report)) {
     return (
-      <div className="flex min-h-screen items-center justify-center gap-2 bg-surface text-[15px] text-ink-soft">
+      <div className="flex min-h-screen items-center justify-center gap-2 text-[15px] text-ink-soft">
         <Loader2 className="h-5 w-5 animate-spin text-primary" /> Loading report…
       </div>
     );
   }
   if (share === null || !report) {
     return (
-      <div className="min-h-screen bg-surface px-5 py-8">
+      <div className="min-h-screen px-5 py-8">
         <main className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-surface-raised p-7 text-center shadow-card">
           <h1 className="text-xl font-bold text-ink">Report unavailable</h1>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
@@ -77,7 +77,7 @@ function SharedReportContent() {
   const isClinician = share.role === "clinician";
 
   return (
-    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
         <Link
           href={`/shared/${patientId}`}

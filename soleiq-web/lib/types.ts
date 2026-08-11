@@ -1,3 +1,6 @@
+import type { FootPerfusionAssessment } from "./perfusion";
+import type { UlcerAnalysis } from "./wound";
+
 export type Sex = "male" | "female";
 export type DiabetesType = "type_1" | "type_2" | "gestational" | "not_sure";
 export type Numbness = "right" | "left" | "both" | "neither";
@@ -154,7 +157,17 @@ export interface PatientProfile {
     claudication: boolean;
     restPain: boolean;
     signs: string[];
+    /** Legacy single ABI, kept so older saved answers still load. */
     abi?: number;
+    /**
+     * Per-side pressures, measured with a cuff and Doppler — never estimated
+     * by this app. Peripheral arterial disease is frequently one-sided, so a
+     * single figure for "the patient" hides the leg that is in trouble.
+     */
+    abiLeft?: number;
+    abiRight?: number;
+    toePressureLeftMmHg?: number;
+    toePressureRightMmHg?: number;
   };
   priorEvents: {
     type: "ulcer" | "amputation";
@@ -356,6 +369,12 @@ export interface AnalysisResult {
   trend: "improving" | "stable" | "worsening" | "first_scan";
   screening?: PhotoScreeningResult;
   reading?: VisitReading;
+  /**
+   * Deterministic measurements of the wound-like findings the image model
+   * localised (lib/wound). The model says what it is; these say how big it is,
+   * which is the part that can be tracked between visits.
+   */
+  ulcers?: UlcerAnalysis[];
 }
 
 export interface Visit {
@@ -365,4 +384,6 @@ export interface Visit {
   images: CapturedImage[];
   meshes: FootMesh[];
   result?: AnalysisResult;
+  /** Camera + measured-pressure circulation check (lib/perfusion). */
+  perfusion?: FootPerfusionAssessment | null;
 }

@@ -1,6 +1,11 @@
 "use client";
 
 import { evaluateVisitForAnalysis } from "./captureGate";
+import {
+  type UlcerAnalysis,
+  measureUlcerInRegion,
+  pixelsFromDataUrl,
+} from "./wound";
 import type {
   AnalysisResult,
   PatientProfile,
@@ -8,6 +13,51 @@ import type {
   PhotoScreeningResult,
   Visit,
 } from "./types";
+
+/** Findings worth putting a ruler to. */
+const WOUND_LIKE =
+  /wound|ulcer|open|sore|blister|erosion|breakdown|dark tissue|black tissue|necro|slough|crater/i;
+
+/**
+ * Measure the wound-like findings the image model localised.
+ *
+ * Best-effort throughout: the screening result is what the patient is waiting
+ * for, and a measurement that fails must never take it down with it.
+ */
+async function measureUlcers(
+  visit: Visit,
+  profile: Partial<PatientProfile>,
+  screening: PhotoScreeningResult
+): Promise<UlcerAnalysis[]> {
+  const measurements: UlcerAnalysis[] = [];
+  for (const finding of screening.findings) {
+    if (!finding.region || !WOUND_LIKE.test(finding.what_we_saw)) continue;
+    const image = visit.images.find(
+      (candidate) =>
+        candidate.side === finding.foot && candidate.view === finding.surface
+    );
+    if (!image) continue;
+    try {
+      const loaded = await pixelsFromDataUrl(image.dataUrl);
+      if (!loaded) continue;
+      const analysis = measureUlcerInRegion(
+        loaded.pixels,
+        loaded.width,
+        loaded.height,
+        finding.region,
+        {
+          side: finding.foot,
+          view: finding.surface,
+          footLengthMm: profile.footLengthMm,
+        }
+      );
+      if (analysis) measurements.push(analysis);
+    } catch (error) {
+      console.error("[soleiq] wound measurement failed", error);
+    }
+  }
+  return measurements;
+}
 
 export class PhotoRetakeError extends Error {
   constructor(public reasons: string[]) {
@@ -66,9 +116,12 @@ export async function analyzeFootPhotos(
     );
   }
 
+  const ulcers = await measureUlcers(visit, profile, screening);
+
   return {
     visitId: visit.id,
     scoredAt: Date.now(),
+    ulcers,
     riskLevel:
       screening.overall.level === "clear"
         ? "low"

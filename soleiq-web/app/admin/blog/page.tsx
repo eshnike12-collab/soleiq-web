@@ -35,7 +35,7 @@ export default function BlogAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-warmGray-50/40">
+    <div className="min-h-screen ">
       <header className="border-b border-warmGray-100 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">

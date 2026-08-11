@@ -43,14 +43,14 @@ function SharedPatientContent() {
 
   if (share === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center gap-2 bg-surface text-[15px] text-ink-soft">
+      <div className="flex min-h-screen items-center justify-center gap-2 text-[15px] text-ink-soft">
         <Loader2 className="h-5 w-5 animate-spin text-primary" /> Loading shared records…
       </div>
     );
   }
   if (share === null) {
     return (
-      <div className="min-h-screen bg-surface px-5 py-8">
+      <div className="min-h-screen px-5 py-8">
         <main className="mx-auto flex max-w-3xl flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-7 text-center shadow-card">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
             <ShieldCheck className="h-6 w-6 text-primary" />
@@ -72,7 +72,7 @@ function SharedPatientContent() {
   }
 
   return (
-    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
         <Link href="/features/care-team" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">
           ← Care Team

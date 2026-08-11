@@ -12,7 +12,7 @@ export default async function PlatformPage() {
   const organizations = await pageAccess(listPlatformOrganizations);
   const feedback = await listPlatformFeedback().catch(() => []);
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen ">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <div>

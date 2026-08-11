@@ -31,10 +31,20 @@
 html,
 body {
   height: 100%;
-  background: linear-gradient(180deg, #f9f6ee 0%, #f3efe4 100%);
   color: rgb(var(--c-ink));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* The page ground lives on <html>, not on <body>. The cursor grid is drawn
+   behind the content at z-index -1, and a body painting its own background
+   would cover it. */
+html {
+  background: linear-gradient(180deg, #f9f6ee 0%, #f3efe4 100%);
+}
+
+body {
+  background: transparent;
 }
 
 /* Older readers on phones: comfortable base size and line height. Elements
@@ -67,5 +77,233 @@ body {
   }
   .field-label {
     @apply mb-1.5 block text-[13px] font-semibold text-ink-soft;
+  }
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Custom cursor
+   The square, the grid it lights up, and the lift a control takes under the
+   pointer. Ported from soleiqhealth.com so the app and the site handle the
+   pointer identically.
+
+   Native focus rings are deliberately untouched — this is decoration on top of
+   the pointer, never a replacement for keyboard affordances. Touch and
+   reduced-motion get none of it, and the native cursor stays.
+   ─────────────────────────────────────────────────────────────────────────── */
+.cursor-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+/* The lit patch. Its mask never moves relative to itself, so it is rasterised
+   once and thereafter only translated — a compositor operation, not a repaint. */
+.cursor-grid-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 620px;
+  height: 620px;
+  will-change: transform;
+  -webkit-mask-image: radial-gradient(
+    closest-side circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.6) 42%,
+    transparent 76%
+  );
+  mask-image: radial-gradient(
+    closest-side circle,
+    #000 0%,
+    rgba(0, 0, 0, 0.6) 42%,
+    transparent 76%
+  );
+}
+
+/* Counter-translated by the same offset, so the lines stay locked to the page
+   while the window slides over them. Ruled in the app's own navy rather than
+   the site's, so it reads as part of this palette. */
+.cursor-grid-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  will-change: transform;
+  background-image:
+    linear-gradient(to right, rgb(var(--c-primary) / 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--c-primary) / 0.2) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+
+html.has-custom-cursor .cursor-grid,
+html.has-custom-cursor .cursor-box {
+  opacity: 1;
+}
+
+html.has-custom-cursor,
+html.has-custom-cursor a,
+html.has-custom-cursor button,
+html.has-custom-cursor input,
+html.has-custom-cursor textarea,
+html.has-custom-cursor select,
+html.has-custom-cursor label {
+  cursor: none;
+}
+
+.cursor-box {
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* Above the app's dialogs and toasts — it is the pointer. */
+  z-index: 200;
+  width: 11px;
+  height: 11px;
+  /* A square, always — no radius in any state. */
+  border-radius: 0;
+  background: #ffffff;
+  border: 0 solid #ffffff;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, width, height;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.24s ease,
+    opacity 0.25s ease;
+}
+
+/* Over text and headings: big and hollow, so the words stay readable through it. */
+.cursor-box[data-state='text'] {
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  border-width: 1.5px;
+}
+
+.cursor-box[data-state='link'] {
+  width: 48px;
+  height: 48px;
+  background: transparent;
+  border-width: 1.5px;
+}
+
+.cursor-box[data-state='canvas'] {
+  width: 25px;
+  height: 25px;
+  background: transparent;
+  border-width: 1px;
+}
+
+.cursor-box[data-state='pressed'] {
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border-width: 0;
+}
+
+.cursor-label {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  user-select: none;
+}
+
+.cursor-box[data-state='link'] .cursor-label {
+  opacity: 1;
+}
+
+/* An arrow inside the ring, for a link that leaves the app. Drawn as a glyph
+   rather than an SVG so it inherits the box's difference blend like the label
+   does, and disappears with it in every other cursor state. */
+.cursor-box[data-icon='arrow']::after {
+  content: '↗';
+  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  user-select: none;
+}
+
+.cursor-box[data-icon='arrow']:not([data-state='link'])::after {
+  content: none;
+}
+
+/* The lift a control takes under the pointer, and the settle back down.
+   Transform only — no layout is affected, and nothing below it moves. */
+.cursor-nudge {
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Text that is not a control only deepens, because movement is a promise that
+   something happens when you click and a paragraph has nothing to give. */
+.cursor-dim {
+  transition:
+    filter 0.2s ease,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Grows from its own left edge, so a line swells in place rather than
+     drifting sideways out of its column. */
+  transform-origin: left center;
+  filter: brightness(0.5);
+  transform: scale(1.04);
+}
+
+/* A filter applies to everything inside, so any block carrying a photo, an
+   icon or a canvas opts out rather than having its picture dimmed too. This
+   matters more here than on the site: half these blocks hold a foot photo. */
+.cursor-dim:has(img, svg, canvas, video, picture) {
+  filter: none;
+}
+
+/* Light text on the dark camera and capture surfaces would be dimmed the wrong
+   way — brightness down on white is a fade, not an emphasis. */
+[class*='bg-ink'] .cursor-dim,
+[class*='bg-slate-8'] .cursor-dim,
+[class*='bg-slate-9'] .cursor-dim,
+[class*='bg-black'] .cursor-dim {
+  filter: none;
+  transform: none;
+}
+
+/* Touch devices never get any of this. */
+@media (pointer: coarse) {
+  .cursor-grid,
+  .cursor-box {
+    display: none;
+  }
+
+  html.has-custom-cursor,
+  html.has-custom-cursor a,
+  html.has-custom-cursor button {
+    cursor: auto;
+  }
+}
+
+/* The custom cursor is decoration built out of motion — it is not offered at
+   all here, and the native pointer comes back. */
+@media (prefers-reduced-motion: reduce) {
+  .cursor-grid,
+  .cursor-box {
+    display: none;
+  }
+
+  html.has-custom-cursor,
+  html.has-custom-cursor a,
+  html.has-custom-cursor button {
+    cursor: auto;
   }
 }

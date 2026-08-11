@@ -158,7 +158,7 @@ export default function LoginPage() {
 
   if (auth.loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center gap-2 bg-surface text-[15px] text-ink-soft">
+      <div className="flex min-h-screen items-center justify-center gap-2 text-[15px] text-ink-soft">
         <Loader2 className="h-5 w-5 animate-spin text-primary" /> Loading…
       </div>
     );
@@ -170,7 +170,7 @@ export default function LoginPage() {
     // The redirect effect fires ~1s later — this is the explicit
     // "Successfully signed in" confirmation the user sees first.
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
         <span className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary-soft">
           <CheckCircle2 className="h-8 w-8 text-secondary" />
         </span>
@@ -183,7 +183,7 @@ export default function LoginPage() {
   // ---- Step 1: who are you? ----------------------------------------------
   if (!audience) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center bg-surface px-6 py-10">
+      <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6 py-10">
         <BrandLockup className="mb-6" />
         <h1 className="text-2xl font-bold text-ink">Welcome</h1>
         <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
@@ -233,7 +233,7 @@ export default function LoginPage() {
 
   // ---- Step 2: sign in / create account ----------------------------------
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center bg-surface px-6 py-10">
+    <div className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6 py-10">
       <button
         type="button"
         onClick={() => {

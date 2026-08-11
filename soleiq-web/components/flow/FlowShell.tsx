@@ -13,9 +13,14 @@ import { ReactNode } from "react";
  * h-full / flex-1 / mt-auto, and the camera stage needs a bounded box.
  */
 export function FlowShell({ children }: { children: ReactNode }) {
+  // No background of its own: the page ground is on <html>, and painting over
+  // it here would hide the cursor grid drawn behind the content. The cream
+  // either side of the card is that ground showing through.
   return (
-    <div className="h-screen w-full bg-surface supports-[height:100dvh]:h-[100dvh]">
-      <div className="relative mx-auto h-full w-full max-w-2xl overflow-hidden bg-surface-raised md:border-x md:border-slate-200">
+    <div className="h-screen w-full supports-[height:100dvh]:h-[100dvh]">
+      {/* Transparent too, so the ruled ground reads straight through the flow.
+          The border still marks the column on wide screens. */}
+      <div className="relative mx-auto h-full w-full max-w-2xl overflow-hidden md:border-x md:border-slate-200">
         {children}
       </div>
     </div>

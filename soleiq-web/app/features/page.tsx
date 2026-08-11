@@ -130,7 +130,7 @@ function FeaturesContent() {
   }, [query]);
 
   return (
-    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
         <div className="flex items-center gap-3">
           <BrandLogo size={44} />

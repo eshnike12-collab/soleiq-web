@@ -4,6 +4,10 @@ import { Info } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { ScreeningReport } from "@/components/result/ScreeningReport";
+import {
+  PerfusionCard,
+  UlcerMeasurementCard,
+} from "@/components/result/PerfusionCard";
 import { CenteredScreen } from "@/components/flow/ScreenContainer";
 
 export function Results() {
@@ -25,6 +29,16 @@ export function Results() {
 
   return (
     <div className="-mx-1 flex h-full flex-col overflow-y-auto px-1 pb-2">
+      {visit.perfusion && (
+        <div className="mb-3">
+          <PerfusionCard perfusion={visit.perfusion} />
+        </div>
+      )}
+      {(visit.result?.ulcers?.length ?? 0) > 0 && (
+        <div className="mb-3">
+          <UlcerMeasurementCard ulcers={visit.result!.ulcers!} />
+        </div>
+      )}
       <ScreeningReport
         screening={screening}
         images={visit.images.map((image) => ({

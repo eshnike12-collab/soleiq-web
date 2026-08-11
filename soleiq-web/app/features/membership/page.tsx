@@ -19,7 +19,7 @@ function MembershipContent() {
   const slotsFull = slotsUsed !== null && used >= plan.maxCaregivers;
 
   return (
-    <div className="min-h-screen bg-surface px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
         <Link href="/features" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">
           ← Features
