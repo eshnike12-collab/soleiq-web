@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import emailjs from '@emailjs/browser'
+import { useT, fill } from '../i18n/I18nProvider'
 
 // ─── EmailJS config ───────────────────────────────────────────────────────────
 // Unchanged from the previous site — same service, template, and public key.
@@ -19,6 +20,7 @@ interface Errors {
 }
 
 export default function Contact() {
+  const d = useT()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
@@ -30,10 +32,10 @@ export default function Contact() {
 
   const validate = (): boolean => {
     const e: Errors = {}
-    if (!name.trim()) e.name = 'Please tell us your name.'
-    if (!email.trim()) e.email = 'Please add an email address.'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'That email address looks off.'
-    if (!message.trim()) e.message = 'Please include a message.'
+    if (!name.trim()) e.name = d.contact.errors.name
+    if (!email.trim()) e.email = d.contact.errors.email
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = d.contact.errors.emailInvalid
+    if (!message.trim()) e.message = d.contact.errors.message
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -69,16 +71,15 @@ export default function Contact() {
       <div className="shell">
         <div className="grid gap-14 md:grid-cols-[1fr_1.1fr] md:gap-20">
           <div>
-            <p className="eyebrow">Contact</p>
+            <p className="eyebrow">{d.contact.eyebrow}</p>
             <h2 id="contact-heading" className="h-section mt-5">
-              Get in touch.
+              {d.contact.heading}
             </h2>
             <p className="lede mt-6 max-w-prose">
-              Clinical partnerships, research collaboration, press, or a
-              question about the product. This reaches us directly.
+              {d.contact.body}
             </p>
             <p className="mt-8 text-[0.9375rem] text-clr-muted">
-              Or email{' '}
+              {d.contact.orEmail}{' '}
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
                 className="text-clr-text underline underline-offset-4"
@@ -88,9 +89,7 @@ export default function Contact() {
               .
             </p>
             <p className="mt-6 max-w-prose text-sm leading-relaxed text-clr-muted">
-              Please don't send medical details or images through this form. It
-              is not a clinical channel, and it is not monitored for urgent
-              problems.
+              {d.contact.noMedicalDetails}
             </p>
           </div>
 
@@ -102,10 +101,10 @@ export default function Contact() {
                 role="status"
               >
                 <p className="font-display text-xl font-medium tracking-tight text-clr-text">
-                  Message sent.
+                  {d.contact.sent}
                 </p>
                 <p className="mt-3 max-w-prose text-[0.9375rem] leading-relaxed text-clr-muted">
-                  Thanks. We'll reply to {email}.
+                  {fill(d.contact.sentBody, { email })}
                 </p>
                 <button
                   type="button"
@@ -118,14 +117,14 @@ export default function Contact() {
                     setErrors({})
                   }}
                 >
-                  Send another
+                  {d.contact.sendAnother}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} noValidate className="space-y-6">
                 <Field
                   id={`${ids}-name`}
-                  label="Name"
+                  label={d.contact.name}
                   error={errors.name}
                   value={name}
                   onChange={setName}
@@ -133,7 +132,7 @@ export default function Contact() {
                 />
                 <Field
                   id={`${ids}-email`}
-                  label="Email"
+                  label={d.contact.email}
                   type="email"
                   error={errors.email}
                   value={email}
@@ -142,7 +141,7 @@ export default function Contact() {
                 />
                 <div>
                   <label htmlFor={`${ids}-message`} className="eyebrow">
-                    Message
+                    {d.contact.message}
                   </label>
                   <textarea
                     id={`${ids}-message`}
@@ -166,12 +165,12 @@ export default function Contact() {
 
                 {failed && (
                   <p className="text-sm" style={{ color: 'var(--clr-level-urgent)' }} role="alert">
-                    That didn't send. Please email {CONTACT_EMAIL} directly.
+                    {d.contact.errors.failed} {CONTACT_EMAIL}
                   </p>
                 )}
 
                 <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? 'Sending…' : 'Send message'}
+                  {submitting ? d.contact.sending : d.contact.send}
                 </button>
               </form>
             )}

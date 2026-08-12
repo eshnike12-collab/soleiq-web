@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useT } from '../i18n/I18nProvider'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   PhoneFrame,
@@ -17,17 +18,13 @@ import type { TargetKey } from '../three/scenes'
  */
 
 interface Feature {
-  id: string
-  kicker: string
-  headline: string
-  body: string
+  id: 'capture' | 'report' | 'timeline'
   /** The particle composition for this topic. Framing is solved, not declared. */
   target: TargetKey
   /** Named parts, labelled exactly as the narrative labels them. */
-  labels: PartLabel[]
+  labels: { part: string; textKey: string; dx?: number; dy?: number }[]
   /** Flat fallback, used when there is no WebGL or motion is not wanted. */
   visual: ReactNode
-  visualLabel: string
   flip?: boolean
   /** Runs a loop rather than settling. */
   animated?: boolean
@@ -35,52 +32,37 @@ interface Feature {
   loop?: 'cycle' | 'pingPong'
 }
 
-const FEATURES: Feature[] = [
+const FEATURES_STRUCTURE: Feature[] = [
   {
     id: 'capture',
-    kicker: 'Guided capture',
-    headline: 'The hard part is taking a usable photograph. So the app does it.',
-    body: 'Framing, steadiness, and lighting are checked on the device before anything is uploaded. If one of the four is unusable, you retake only that one.',
     target: 'capture',
     // Moved beside the phone, not above it: the phone is tall and narrow, so
     // there is no room over it, and dead centre it covered the very frames
     // whose turn the animation is showing.
-    labels: [{ part: 'phone', text: 'App', dx: -150 }],
+    labels: [{ part: 'phone', textKey: 'label', dx: -150 }],
     animated: true,
     loop: 'cycle',
     visual: <ScreenCapture />,
-    visualLabel:
-      'A particle rendering of guided capture: a phone held above a foot, with the four photographs landing on its screen.',
   },
   {
     id: 'report',
-    kicker: 'Clinical report',
-    headline: 'Your clinician opens a record, not a photograph.',
-    body: 'Findings mapped onto your own images, the full intake behind them (history, HbA1c, vascular, neuropathy, pain map), and an assistant scoped to that one patient.',
     target: 'clinician',
     labels: [
-      { part: 'doctors', text: 'Your care team' },
+      { part: 'doctors', textKey: 'careTeam' },
       // Lifted clear of the rows it names, which it was sitting across.
-      { part: 'record', text: 'Patient record', dy: -78 },
+      { part: 'record', textKey: 'patientRecord', dy: -78 },
     ],
     animated: true,
     visual: <ScreenShare />,
-    visualLabel:
-      'A particle rendering of the clinical report: a dashboard receiving the record, with the findings mapped onto the patient photograph.',
     flip: true,
   },
   {
     id: 'timeline',
-    kicker: 'Shared timeline',
-    headline: 'One screening is a data point. A series is a direction.',
-    body: 'Every check is kept as a dated set of photos and levels, so a change too slow to notice day to day is obvious side by side.',
     target: 'timeline',
     // Lifted off the line: on the curve itself it sat across the reading.
-    labels: [{ part: 'curve', text: 'Risk over time', dy: -52 }],
+    labels: [{ part: 'curve', textKey: 'riskOverTime', dy: -52 }],
     animated: true,
     visual: <ScreenTimeline />,
-    visualLabel:
-      'A particle rendering of the shared timeline: dated screenings along an axis, with a marker walking down the descending risk curve and back.',
   },
 ]
 
@@ -88,6 +70,21 @@ const EASE = [0.22, 0.61, 0.36, 1] as const
 
 export default function FeatureSections() {
   const reduce = useReducedMotion()
+  const d = useT()
+
+  /* Structure and copy, joined at render so a language change re-renders the
+     words without rebuilding a single particle composition. */
+  const FEATURES = FEATURES_STRUCTURE.map((f) => {
+    const copy = d.features[f.id] as Record<string, string>
+    return {
+      ...f,
+      kicker: copy.kicker,
+      headline: copy.headline,
+      body: copy.body,
+      visualLabel: copy.visualLabel,
+      labels: f.labels.map((l) => ({ ...l, text: copy[l.textKey] ?? '' })),
+    }
+  })
   const reveal = reduce
     ? {}
     : {
@@ -100,7 +97,7 @@ export default function FeatureSections() {
     <section id="how-it-works" aria-labelledby="features-heading">
       <div className="shell pt-24 md:pt-32">
         <h2 id="features-heading" className="sr-only">
-          What SoleIQ does
+          {d.features.heading}
         </h2>
       </div>
 

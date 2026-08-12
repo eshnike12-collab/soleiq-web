@@ -46,6 +46,15 @@ interface Props {
   forming: boolean
   /** False once the panel is far enough away that the canvas has stopped. */
   rendering: boolean
+  /**
+   * The narrative copy for the active language, keyed by scene id.
+   *
+   * The labels floating over the cloud are words, so they belong to the
+   * dictionary like every other word; the scene declares which key it wants
+   * and this resolves it. Passed in rather than read here because this module
+   * is inside the canvas and has no business knowing about React context.
+   */
+  sceneCopy: Record<string, Record<string, string>>
   /** Whether the pointer is over this panel, and the frame it arrived on. */
   pointer: {
     inside: MutableRefObject<boolean>
@@ -131,6 +140,7 @@ export default function ParticleField({
   copyRectRef,
   forming,
   rendering,
+  sceneCopy,
   pointer,
 }: Props) {
   const points = useRef<THREE.Points>(null)
@@ -344,7 +354,12 @@ export default function ParticleField({
       const anchors = partAnchors(a)
       anchorsRef.current = (scene.labels ?? [])
         .filter((l) => anchors[l.part])
-        .map((l) => ({ text: l.text, dx: l.dx ?? 0, dy: l.dy ?? 0, at: new THREE.Vector3(...anchors[l.part]) }))
+        .map((l) => ({
+          text: sceneCopy[scene.id]?.[l.textKey] ?? '',
+          dx: l.dx ?? 0,
+          dy: l.dy ?? 0,
+          at: new THREE.Vector3(...anchors[l.part]),
+        }))
       sceneIndexRef.current = index
     }
 
@@ -392,7 +407,7 @@ export default function ParticleField({
     }
 
     // The closing logo runs a wave of brand colour through the mark.
-    u.uWave.value = lerp(u.uWave.value, scene.id === 'logo' ? 1 : 0, 1 - Math.pow(0.02, dt))
+    u.uWave.value = lerp(u.uWave.value, scene.id === 'close' ? 1 : 0, 1 - Math.pow(0.02, dt))
 
     u.uProgress.value = smoother(morph)
     // Whiteness of the transition: nothing while the shape is held, peaking as

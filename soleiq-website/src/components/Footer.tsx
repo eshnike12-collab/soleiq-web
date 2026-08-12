@@ -2,6 +2,7 @@ import { Instagram, Linkedin } from 'lucide-react'
 import SoleIQLogo from './SoleIQLogo'
 import { APP_URL, useAppSession } from '../hooks/useAppSession'
 import { SOCIAL } from '../data/social'
+import { useT, fill } from '../i18n/I18nProvider'
 
 const SOCIAL_ICON: Record<string, typeof Instagram> = {
   Instagram,
@@ -9,33 +10,34 @@ const SOCIAL_ICON: Record<string, typeof Instagram> = {
 }
 
 const LINKS = [
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'In practice', href: '#journeys' },
-  { label: 'Research', href: '#research' },
-  { label: 'About', href: '#about' },
-  { label: 'Contact', href: '#contact' },
-]
+  { key: 'howItWorks', href: '#how-it-works' },
+  { key: 'inPractice', href: '#journeys' },
+  { key: 'research', href: '#research' },
+  { key: 'about', href: '#about' },
+  { key: 'contact', href: '#contact' },
+] as const
 
 const CONTACT_EMAIL = 'contact.soleiq@gmail.com'
 
 export default function Footer() {
   const { signedIn } = useAppSession()
   const year = new Date().getFullYear()
+  const d = useT()
 
   return (
     <footer className="border-t border-clr-border" aria-labelledby="footer-heading">
       <h2 id="footer-heading" className="sr-only">
-        Site footer
+        {d.footer.heading}
       </h2>
       <div className="shell py-16 md:py-20">
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div>
             <SoleIQLogo size={32} />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-clr-muted">
-              AI-assisted diabetic foot screening from four guided phone photos.
+              {d.footer.tagline}
             </p>
             <a href={APP_URL} className="btn btn-secondary btn-sm mt-6">
-              {signedIn ? 'Dashboard' : 'Open the app'}
+              {signedIn ? d.footer.dashboard : d.footer.openApp}
             </a>
 
             <ul className="mt-8 flex items-center gap-2">
@@ -48,7 +50,7 @@ export default function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="social-link"
-                      aria-label={`SoleIQ Health on ${label}`}
+                      aria-label={fill(d.footer.onNetwork, { network: label })}
                     >
                       {Icon && <Icon size={19} aria-hidden="true" />}
                     </a>
@@ -58,7 +60,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <nav aria-label="Footer">
+          <nav aria-label={d.footer.nav}>
             <ul className="grid grid-cols-2 gap-x-12 gap-y-0 sm:grid-cols-3 sm:gap-y-3 md:grid-cols-2">
               {LINKS.map((link) => (
                 <li key={link.href}>
@@ -66,7 +68,7 @@ export default function Footer() {
                     href={link.href}
                     className="tap inline-flex items-center text-sm text-clr-muted transition-colors hover:text-clr-text"
                   >
-                    {link.label}
+                    {d.nav[link.key]}
                   </a>
                 </li>
               ))}
@@ -75,7 +77,7 @@ export default function Footer() {
                   href={`mailto:${CONTACT_EMAIL}`}
                   className="tap inline-flex items-center text-sm text-clr-muted transition-colors hover:text-clr-text"
                 >
-                  Email us
+                  {d.footer.emailUs}
                 </a>
               </li>
             </ul>
@@ -84,20 +86,16 @@ export default function Footer() {
 
         <div className="mt-14 border-t border-clr-border pt-8">
           <p className="max-w-3xl text-xs leading-relaxed text-clr-muted">
-            SoleIQ is a screening and decision-support tool. It is not a
-            diagnostic device, it does not provide medical advice, and it is not
-            a substitute for assessment by a qualified clinician. If you have a
-            wound, an infection, sudden pain, or a change in the colour or
-            temperature of a foot, seek medical care immediately.
+            {d.footer.disclaimer}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-x-6 sm:mt-6">
-            <p className="text-xs text-clr-muted">© {year} SoleIQ Health</p>
+            <p className="text-xs text-clr-muted">{fill(d.footer.copyright, { year })}</p>
             {/* TODO(soleiq): point these at the real policy pages when they exist. */}
             <a href={`mailto:${CONTACT_EMAIL}`} className="tap inline-flex items-center text-xs text-clr-muted hover:text-clr-text">
-              Privacy
+              {d.footer.privacy}
             </a>
             <a href={`mailto:${CONTACT_EMAIL}`} className="tap inline-flex items-center text-xs text-clr-muted hover:text-clr-text">
-              Terms
+              {d.footer.terms}
             </a>
           </div>
         </div>

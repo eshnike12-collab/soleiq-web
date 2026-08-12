@@ -4,6 +4,7 @@ import { buildAllTargets } from '../three/targets'
 import { renderStills } from '../three/renderStills'
 import type { Capabilities } from '../three/capabilities'
 import SceneArt from './visuals/SceneArt'
+import { useT } from '../i18n/I18nProvider'
 
 const ALT: Record<string, string> = {
   foot: 'A particle rendering of a foot, seen from the sole.',
@@ -24,6 +25,7 @@ const ALT: Record<string, string> = {
  * fully readable either way.
  */
 export default function NarrativeStatic({ caps }: { caps: Capabilities }) {
+  const d = useT()
   const [stills, setStills] = useState<string[] | null>(null)
 
   useEffect(() => {
@@ -60,32 +62,32 @@ export default function NarrativeStatic({ caps }: { caps: Capabilities }) {
           >
             <div className="shell grid items-center gap-12 md:grid-cols-2 md:gap-16">
               <div className="max-w-xl">
-                {scene.kicker && (
+                {'kicker' in d.narrative[scene.id] && (
                   <p
                     className="eyebrow"
                     style={{ color: dark ? 'rgba(255,255,255,0.65)' : undefined }}
                   >
-                    {scene.kicker}
+                    {(d.narrative[scene.id] as { kicker: string }).kicker}
                   </p>
                 )}
                 <h2
                   className="mt-4 text-[clamp(1.6rem,3.4vw,2.4rem)] font-medium tracking-tightest"
                   style={{ color: 'inherit' }}
                 >
-                  {scene.headline}
+                  {d.narrative[scene.id].headline}
                 </h2>
                 <p
                   className="mt-5 text-[1.0625rem] leading-relaxed"
                   style={{ color: dark ? 'rgba(255,255,255,0.78)' : 'var(--clr-text-muted)' }}
                 >
-                  {scene.body}
+                  {d.narrative[scene.id].body}
                 </p>
-                {scene.note && (
+                {'note' in d.narrative[scene.id] && (
                   <p
                     className="mt-3 text-xs"
                     style={{ color: dark ? 'rgba(255,255,255,0.5)' : 'var(--clr-muted)' }}
                   >
-                    {scene.note}
+                    {(d.narrative[scene.id] as { note: string }).note}
                   </p>
                 )}
               </div>

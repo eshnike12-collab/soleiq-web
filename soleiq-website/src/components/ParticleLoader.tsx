@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useT } from '../i18n/I18nProvider'
 
 /**
  * The loader is a small particle cluster forming — the same idea as the thing
@@ -8,6 +9,7 @@ import { useEffect, useRef } from 'react'
  * WebGL does.
  */
 export default function ParticleLoader({ progress }: { progress: number }) {
+  const d = useT()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const progressRef = useRef(progress)
   progressRef.current = progress
@@ -84,9 +86,9 @@ export default function ParticleLoader({ progress }: { progress: number }) {
         aria-hidden="true"
       />
       <p className="mt-6 text-xs uppercase tracking-[0.16em] text-clr-muted">
-        Preparing the sequence
+        {d.narrative.loading}
       </p>
-      <span className="sr-only">Loading the SoleIQ scroll sequence.</span>
+      <span className="sr-only">{d.narrative.loadingLong}</span>
     </div>
   )
 }

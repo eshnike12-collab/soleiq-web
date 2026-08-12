@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { useT } from '../i18n/I18nProvider'
 import { motion, useReducedMotion } from 'framer-motion'
 import SectionParticles from './visuals/SectionParticles'
 
@@ -8,104 +9,10 @@ import SectionParticles from './visuals/SectionParticles'
  * pathway, not a measured claim — no durations or rates are asserted.
  */
 
-type Setting = 'rural' | 'urban'
-
-interface Journey {
-  label: string
-  person: string
-  without: { title: string; steps: string[] }
-  with: { title: string; steps: string[] }
-  /** Qualitative monitoring cadence, drawn as a rail. */
-  cadence: { without: string; with: string }
-}
-
-const JOURNEYS: Record<Setting, Journey> = {
-  rural: {
-    label: 'Rural',
-    person:
-      'A farmer with type 2 diabetes and reduced sensation in both feet. The nearest foot clinic is a journey, not a trip.',
-    without: {
-      title: 'Without SoleIQ',
-      steps: [
-        'Pressure builds under the forefoot. Neuropathy means nothing is felt.',
-        'Nothing prompts a look. The feet are not part of the daily routine.',
-        'It is found when a sock sticks, or when someone else notices.',
-        'Going to the clinic means transport, cost, and a lost day of work.',
-        'The visit happens once the wound is impossible to ignore.',
-        'Care begins at the point where care is hardest.',
-      ],
-    },
-    with: {
-      title: 'With SoleIQ',
-      steps: [
-        'A screening at home: four photos, taken by a family member if needed.',
-        'Photos are checked for quality on the phone before anything uploads.',
-        'A screening level comes back with the findings marked on the photos.',
-        'The record is shared ahead to the clinic or the visiting health worker.',
-        'The journey is made once, deliberately, with a history already in hand.',
-        'Between visits, the timeline keeps watching.',
-      ],
-    },
-    cadence: {
-      without: 'Checked when someone happens to look',
-      with: 'Checked on a schedule, at home',
-    },
-  },
-  urban: {
-    label: 'Urban',
-    person:
-      'A commuter with type 2 diabetes and a callus that keeps coming back. A podiatry appointment is available, eventually.',
-    without: {
-      title: 'Without SoleIQ',
-      steps: [
-        'A callus thickens and the skin around it changes colour. Easy to dismiss.',
-        'Booking a podiatry appointment means joining a queue.',
-        'The appointment arrives, or is rescheduled, or is missed.',
-        'In the room, the clinician sees today’s foot and nothing before it.',
-        'Advice is given; follow-up depends on remembering how it looked.',
-        'The next change goes unmeasured until the next appointment.',
-      ],
-    },
-    with: {
-      title: 'With SoleIQ',
-      steps: [
-        'A screening at home takes a few minutes, before work.',
-        'Findings are marked on the patient’s own photographs.',
-        'The level says whether this is recheck-in-a-week or book-now.',
-        'Appointment slots go to the people whose level says they need one.',
-        'The clinician opens a dated photo series instead of a blank slate.',
-        'Follow-up is measured against images, not against recall.',
-      ],
-    },
-    cadence: {
-      without: 'Checked at appointments',
-      with: 'Checked between appointments too',
-    },
-  },
-}
-
-const CHANGES = [
-  {
-    q: 'Who notices first',
-    without: 'Whoever happens to look, which with neuropathy is often nobody.',
-    with: 'A routine check that does not depend on being able to feel it.',
-  },
-  {
-    q: 'What the clinician sees',
-    without: 'The foot as it is today.',
-    with: 'A dated series, so the direction of travel is visible.',
-  },
-  {
-    q: 'What triggers a visit',
-    without: 'A wound that has become obvious.',
-    with: 'A screening level, with the reason attached.',
-  },
-  {
-    q: 'What a journey costs',
-    without: 'The same, whether or not it turns out to be needed.',
-    with: 'The same, but made for a reason you can point at.',
-  },
-]
+/* Which settings exist, and in what order. Every word for them lives in the
+   dictionary; this is only the shape of the section. */
+const SETTINGS = ['rural', 'urban'] as const
+type Setting = (typeof SETTINGS)[number]
 
 const EASE = [0.22, 0.61, 0.36, 1] as const
 
@@ -113,7 +20,8 @@ export default function Journeys() {
   const [setting, setSetting] = useState<Setting>('rural')
   const reduce = useReducedMotion()
   const baseId = useId()
-  const journey = JOURNEYS[setting]
+  const d = useT()
+  const journey = d.journeys[setting]
 
   return (
     <section
@@ -127,14 +35,12 @@ export default function Journeys() {
             emptiest on the page. */}
         <div className="grid items-start gap-12 lg:grid-cols-[1fr_26rem] lg:gap-16">
           <div>
-            <p className="eyebrow">In practice</p>
+            <p className="eyebrow">{d.journeys.eyebrow}</p>
             <h2 id="journeys-heading" className="h-section mt-5 max-w-3xl">
-              The same feet, two settings, and what changes when the check
-              happens at home.
+              {d.journeys.heading}
             </h2>
             <p className="lede mt-6 max-w-prose">
-              These are the pathways SoleIQ is designed around. They describe how
-              the product is used. They are not outcome claims.
+              {d.journeys.lede}
             </p>
           </div>
 
@@ -144,11 +50,7 @@ export default function Journeys() {
               target={setting === 'rural' ? 'village' : 'city'}
               loop="pingPong"
               period={setting === 'rural' ? 7 : 11}
-              label={
-                setting === 'rural'
-                  ? 'A particle rendering of a cottage among trees, with leaves in the air.'
-                  : 'A particle rendering of a city skyline under a sky that moves from day to night.'
-              }
+              label={journey.visualLabel}
               fallback={<div />}
             />
           </div>
@@ -157,11 +59,11 @@ export default function Journeys() {
         {/* Setting switch */}
         <div
           role="tablist"
-          aria-label="Choose a setting"
+          aria-label={d.journeys.chooseSetting}
           className="mt-10 inline-flex rounded-lg p-1"
           style={{ background: 'var(--clr-bg)', border: '1px solid var(--clr-border)' }}
         >
-          {(Object.keys(JOURNEYS) as Setting[]).map((key) => {
+          {SETTINGS.map((key) => {
             const selected = key === setting
             return (
               <button
@@ -178,7 +80,7 @@ export default function Journeys() {
                   color: selected ? '#fff' : 'var(--clr-text-muted)',
                 }}
               >
-                {JOURNEYS[key].label}
+                {d.journeys[key].label}
               </button>
             )
           })}
@@ -202,15 +104,17 @@ export default function Journeys() {
 
             <div className="mt-14 grid gap-12 lg:grid-cols-2 lg:gap-16">
               <Lane
-                title={journey.without.title}
-                steps={journey.without.steps}
-                cadence={journey.cadence.without}
+                title={d.journeys.withoutTitle}
+                steps={journey.without}
+                cadence={journey.cadenceWithout}
+                cadenceLabel={d.journeys.cadence}
                 tone="neutral"
               />
               <Lane
-                title={journey.with.title}
-                steps={journey.with.steps}
-                cadence={journey.cadence.with}
+                title={d.journeys.withTitle}
+                steps={journey.with}
+                cadence={journey.cadenceWith}
+                cadenceLabel={d.journeys.cadence}
                 tone="accent"
               />
             </div>
@@ -219,17 +123,17 @@ export default function Journeys() {
 
         {/* What changes */}
         <div className="mt-20 md:mt-28">
-          <h3 className="h-sub">What actually changes</h3>
+          <h3 className="h-sub">{d.journeys.changesHeading}</h3>
           <div
             className="mt-8 hidden gap-8 border-t border-clr-border pt-4 md:grid md:grid-cols-[14rem_1fr_1fr]"
             aria-hidden="true"
           >
             <span />
-            <span className="eyebrow">Without SoleIQ</span>
-            <span className="eyebrow">With SoleIQ</span>
+            <span className="eyebrow">{d.journeys.withoutTitle}</span>
+            <span className="eyebrow">{d.journeys.withTitle}</span>
           </div>
           <dl className="mt-8 border-t border-clr-border md:mt-0 md:border-t-0">
-            {CHANGES.map((row) => (
+            {d.journeys.comparison.map((row) => (
               <div
                 key={row.q}
                 className="grid gap-2 border-b border-clr-border py-6 md:grid-cols-[14rem_1fr_1fr] md:gap-8"
@@ -261,11 +165,13 @@ function Lane({
   title,
   steps,
   cadence,
+  cadenceLabel,
   tone,
 }: {
   title: string
-  steps: string[]
+  steps: readonly string[]
   cadence: string
+  cadenceLabel: string
   tone: 'neutral' | 'accent'
 }) {
   const color = tone === 'accent' ? 'var(--clr-accent-2)' : 'var(--clr-text-muted)'
@@ -278,7 +184,7 @@ function Lane({
         {title}
       </h3>
 
-      <CadenceRail tone={tone} label={cadence} />
+      <CadenceRail tone={tone} label={cadence} caption={cadenceLabel} />
 
       <ol className="mt-8">
         {steps.map((step, i) => (
@@ -306,7 +212,16 @@ function Lane({
  * spaced in the SoleIQ lane and sparse in the other — no time axis is implied,
  * and no interval is claimed.
  */
-function CadenceRail({ tone, label }: { tone: 'neutral' | 'accent'; label: string }) {
+function CadenceRail({
+  tone,
+  label,
+  caption,
+}: {
+  tone: 'neutral' | 'accent'
+  label: string
+  /** The word for what the rail measures — screen-reader only. */
+  caption: string
+}) {
   const accent = tone === 'accent'
   const ticks = accent
     ? [4, 12, 20, 28, 36, 44, 52, 60, 68, 76, 84, 92]
@@ -315,7 +230,7 @@ function CadenceRail({ tone, label }: { tone: 'neutral' | 'accent'; label: strin
 
   return (
     <div className="mt-5">
-      <svg viewBox="0 0 100 12" className="h-3 w-full" preserveAspectRatio="none" aria-hidden="true">
+      <svg viewBox="0 0 100 12" className="h-3 w-full" preserveAspectRatio="none" role="img" aria-label={`${caption}: ${label}`}>
         <line x1="0" y1="6" x2="100" y2="6" stroke="var(--clr-border)" strokeWidth="0.5" />
         {ticks.map((x) => (
           <line

@@ -3,18 +3,22 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
 import SoleIQLogo from './SoleIQLogo'
 import { APP_URL, useAppSession } from '../hooks/useAppSession'
+import LanguageSwitcher from './LanguageSwitcher'
+import { useT } from '../i18n/I18nProvider'
 
+/* Hrefs are structure and stay put; the words come from the dictionary. */
 const NAV_LINKS = [
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Research', href: '#research' },
-  { label: 'About', href: '#about' },
-  { label: 'Contact', href: '#contact' },
-]
+  { key: 'howItWorks', href: '#how-it-works' },
+  { key: 'research', href: '#research' },
+  { key: 'about', href: '#about' },
+  { key: 'contact', href: '#contact' },
+] as const
 
 export default function Navbar() {
   const { signedIn } = useAppSession()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const d = useT()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -35,7 +39,7 @@ export default function Navbar() {
     }
   }, [mobileOpen])
 
-  const appLabel = signedIn ? 'Dashboard' : 'App'
+  const appLabel = signedIn ? d.nav.dashboard : d.nav.app
 
   return (
     <>
@@ -52,7 +56,7 @@ export default function Navbar() {
             <a
               href="#top"
               className="tap flex h-10 min-w-0 items-center rounded"
-              aria-label="SoleIQ Health, back to top"
+              aria-label={d.nav.backToTop}
             >
               <SoleIQLogo size={38} />
             </a>
@@ -60,16 +64,14 @@ export default function Navbar() {
             <a
               href={APP_URL}
               className="btn btn-primary btn-sm h-10 shrink-0"
-              aria-label={
-                signedIn ? 'Open your SoleIQ dashboard' : 'Open the SoleIQ app'
-              }
+              aria-label={signedIn ? d.nav.openDashboard : d.nav.openApp}
             >
               {appLabel}
               <ArrowUpRight size={15} aria-hidden="true" />
             </a>
           </div>
 
-          <nav className="ml-auto hidden md:block" aria-label="Primary">
+          <nav className="ms-auto hidden md:block" aria-label={d.nav.primary}>
             <ul className="flex items-center gap-8">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
@@ -77,20 +79,23 @@ export default function Navbar() {
                     href={link.href}
                     className="text-[0.9375rem] text-clr-muted transition-colors hover:text-clr-text"
                   >
-                    {link.label}
+                    {d.nav[link.key]}
                   </a>
                 </li>
               ))}
+              <li>
+                <LanguageSwitcher />
+              </li>
             </ul>
           </nav>
 
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-clr-text md:hidden"
+            className="ms-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-clr-text md:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
-            aria-label="Open menu"
+            aria-label={d.nav.openMenu}
           >
             <Menu size={22} aria-hidden="true" />
           </button>
@@ -122,8 +127,8 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="-mr-2 ml-auto inline-flex h-11 w-11 items-center justify-center rounded-lg text-clr-text"
-                aria-label="Close menu"
+                className="-me-2 ms-auto inline-flex h-11 w-11 items-center justify-center rounded-lg text-clr-text"
+                aria-label={d.nav.closeMenu}
               >
                 <X size={22} aria-hidden="true" />
               </button>
@@ -132,7 +137,7 @@ export default function Navbar() {
             {/* Scrolls on its own if a short screen cannot hold the list. */}
             <nav
               className="shell flex min-h-0 flex-1 flex-col overflow-y-auto pb-8 pt-4"
-              aria-label="Primary, mobile"
+              aria-label={d.nav.primaryMobile}
             >
               <ul className="flex flex-col">
                 {NAV_LINKS.map((link) => (
@@ -142,7 +147,7 @@ export default function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center justify-between gap-4 border-b border-clr-border py-5 font-display text-[1.625rem] tracking-tight text-clr-text"
                     >
-                      {link.label}
+                      {d.nav[link.key]}
                       <ArrowUpRight
                         size={18}
                         className="shrink-0 text-clr-muted"
@@ -162,9 +167,12 @@ export default function Navbar() {
                 <ArrowUpRight size={16} aria-hidden="true" />
               </a>
 
+              <div className="mt-6">
+                <LanguageSwitcher variant="sheet" />
+              </div>
+
               <p className="mt-6 text-sm leading-relaxed text-clr-muted">
-                Screening and decision support for the diabetic foot. Not a
-                diagnostic device.
+                {d.nav.disclaimerShort}
               </p>
             </nav>
           </motion.div>

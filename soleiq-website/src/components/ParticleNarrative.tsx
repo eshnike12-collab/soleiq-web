@@ -12,6 +12,7 @@ import { copyOpacity, SCENE_BOUNDS, SCENES } from '../three/scenes'
 import { INITIAL_CAMERA } from '../three/framing'
 import { usePointerInside } from '../hooks/usePointerInside'
 import type { BuiltTarget } from '../three/sampleTargets'
+import { useT } from '../i18n/I18nProvider'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -20,6 +21,7 @@ gsap.registerPlugin(ScrollTrigger)
 const VH_PER_UNIT = 155
 
 export default function ParticleNarrative() {
+  const d = useT()
   const caps = useMemo<Capabilities>(detectCapabilities, [])
   const [targets, setTargets] = useState<Record<string, BuiltTarget> | null>(null)
   const [built, setBuilt] = useState(0)
@@ -328,6 +330,7 @@ export default function ParticleNarrative() {
                   to — so this is deliberately one-way. */}
               <PerformanceMonitor onDecline={() => setDpr((d) => Math.max(1, d - 0.5))} />
               <ParticleField
+                sceneCopy={d.narrative as unknown as Record<string, Record<string, string>>}
                 targets={targets}
                 count={caps.particleCount}
                 caps={caps}
@@ -377,7 +380,7 @@ export default function ParticleNarrative() {
                     ref={(el) => (railLabelRefs.current[i] = el)}
                     className="scene-rail-label"
                   >
-                    {s.kicker ?? 'SoleIQ'}
+                    {(d.narrative[s.id] as { kicker?: string }).kicker ?? 'SoleIQ'}
                   </span>
                 </li>
               ))}
@@ -401,10 +404,14 @@ export default function ParticleNarrative() {
                 style={{ opacity: 0, visibility: 'hidden', willChange: 'opacity, transform' }}
               >
                 <div className={scene.wideCopy ? 'max-w-none' : 'max-w-xl'}>
-                  {scene.kicker && <p className="scene-kicker eyebrow">{scene.kicker}</p>}
-                  {scene.id !== 'logo' && (
+                  {'kicker' in d.narrative[scene.id] && (
+                    <p className="scene-kicker eyebrow">
+                      {(d.narrative[scene.id] as { kicker: string }).kicker}
+                    </p>
+                  )}
+                  {scene.id !== 'close' && (
                     <h2 className="mt-4 text-[clamp(1.6rem,3.4vw,2.6rem)] font-medium tracking-tightest">
-                      {scene.headline}
+                      {d.narrative[scene.id].headline}
                     </h2>
                   )}
                   <p
@@ -416,9 +423,13 @@ export default function ParticleNarrative() {
                         : 'scene-body mt-5 text-[1rem] leading-relaxed md:text-[1.0625rem]'
                     }
                   >
-                    {scene.body}
+                    {d.narrative[scene.id].body}
                   </p>
-                  {scene.note && <p className="scene-note mt-3 text-xs">{scene.note}</p>}
+                  {'note' in d.narrative[scene.id] && (
+                    <p className="scene-note mt-3 text-xs">
+                      {(d.narrative[scene.id] as { note: string }).note}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

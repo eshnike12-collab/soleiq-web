@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, X } from 'lucide-react'
 import { marked } from 'marked'
 import { listPublishedPosts, type PublicBlogPost } from '../lib/blog'
+import { useT, useI18n, fill } from '../i18n/I18nProvider'
 
 /**
  * Posts come from Supabase (`blog_posts`, published only) and are authored in
@@ -20,20 +21,15 @@ interface DisplayPost {
   readMin: number
 }
 
-function toDisplay(p: PublicBlogPost): DisplayPost {
+function toDisplay(p: PublicBlogPost, fallbackCategory: string, formatDate: (v: string) => string): DisplayPost {
   return {
     id: p.id,
-    category: p.category ?? 'Notes',
+    category: p.category ?? fallbackCategory,
     title: p.title,
     excerpt: p.excerpt ?? '',
     body_markdown: p.body_markdown,
-    date: p.published_at
-      ? new Date(p.published_at).toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })
-      : '',
+    // Dates follow the reader's language, not the browser's default.
+    date: p.published_at ? formatDate(p.published_at) : '',
     readMin: p.read_min,
   }
 }
@@ -42,15 +38,22 @@ export default function Blog() {
   const [posts, setPosts] = useState<DisplayPost[]>([])
   const [reading, setReading] = useState<DisplayPost | null>(null)
 
+  const d = useT()
+  const { formatDate } = useI18n()
+
   useEffect(() => {
     let alive = true
     listPublishedPosts().then((rows) => {
-      if (alive) setPosts(rows.map(toDisplay))
+      if (alive) {
+        setPosts(
+          rows.map((row) => toDisplay(row, d.blog.defaultCategory, (v) => formatDate(v)))
+        )
+      }
     })
     return () => {
       alive = false
     }
-  }, [])
+  }, [d, formatDate])
 
   if (posts.length === 0) return null
 
@@ -61,9 +64,9 @@ export default function Blog() {
       aria-labelledby="blog-heading"
     >
       <div className="shell">
-        <p className="eyebrow">Writing</p>
+        <p className="eyebrow">{d.blog.eyebrow}</p>
         <h2 id="blog-heading" className="h-section mt-5 max-w-2xl">
-          Notes from the people building it.
+          {d.blog.heading}
         </h2>
 
         <ul className="mt-12 border-t border-clr-border">
@@ -72,7 +75,7 @@ export default function Blog() {
               <button
                 type="button"
                 onClick={() => setReading(post)}
-                className="group grid w-full gap-3 py-7 text-left md:grid-cols-[9rem_1fr_auto] md:items-baseline md:gap-8"
+                className="group grid w-full gap-3 py-7 text-start md:grid-cols-[9rem_1fr_auto] md:items-baseline md:gap-8"
               >
                 <span className="text-sm text-clr-muted">
                   {post.date}
@@ -89,7 +92,7 @@ export default function Blog() {
                   )}
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-sm text-clr-muted">
-                  {post.readMin} min
+                  {fill(d.blog.minutesShort, { minutes: post.readMin })}
                   <ArrowRight size={15} aria-hidden="true" />
                 </span>
               </button>
@@ -105,6 +108,7 @@ export default function Blog() {
 
 function ReadModal({ post, onClose }: { post: DisplayPost | null; onClose: () => void }) {
   const reduce = useReducedMotion()
+  const d = useT()
   const html = useMemo(
     () =>
       post ? (marked.parse(post.body_markdown, { breaks: true, async: false }) as string) : '',
@@ -148,14 +152,14 @@ function ReadModal({ post, onClose }: { post: DisplayPost | null; onClose: () =>
             <div className="flex items-center justify-between border-b border-clr-border px-6 py-4 sm:px-10">
               <span className="text-sm text-clr-muted">
                 {post.date}
-                {post.category ? ` · ${post.category}` : ''} · {post.readMin} min
+                {post.category ? ` · ${post.category}` : ''} · {fill(d.blog.minutesShort, { minutes: post.readMin })}
               </span>
               <button
                 type="button"
                 onClick={onClose}
                 autoFocus
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-clr-muted hover:text-clr-text"
-                aria-label="Close article"
+                aria-label={d.blog.closeArticle}
               >
                 <X size={18} aria-hidden="true" />
               </button>

@@ -5,6 +5,7 @@ import {
   searchLiterature,
   type LiteratureResult,
 } from '../../lib/europepmc'
+import { useT, fill } from '../../i18n/I18nProvider'
 
 const DEBOUNCE_MS = 400
 
@@ -16,6 +17,7 @@ const DEBOUNCE_MS = 400
  * people's papers sitting under SoleIQ's name.
  */
 export default function LiteratureSearch() {
+  const d = useT()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<LiteratureResult[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
@@ -49,7 +51,7 @@ export default function LiteratureSearch() {
           setError(
             err instanceof LiteratureSearchError
               ? err.message
-              : 'Something went wrong running that search.'
+              : d.research.searchError
           )
           setResults([])
           setStatus('error')
@@ -65,7 +67,7 @@ export default function LiteratureSearch() {
     <div>
       <form role="search" onSubmit={(e) => e.preventDefault()}>
         <label htmlFor={inputId} className="eyebrow">
-          Search the literature
+          {d.research.searchHeading}
         </label>
         <div className="relative mt-3">
           <Search
@@ -78,9 +80,9 @@ export default function LiteratureSearch() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="diabetic foot ulcer, offloading, neuropathy screening…"
+            placeholder={d.research.searchPlaceholder}
             autoComplete="off"
-            className="field py-3.5 pl-11"
+            className="field py-3.5 ps-11"
             style={{ background: 'var(--clr-bg)' }}
           />
         </div>
@@ -102,8 +104,8 @@ export default function LiteratureSearch() {
       </p>
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {status === 'loading' && 'Searching Europe PMC'}
-        {status === 'ready' && `${results.length} results for ${query}`}
+        {status === 'loading' && d.research.searching}
+        {status === 'ready' && fill(d.research.resultsFor, { count: results.length, query })}
         {status === 'error' && error}
       </div>
 
@@ -135,7 +137,7 @@ export default function LiteratureSearch() {
 
         {status === 'ready' && results.length === 0 && (
           <p className="text-[0.9375rem] text-clr-muted">
-            No records matched “{query.trim()}”. Try a broader term.
+            {fill(d.research.noResults, { query: query.trim() })}
           </p>
         )}
 
@@ -154,6 +156,7 @@ export default function LiteratureSearch() {
 }
 
 function ResultCard({ result }: { result: LiteratureResult }) {
+  const d = useT()
   return (
     <a
       href={result.url}
@@ -171,7 +174,7 @@ function ResultCard({ result }: { result: LiteratureResult }) {
         </span>
         {result.year && <span>{result.year}</span>}
         {result.openAccess && (
-          <span style={{ color: 'var(--clr-accent-2)' }}>Open access</span>
+          <span style={{ color: 'var(--clr-accent-2)' }}>{d.research.openAccess}</span>
         )}
         {typeof result.citedByCount === 'number' && result.citedByCount > 0 && (
           <span>{result.citedByCount} citations</span>

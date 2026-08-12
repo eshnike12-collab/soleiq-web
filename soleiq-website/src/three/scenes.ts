@@ -19,13 +19,9 @@ export type TargetKey =
   | 'paper'
 
 export interface Scene {
-  id: string
+  /** Also the key its copy is filed under in the dictionaries. */
+  id: SceneKey
   target: TargetKey
-  kicker: string | null
-  headline: string
-  body: string
-  /** Small print under the copy — used where a visual is illustrative. */
-  note?: string
   /** Relative scroll length. Scene 5 gets the most, as the payoff. */
   length: number
   /** Fraction of the scene spent holding the formed shape before morphing on. */
@@ -90,7 +86,7 @@ export interface Scene {
    * Only for things a viewer cannot name on sight. A foot is obvious; that a
    * particular slab is the phone running the app is not.
    */
-  labels?: { part: string; text: string; dx?: number; dy?: number }[]
+  labels?: { part: string; textKey: string; dx?: number; dy?: number }[]
   /** Additive blending only makes sense on the dark scenes. */
   additive: boolean
   /** Peak displacement during this scene's outgoing morph. */
@@ -99,13 +95,19 @@ export interface Scene {
   dayNight?: boolean
 }
 
+/** The six scenes, in order. Copy for each lives under `narrative[id]`. */
+export type SceneKey =
+  | 'problem'
+  | 'capture'
+  | 'analysis'
+  | 'handover'
+  | 'overTime'
+  | 'close'
+
 export const SCENES: Scene[] = [
   {
-    id: 'foot',
+    id: 'problem',
     target: 'foot',
-    kicker: 'The problem',
-    headline: 'It starts as something you cannot feel.',
-    body: 'Diabetic neuropathy removes the signal that would normally make you look at your foot. Pressure, a blister, a crack in the skin: none of it hurts, so none of it prompts a check. Found early, a foot ulcer is usually manageable. Found late, it often is not.',
     // TODO(soleiq): if you want a sourced prevalence or outcome figure here,
     // send me the citation and I'll add it. Nothing unsourced goes on this page.
     length: 1,
@@ -119,61 +121,48 @@ export const SCENES: Scene[] = [
   {
     id: 'capture',
     target: 'capture',
-    kicker: 'Capture',
-    headline: 'Four guided photos. ≈4 minutes.',
-    body: 'Both feet, top and sole, on the phone you already own. The app frames each shot and holds you steady through it. No attachment, no dock, no appointment.',
     length: 1,
     hold: 0.5,
     x: 0.64,
     bg: ['#0c1455', '#05082e'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
-    labels: [{ part: 'phone', text: 'App', dx: -150 }],
+    labels: [{ part: 'phone', textKey: 'app', dx: -150 }],
     additive: true,
     turbulence: 0.46,
   },
   {
     id: 'analysis',
     target: 'analysis',
-    kicker: 'Analysis',
-    headline: 'Checked on your phone, then read against your history.',
-    body: 'Quality checks and lighting normalisation run on the device before anything is uploaded. A vision model then reads all four images together with your intake (diabetes history, HbA1c, PAD and vascular answers, neuropathy, foot history, pain map), and returns one of four screening levels.',
     length: 1.15,
     hold: 0.5,
     x: 0.65,
     bg: ['#0a1049', '#030626'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
     labels: [
-      { part: 'mesh', text: 'AI analysis' },
-      { part: 'level', text: 'Risk level' },
+      { part: 'mesh', textKey: 'aiAnalysis' },
+      { part: 'level', textKey: 'riskLevel' },
     ],
     additive: true,
     turbulence: 0.55,
   },
   {
-    id: 'clinician',
+    id: 'handover',
     target: 'clinician',
-    kicker: 'Handover',
-    headline: 'Your clinician receives the whole record.',
-    body: 'Every intake field, the findings mapped onto your own photographs, and the complete history, with an assistant scoped to that patient record. You decide who it goes to.',
     length: 1.1,
     hold: 0.5,
     x: 0.6,
     bg: ['#0b1252', '#04072c'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
     labels: [
-      { part: 'doctors', text: 'Your care team' },
-      { part: 'record', text: 'Patient record', dy: -78 },
+      { part: 'doctors', textKey: 'careTeam' },
+      { part: 'record', textKey: 'patientRecord', dy: -78 },
     ],
     additive: true,
     turbulence: 0.52,
   },
   {
-    id: 'timeline',
+    id: 'overTime',
     target: 'timeline',
-    kicker: 'Over time',
-    headline: 'A record that accumulates, and a risk that can come down.',
-    body: 'Every screening is kept as a dated set of photos and levels. A change too slow to notice day to day becomes obvious across a timeline, and so does the direction it is heading.',
-    note: 'Illustrative. Not patient data.',
     length: 1.9,
     hold: 0.42,
     x: 0.6,
@@ -185,17 +174,14 @@ export const SCENES: Scene[] = [
     tallBand: true,
     bg: ['#0b1250', '#030625'],
     colors: { deep: '#7c46c4', core: '#a45fe8', hi: '#cf9dff', hot: '#ffffff', ai: '#26f7fd' },
-    labels: [{ part: 'curve', text: 'Risk over time', dy: -52 }],
+    labels: [{ part: 'curve', textKey: 'riskOverTime', dy: -52 }],
     additive: true,
     turbulence: 0.42,
     dayNight: true,
   },
   {
-    id: 'logo',
+    id: 'close',
     target: 'logo',
-    kicker: null,
-    headline: 'SoleIQ',
-    body: 'Screening and decision support for the diabetic foot. Not a diagnostic device.',
     length: 0.9,
     hold: 1,
     x: 0.5,

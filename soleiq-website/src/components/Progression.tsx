@@ -2,12 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { Camera, Clock, Info, Pause, Play, Stethoscope } from 'lucide-react'
 import StageFoot from './visuals/StageFoot'
-import {
-  PROGRESSION_CAVEAT,
-  STAGES,
-  WINDOWS,
-  type Stage,
-} from '../data/progression'
+import { STAGES, type Stage } from '../data/progression'
+import { useT, fill } from '../i18n/I18nProvider'
 
 /**
  * How a diabetic foot ulcer progresses, and which part of that path a camera
@@ -38,6 +34,7 @@ export default function Progression() {
   // could never be met and the walkthrough never started.
   const inView = useInView(sectionRef, { amount: 0.15 })
   const reduce = useReducedMotion()
+  const d = useT()
 
   // Walks itself until someone takes over, and only while it is on screen.
   useEffect(() => {
@@ -66,6 +63,9 @@ export default function Progression() {
 
   const stage = STAGES[active]
   const soleiqCount = STAGES.filter((s) => s.window === 'soleiq').length
+  /* The grades themselves are structure — number, window, tone. Every word
+     describing them is looked up by grade, so the two never drift apart. */
+  const copy = (grade: number) => d.progression.stages[grade]
 
   return (
     <section
@@ -77,14 +77,12 @@ export default function Progression() {
       // at z-index -1 — stay visible through it.
     >
       <div className="shell section-pad">
-        <p className="eyebrow">Progression</p>
+        <p className="eyebrow">{d.progression.eyebrow}</p>
         <h2 id="progression-heading" className="h-section mt-5 max-w-3xl">
-          The whole path, and the part of it a camera can reach.
+          {d.progression.heading}
         </h2>
         <p className="lede mt-6 max-w-prose">
-          A diabetic foot ulcer does not arrive; it progresses. Select any grade
-          to see what is true of the foot at that point, and what a photograph
-          can and cannot establish there.
+          {d.progression.lede}
         </p>
 
         {/* ── The two windows ──────────────────────────────────────────────── */}
@@ -92,21 +90,25 @@ export default function Progression() {
           <WindowBanner
             kind="soleiq"
             icon={<Camera size={15} aria-hidden="true" />}
-            span={`Grades 0–${soleiqCount - 1}`}
+            span={fill(d.progression.gradesRange, { from: 0, to: soleiqCount - 1 })}
             active={stage.window === 'soleiq'}
+            title={d.progression.windows.soleiq.title}
+            line={d.progression.windows.soleiq.line}
           />
           <WindowBanner
             kind="standard"
             icon={<Stethoscope size={15} aria-hidden="true" />}
-            span={`Grades ${soleiqCount}–5`}
+            span={fill(d.progression.gradesRange, { from: soleiqCount, to: 5 })}
             active={stage.window === 'standard'}
+            title={d.progression.windows.standard.title}
+            line={d.progression.windows.standard.line}
           />
         </div>
 
         {/* ── Stage strip ──────────────────────────────────────────────────── */}
         <div
           role="tablist"
-          aria-label="Wagner grades"
+          aria-label={d.progression.gradesLabel}
           onKeyDown={onKeyDown}
           className="mt-4 grid grid-cols-3 gap-3 lg:grid-cols-6"
         >
@@ -122,7 +124,7 @@ export default function Progression() {
                 aria-controls="stage-detail"
                 tabIndex={selected ? 0 : -1}
                 onClick={() => choose(i)}
-                className="group relative flex flex-col rounded-xl p-3 text-left transition-[transform,box-shadow] duration-200"
+                className="group relative flex flex-col rounded-xl p-3 text-start transition-[transform,box-shadow] duration-200"
                 style={{
                   background: selected ? tone.soft : 'var(--clr-bg)',
                   border: `1px solid ${selected ? tone.line : 'var(--clr-border)'}`,
@@ -135,7 +137,7 @@ export default function Progression() {
                     className="text-[0.6875rem] font-medium uppercase tracking-widest"
                     style={{ color: selected ? tone.line : 'var(--clr-text-muted)' }}
                   >
-                    Grade {s.grade}
+                    {d.progression.grade} {s.grade}
                   </span>
                   {s.window === 'soleiq' && (
                     <Camera
@@ -156,10 +158,10 @@ export default function Progression() {
                 />
 
                 <span className="text-[0.8125rem] font-medium leading-snug text-clr-text">
-                  {s.name}
+                  {copy(s.grade).name}
                 </span>
                 <span className="mt-0.5 text-[0.75rem] leading-snug text-clr-muted">
-                  {s.plain}
+                  {copy(s.grade).plain}
                 </span>
 
                 {/* Selection rail */}
@@ -218,26 +220,26 @@ export default function Progression() {
                 >
                   <div>
                     <p className="eyebrow" style={{ color: TONE[s.tone].line }}>
-                      Grade {s.grade} · {s.name}
+                      {d.progression.grade} {s.grade} · {copy(s.grade).name}
                     </p>
                     <p className="mt-3 text-[1.0625rem] leading-relaxed text-clr-text">
-                      {s.what}
+                      {copy(s.grade).what}
                     </p>
                   </div>
                   <div>
                     <p className="eyebrow inline-flex items-center gap-1.5">
-                      <Camera size={13} aria-hidden="true" /> What a photo shows
+                      <Camera size={13} aria-hidden="true" /> {d.progression.whatPhotoShows}
                     </p>
                     <p className="mt-3 text-[0.9375rem] leading-relaxed text-clr-muted">
-                      {s.camera}
+                      {copy(s.grade).camera}
                     </p>
                   </div>
                   <div>
                     <p className="eyebrow inline-flex items-center gap-1.5">
-                      <Stethoscope size={13} aria-hidden="true" /> What SoleIQ does
+                      <Stethoscope size={13} aria-hidden="true" /> {d.progression.whatSoleIQDoes}
                     </p>
                     <p className="mt-3 text-[0.9375rem] leading-relaxed text-clr-muted">
-                      {s.soleiq}
+                      {copy(s.grade).soleiq}
                     </p>
                   </div>
                 </motion.div>
@@ -251,7 +253,7 @@ export default function Progression() {
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h3 className="h-sub inline-flex items-center gap-2">
               <Clock size={17} aria-hidden="true" style={{ color: 'var(--clr-accent-2)' }} />
-              Typical worst-case trajectory
+              {d.progression.trajectory}
             </h3>
             <button
               type="button"
@@ -263,7 +265,7 @@ export default function Progression() {
               }}
             >
               {playing ? <Pause size={12} aria-hidden="true" /> : <Play size={12} aria-hidden="true" />}
-              {playing ? 'Pause walkthrough' : 'Play walkthrough'}
+              {playing ? d.progression.pause : d.progression.play}
             </button>
           </div>
 
@@ -276,8 +278,8 @@ export default function Progression() {
                   <button
                     type="button"
                     onClick={() => choose(i)}
-                    aria-label={`Grade ${s.grade}, ${s.when.label}`}
-                    className="flex w-full flex-col rounded-lg p-3 text-left transition-colors"
+                    aria-label={`${d.progression.grade} ${s.grade}, ${copy(s.grade).whenLabel}`}
+                    className="flex w-full flex-col rounded-lg p-3 text-start transition-colors"
                     style={{
                       background: i === active ? tone.soft : 'transparent',
                       border: `1px solid ${i === active ? tone.line : 'var(--clr-border)'}`,
@@ -287,14 +289,14 @@ export default function Progression() {
                       className="text-[0.8125rem] font-medium"
                       style={{ color: reached ? tone.line : 'var(--clr-text-muted)' }}
                     >
-                      {s.when.label}
+                      {copy(s.grade).whenLabel}
                     </span>
                     <span className="mt-1 text-[0.75rem] leading-snug text-clr-muted">
-                      {s.when.detail}
+                      {copy(s.grade).whenDetail}
                     </span>
-                    {s.toNext && (
+                    {copy(s.grade).toNext && (
                       <span className="mt-2 text-[0.6875rem] uppercase tracking-widest text-clr-muted">
-                        → {s.toNext}
+                        → {copy(s.grade).toNext}
                       </span>
                     )}
                   </button>
@@ -329,7 +331,7 @@ export default function Progression() {
           style={{ background: 'var(--clr-bg)', border: '1px solid var(--clr-border)' }}
         >
           <Info size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
-          <span>{PROGRESSION_CAVEAT}</span>
+          <span>{d.progression.caveat}</span>
         </p>
       </div>
     </section>
@@ -341,34 +343,37 @@ function WindowBanner({
   icon,
   span,
   active,
+  title,
+  line,
 }: {
   kind: 'soleiq' | 'standard'
   icon: React.ReactNode
   span: string
   active: boolean
+  title: string
+  /** The one-line statement under the title. */
+  line: string
 }) {
   const soleiq = kind === 'soleiq'
-  const line = soleiq ? 'var(--clr-accent-2)' : 'var(--clr-level-urgent)'
+  const accent = soleiq ? 'var(--clr-accent-2)' : 'var(--clr-level-urgent)'
   const soft = soleiq ? 'var(--clr-accent-2-soft)' : '#fbeae8'
   return (
     <motion.div
       className="relative overflow-hidden rounded-xl px-5 py-4"
-      style={{ background: soft, border: `1px solid ${active ? line : 'transparent'}` }}
+      style={{ background: soft, border: `1px solid ${active ? accent : 'transparent'}` }}
       initial={false}
       animate={{ opacity: active ? 1 : 0.55 }}
       transition={{ duration: 0.3 }}
     >
       <p
         className="inline-flex items-center gap-2 text-[0.6875rem] font-medium uppercase tracking-widest"
-        style={{ color: line }}
+        style={{ color: accent }}
       >
         {icon}
-        {WINDOWS[kind].title}
+        {title}
         <span className="opacity-60">· {span}</span>
       </p>
-      <p className="mt-1.5 text-[0.9375rem] font-medium text-clr-text">
-        {WINDOWS[kind].line}
-      </p>
+      <p className="mt-1.5 text-[0.9375rem] font-medium text-clr-text">{line}</p>
     </motion.div>
   )
 }

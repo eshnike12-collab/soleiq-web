@@ -11,6 +11,7 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import Cursor from './components/Cursor'
 import { detectCapabilities } from './three/capabilities'
+import { I18nProvider, useT } from './i18n/I18nProvider'
 
 // three, R3F, drei, gsap and lenis are all below the fold. Keeping them out of
 // the entry chunk is the difference between a hero that paints immediately and
@@ -19,13 +20,22 @@ const ParticleNarrative = lazy(() => import('./components/ParticleNarrative'))
 const SmoothScroll = lazy(() => import('./components/SmoothScroll'))
 
 export default function App() {
+  return (
+    <I18nProvider>
+      <Site />
+    </I18nProvider>
+  )
+}
+
+function Site() {
   const caps = useMemo(detectCapabilities, [])
   const smooth = !caps.reducedMotion && !caps.coarsePointer
+  const d = useT()
 
   return (
     <>
       <a href="#main" className="skip-link">
-        Skip to content
+        {d.a11y.skipToContent}
       </a>
 
       {smooth && (

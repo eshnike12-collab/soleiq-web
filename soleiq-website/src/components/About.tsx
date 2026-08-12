@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Linkedin } from 'lucide-react'
 import { PROFILE_LINKS } from '../data/social'
+import { useT, fill } from '../i18n/I18nProvider'
 
 /**
  * The team.
@@ -8,17 +9,15 @@ import { PROFILE_LINKS } from '../data/social'
  * TODO(soleiq): add anyone else who should be listed here — name, role, and one
  * honest line each. Nobody goes on this page who isn't real.
  */
+/* Names and photographs are facts, not copy. The role and the line each
+   person is described by are translated; who they are is not. */
 const TEAM = [
-  {
-    name: 'Eshaan Naik',
-    role: 'Founder & CEO, SoleIQ Health',
-    line: 'Leads the platform end to end: the screening model, the product, and the research programme behind it. Published on AI-guided prevention for the diabetic foot with Dr. David G. Armstrong.',
-    photo: '/eshaan-naik.png',
-  },
-]
+  { name: 'Eshaan Naik', roleKey: 'founder', bioKey: 'eshaan', photo: '/eshaan-naik.png' },
+] as const
 
 export default function About() {
   const reduce = useReducedMotion()
+  const d = useT()
   const reveal = reduce
     ? {}
     : {
@@ -31,10 +30,9 @@ export default function About() {
     <section id="about" className="section-pad" aria-labelledby="about-heading">
       <div className="shell">
         <motion.div {...reveal} transition={{ duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}>
-          <p className="eyebrow">About</p>
+          <p className="eyebrow">{d.about.eyebrow}</p>
           <h2 id="about-heading" className="h-section mt-5 max-w-3xl">
-            Most diabetic foot ulcers are found late. Not because they are
-            hidden, but because nobody was looking.
+            {d.about.heading}
           </h2>
         </motion.div>
 
@@ -44,57 +42,28 @@ export default function About() {
           className="mt-12 grid gap-10 md:grid-cols-2 md:gap-16"
         >
           <div className="space-y-5 text-[1.0625rem] leading-relaxed text-clr-muted">
-            <p>
-              Diabetic neuropathy removes the signal that would normally make
-              someone look at their foot. Pressure, a blister, a crack in the
-              skin: none of it hurts, so none of it prompts a check. By the
-              time the foot is examined, the question has usually stopped being
-              “is this something?” and become “how much of this can be saved?”
-            </p>
-            <p>
-              A clinical foot exam solves this, and it is not the bottleneck we
-              can fix. Appointments are scarce, travel is expensive, and the
-              interval between visits is exactly where the problem develops.
-            </p>
-            <p>
-              SoleIQ closes that interval with the thing every patient already
-              has: a phone camera, and a few minutes. Four photos, read
-              alongside the history that determines risk, produce a screening
-              level a person can act on, and a record a clinician can trust
-              enough to work from.
-            </p>
+            {d.about.paragraphs.slice(0, 3).map((text) => (
+              <p key={text.slice(0, 24)}>{text}</p>
+            ))}
           </div>
 
           <div className="space-y-5 text-[1.0625rem] leading-relaxed text-clr-muted">
-            <p>
-              We are careful about what we claim. SoleIQ screens; it does not
-              diagnose. It is built to send people to care earlier and with
-              better information, not to keep them away from it.
-            </p>
-            <p>
-              That constraint shapes the product. The model never sees a photo
-              the phone judged unusable. Findings are shown on the patient's own
-              images, so a person can see what the system saw. Every screening
-              stays in a timeline, because a single frame is a weaker signal
-              than a series. And the record belongs to the patient, who decides
-              which clinician sees it.
-            </p>
-            {/* TODO(soleiq): if you want prevalence, cost, or outcome figures
-                here, send me the sources and I'll add them with citations.
-                Nothing unsourced goes on this page. */}
+            {d.about.paragraphs.slice(3).map((text) => (
+              <p key={text.slice(0, 24)}>{text}</p>
+            ))}
           </div>
         </motion.div>
 
         <div className="mt-20 md:mt-28">
-          <h3 className="h-sub">Team</h3>
+          <h3 className="h-sub">{d.about.team}</h3>
           <ul className="mt-10 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
             {TEAM.map((member) => (
-              <li key={member.name + member.role}>
+              <li key={member.name}>
                 {member.photo && (
                   <div className="portrait">
                     <img
                       src={member.photo}
-                      alt={`${member.name}, ${member.role}`}
+                      alt={`${member.name}, ${d.about.roles[member.roleKey]}`}
                       width={641}
                       height={800}
                       loading="lazy"
@@ -106,10 +75,10 @@ export default function About() {
                   {member.name}
                 </p>
                 <p className="mt-1 text-sm" style={{ color: 'var(--clr-accent-2)' }}>
-                  {member.role}
+                  {d.about.roles[member.roleKey]}
                 </p>
                 <p className="mt-3 max-w-sm text-[0.9375rem] leading-relaxed text-clr-muted">
-                  {member.line}
+                  {d.about.bios[member.bioKey]}
                 </p>
                 {PROFILE_LINKS[member.name] && (
                   <a
@@ -117,7 +86,7 @@ export default function About() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="tap mt-4 inline-flex items-center gap-2 text-[0.9375rem] font-medium text-clr-muted transition-colors hover:text-clr-accent"
-                    aria-label={`${member.name} on LinkedIn`}
+                    aria-label={fill(d.about.onLinkedIn, { name: member.name })}
                   >
                     <Linkedin size={17} aria-hidden="true" />
                     LinkedIn

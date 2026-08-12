@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Check, ChevronRight, Share2, Sparkles } from 'lucide-react'
 import FootOutline from './FootOutline'
+import { useT } from '../../i18n/I18nProvider'
 
 /**
  * Six illustrative renderings of the SoleIQ app, one per step of the
@@ -64,9 +65,10 @@ function Chip({
 
 /* 1 — Capture ------------------------------------------------------------- */
 export function ScreenCapture() {
+  const d = useT()
   return (
     <>
-      <ScreenTitle>Left foot, sole</ScreenTitle>
+      <ScreenTitle>{d.screens.leftFootSole}</ScreenTitle>
       <div
         className="relative flex-1 overflow-hidden rounded-xl"
         style={{ background: 'var(--clr-surface)' }}
@@ -77,9 +79,7 @@ export function ScreenCapture() {
           className="absolute inset-5 rounded-lg"
           style={{ border: '1.5px dashed var(--clr-border-strong)' }}
         />
-        <span className="absolute inset-x-0 bottom-3 text-center text-[0.6875rem] text-clr-muted">
-          Fit your foot inside the frame
-        </span>
+        <span className="absolute inset-x-0 bottom-3 text-center text-[0.6875rem] text-clr-muted">{d.screens.fitFootInFrame}</span>
       </div>
       <div className="mt-3 flex items-center justify-center gap-1.5">
         {[0, 1, 2, 3].map((i) => (
@@ -99,15 +99,16 @@ export function ScreenCapture() {
 
 /* 2 — Quality check -------------------------------------------------------- */
 export function ScreenQuality() {
+  const d = useT()
   const checks = [
-    ['Lighting normalised', true],
-    ['Whole foot in frame', true],
-    ['Sharp enough to analyse', true],
-    ['Retake right foot, too dark', false],
+    [d.screens.lightingNormalised, true],
+    [d.screens.wholeFootInFrame, true],
+    [d.screens.sharpEnough, true],
+    [d.screens.retakeTooDark, false],
   ] as const
   return (
     <>
-      <ScreenTitle>Photo quality</ScreenTitle>
+      <ScreenTitle>{d.screens.photoQuality}</ScreenTitle>
       <ul className="flex-1 space-y-2">
         {checks.map(([label, ok]) => (
           <li
@@ -142,13 +143,13 @@ export function ScreenQuality() {
 
 /* 3 — Analysis ------------------------------------------------------------- */
 export function ScreenAnalysis() {
-  const inputs = ['4 photos', 'Diabetes history', 'HbA1c', 'Vascular answers', 'Neuropathy', 'Pain map']
+  const d = useT()
+  const inputs = ['4 photos', d.screens.diabetesHistory, 'HbA1c', d.screens.vascularAnswers, d.screens.neuropathy, d.screens.painMap]
   return (
     <>
       <ScreenTitle>
         <span className="inline-flex items-center gap-1.5">
-          <Sparkles size={13} aria-hidden="true" /> Analysing
-        </span>
+          <Sparkles size={13} aria-hidden="true" />{d.screens.analysing}</span>
       </ScreenTitle>
       <div
         className="relative mb-3 h-[42%] overflow-hidden rounded-xl"
@@ -156,9 +157,7 @@ export function ScreenAnalysis() {
       >
         <FootOutline grid className="absolute inset-0 h-full w-full p-5" />
       </div>
-      <p className="mb-2 text-[0.625rem] font-medium uppercase tracking-widest text-clr-muted">
-        Inputs
-      </p>
+      <p className="mb-2 text-[0.625rem] font-medium uppercase tracking-widest text-clr-muted">{d.screens.inputs}</p>
       <ul className="flex flex-wrap gap-1.5">
         {inputs.map((i) => (
           <li key={i}>
@@ -172,15 +171,14 @@ export function ScreenAnalysis() {
 
 /* 4 — Result --------------------------------------------------------------- */
 export function ScreenResult() {
+  const d = useT()
   return (
     <>
       <div
         className="mb-3 rounded-xl px-3 py-2.5"
         style={{ background: '#FBF3E2' }}
       >
-        <p className="text-[0.625rem] uppercase tracking-widest" style={{ color: 'var(--clr-level-watch)' }}>
-          Screening level
-        </p>
+        <p className="text-[0.625rem] uppercase tracking-widest" style={{ color: 'var(--clr-level-watch)' }}>{d.screens.screeningLevel}</p>
         <p
           className="font-display text-lg font-medium tracking-tight"
           style={{ color: 'var(--clr-level-watch)' }}
@@ -210,6 +208,7 @@ export function ScreenResult() {
 
 /* 5 — Timeline ------------------------------------------------------------- */
 export function ScreenTimeline() {
+  const d = useT()
   const entries = [
     { date: 'Today', level: 'Watch', tone: 'watch' as const },
     { date: '3 Jun', level: 'Clear', tone: 'clear' as const },
@@ -218,7 +217,7 @@ export function ScreenTimeline() {
   ]
   return (
     <>
-      <ScreenTitle>Your timeline</ScreenTitle>
+      <ScreenTitle>{d.screens.yourTimeline}</ScreenTitle>
       <ul className="flex-1 space-y-2">
         {entries.map((e) => (
           <li
@@ -244,29 +243,25 @@ export function ScreenTimeline() {
 
 /* 6 — Share ---------------------------------------------------------------- */
 export function ScreenShare() {
+  const d = useT()
   return (
     <>
-      <ScreenTitle>Share your record</ScreenTitle>
+      <ScreenTitle>{d.screens.shareRecord}</ScreenTitle>
       <div
         className="rounded-xl p-3"
         style={{ border: '1px solid var(--clr-border)' }}
       >
-        <p className="text-[0.6875rem] font-medium text-clr-text">Your podiatry clinic</p>
-        <p className="mt-0.5 text-[0.625rem] leading-snug text-clr-muted">
-          Full history, every photo, every screening level.
-        </p>
+        <p className="text-[0.6875rem] font-medium text-clr-text">{d.screens.podiatryClinic}</p>
+        <p className="mt-0.5 text-[0.625rem] leading-snug text-clr-muted">{d.screens.fullHistory}</p>
         <span
           className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[0.6875rem] font-medium text-white"
           style={{ background: 'var(--clr-accent)' }}
         >
-          <Share2 size={11} aria-hidden="true" /> Send record
-        </span>
+          <Share2 size={11} aria-hidden="true" />{d.screens.sendRecord}</span>
       </div>
-      <p className="mb-2 mt-4 text-[0.625rem] font-medium uppercase tracking-widest text-clr-muted">
-        Clinician view
-      </p>
+      <p className="mb-2 mt-4 text-[0.625rem] font-medium uppercase tracking-widest text-clr-muted">{d.screens.clinicianView}</p>
       <ul className="flex-1 space-y-1.5">
-        {['Clinical report', 'Photo comparison', 'Per-patient assistant'].map((row) => (
+        {[d.screens.clinicalReport, d.screens.photoComparison, d.screens.perPatientAssistant].map((row) => (
           <li
             key={row}
             className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[0.6875rem] text-clr-text"

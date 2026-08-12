@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowUpRight, ChevronDown, Linkedin } from 'lucide-react'
 import { sortedPapers, STATUS_LABEL } from '../../data/research'
 import { PROFILE_LINKS } from '../../data/social'
+import { useT } from '../../i18n/I18nProvider'
 
 /**
  * SoleIQ's own paper — the one thing in this section that is always on screen.
@@ -12,6 +13,7 @@ import { PROFILE_LINKS } from '../../data/social'
  * and collapsed entirely it reads as though there is nothing to show.
  */
 export default function FeaturedPaper() {
+  const d = useT()
   const paper = sortedPapers()[0]
   const [open, setOpen] = useState(false)
   const reduce = useReducedMotion()
@@ -121,7 +123,7 @@ export default function FeaturedPaper() {
 
       <div className="mt-10 grid gap-8 md:grid-cols-[1fr_16rem] md:gap-12">
         <div>
-          <p className="eyebrow">Abstract</p>
+          <p className="eyebrow">{d.research.abstract}</p>
           <p className="mt-3 max-w-prose text-[1.0625rem] leading-relaxed text-clr-text">
             {paper.abstractLede}
           </p>
@@ -151,7 +153,7 @@ export default function FeaturedPaper() {
             className="tap mt-4 inline-flex items-center gap-1.5 text-[0.9375rem] font-medium"
             style={{ color: 'var(--clr-accent-2)' }}
           >
-            {open ? 'Show less' : 'Read the full abstract'}
+            {open ? d.research.showLess : d.research.readFullAbstract}
             <ChevronDown
               size={16}
               aria-hidden="true"
@@ -169,7 +171,7 @@ export default function FeaturedPaper() {
                   rel="noopener noreferrer"
                   className="btn btn-secondary btn-sm"
                 >
-                  Read the full text
+                  {d.research.readFullText}
                   <ArrowUpRight size={15} aria-hidden="true" />
                 </a>
                 <p className="mt-3 text-xs text-clr-muted">
@@ -187,7 +189,7 @@ export default function FeaturedPaper() {
         <dl className="text-sm">
           {paper.tags.length > 0 && (
             <>
-              <dt className="eyebrow">Topics</dt>
+              <dt className="eyebrow">{d.research.topics}</dt>
               <dd className="mt-2.5 flex flex-wrap gap-1.5">
                 {paper.tags.map((tag) => (
                   <span
@@ -211,7 +213,7 @@ export default function FeaturedPaper() {
             </>
           )}
 
-          <dt className="eyebrow mt-6">Corresponding author</dt>
+          <dt className="eyebrow mt-6">{d.research.correspondingAuthor}</dt>
           <dd className="mt-2">
             <a
               href="mailto:eshnike12@gmail.com"
