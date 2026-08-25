@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Activity, Building2, ClipboardList, Settings, ShieldCheck, Users } from "lucide-react";
-import { BrandLogo } from "@/components/brand/Logo";
+import { AppTopBar } from "@/components/chrome/AppTopBar";
+import { T } from "@/components/chrome/T";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 
@@ -29,26 +30,25 @@ export function HospitalShell({
       : [{ href: base, label: "Worklist", icon: ClipboardList }];
   return (
     <div className="min-h-screen text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3">
-            <BrandLogo size={40} />
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
-                SoleIQ Clinical
-              </p>
-              <h1 className="text-lg font-semibold">{hospitalName}</h1>
-            </div>
+      <AppTopBar
+        title={
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-brand">
+              <T k="nav.clinical" />
+            </p>
+            <h1 className="truncate text-lg font-semibold">{hospitalName}</h1>
           </div>
-          <div className="flex items-center gap-4">
+        }
+        actions={
+          <>
             <FeedbackButton compact />
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold capitalize text-brand">
               {role}
             </span>
             <SignOutButton />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
       <div className="mx-auto grid max-w-7xl gap-6 px-5 py-6 lg:grid-cols-[220px_1fr]">
         <nav className="flex gap-2 overflow-x-auto lg:flex-col" aria-label="Hospital">
           {links.map(({ href, label, icon: Icon }) => (

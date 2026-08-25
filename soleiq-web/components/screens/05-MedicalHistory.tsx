@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { ConditionHelpButton } from "@/components/conditions/ConditionInfoDialog";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const CONDITIONS = [
   "diabetes",
@@ -24,6 +25,7 @@ const CONDITIONS = [
 const NONE = "None of the above";
 
 export function MedicalHistory() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -48,9 +50,9 @@ export function MedicalHistory() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Health history"
-        title="Medical conditions"
-        subtitle="Select all that apply. Tap the (?) for clinical details on any condition."
+        eyebrow={d.screens.historyEyebrow}
+        title={d.screens.conditionsTitle}
+        subtitle={d.screens.conditionsSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-2 overflow-y-auto px-1 pb-2">
         {CONDITIONS.map((c) => (

@@ -27,6 +27,11 @@ export default function LanguageSwitcher({
       value={locale}
       onChange={(e) => {
         if (isLocale(e.target.value)) setLocale(e.target.value)
+        /* Hand focus back to the page. A <select> keeps it after the picker
+           closes, which leaves the arrow keys and the wheel talking to the
+           control instead of to the document — so you pick a language and
+           then cannot scroll. */
+        e.currentTarget.blur()
       }}
       aria-label={d.language.change}
       className="lang-select"

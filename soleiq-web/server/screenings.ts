@@ -5,6 +5,7 @@ import { z } from "zod";
 import { DomainError, conflict, notFound } from "./errors";
 import { requireAuth } from "./auth";
 import { infrastructureClient } from "./storage";
+import { sendReportSummaryForSession } from "./email/sendReportSummary";
 import { anthropicAnalysisProvider } from "./providers/anthropic-analysis";
 import {
   MAX_ANALYSIS_ATTEMPTS,
@@ -97,15 +98,34 @@ async function findSessionReportId(
  * report preliminary, which doctors can still see.
  */
 async function releaseSessionReport(sessionId: string): Promise<void> {
+  let released = false;
   try {
     const infra = infrastructureClient();
-    await infra
+    const { data } = await infra
       .from("reports")
       .update({ status: "released", finalized_at: new Date().toISOString() })
       .eq("screening_session_id", sessionId)
-      .eq("status", "preliminary");
+      .eq("status", "preliminary")
+      .select("id");
+    released = (data?.length ?? 0) > 0;
   } catch {
     /* stays preliminary until a clinician releases it */
+  }
+
+  // Tell the patient their results are ready. Gated on an actual transition,
+  // so a retried or already-released session does not email twice; the update
+  // filters on `status = 'preliminary'`, which makes that check atomic rather
+  // than a read-then-write race.
+  //
+  // Awaited, not fired and forgotten: on serverless the process can be frozen
+  // the moment the handler returns, which silently drops in-flight requests.
+  // It cannot throw (see server/email/client.ts), so awaiting it cannot fail
+  // the release.
+  if (released) {
+    const result = await sendReportSummaryForSession(sessionId);
+    if (!result.ok && result.reason !== "not_configured") {
+      console.warn("[email] report summary not sent:", result.reason, result.detail ?? "");
+    }
   }
 }
 

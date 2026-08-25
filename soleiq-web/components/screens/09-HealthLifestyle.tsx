@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { cn } from "@/lib/utils";
 import type { Numbness } from "@/lib/types";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const NUMBNESS: { value: Numbness; label: string }[] = [
   { value: "neither", label: "Neither" },
@@ -16,6 +17,7 @@ const NUMBNESS: { value: Numbness; label: string }[] = [
 ];
 
 export function HealthLifestyle() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -30,9 +32,9 @@ export function HealthLifestyle() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Health history"
-        title="Health & lifestyle"
-        subtitle="Numbness in your feet, plus a couple of lifestyle questions."
+        eyebrow={d.screens.historyEyebrow}
+        title={d.screens.lifestyleTitle}
+        subtitle={d.screens.lifestyleSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div>

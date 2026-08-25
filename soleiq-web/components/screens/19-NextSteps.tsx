@@ -20,10 +20,12 @@ import { CenteredScreen, ScreenHeader } from "@/components/flow/ScreenContainer"
 import { buildPatientSummary } from "@/lib/exportSummary";
 import { downloadPatientSummaryPdf } from "@/lib/pdfExport";
 import { ShareWithDoctorDialog } from "@/components/share/ShareWithDoctorDialog";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 type SaveState = "idle" | "saving" | "saved" | "local" | "failed";
 
 export function NextSteps() {
+  const d = useT();
   const completeVisit = useSoleiqStore((s) => s.completeVisit);
   const goNext = useSoleiqStore((s) => s.goNext);
   const showToast = useToastStore((s) => s.show);
@@ -118,9 +120,9 @@ export function NextSteps() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Check complete"
-        title="Save your check"
-        subtitle="Keep it in your private history so you and your care team can track changes over time."
+        eyebrow={d.screens.nextStepsEyebrow}
+        title={d.screens.nextStepsTitle}
+        subtitle={d.screens.nextStepsSubtitle}
       />
 
       <div className="-mx-1 flex-1 overflow-y-auto px-1 pb-2">

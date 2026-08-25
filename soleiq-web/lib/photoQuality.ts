@@ -6,25 +6,46 @@ export interface PreparedPhoto {
     sharpness: number;
     width: number;
     height: number;
+    /** Blocking problems. Non-empty means `passed` is false. */
     issues: string[];
+    /**
+     * Advisories. The photo is accepted and analysed regardless — these are
+     * shown so the patient knows a retake would give a better reading, not to
+     * stop them submitting what they have.
+     */
+    notes: string[];
   };
 }
 
 const MAX_EDGE = 1400;
 const HEIC_NAME = /\.(heic|heif)$/i;
-const SUPPORTED_NAME = /\.(jpe?g|png|webp|heic|heif)$/i;
 
+/**
+ * Prepare an uploaded or captured photo for analysis.
+ *
+ * ANY image the browser can decode is accepted, at any size and in any format.
+ * There is deliberately no allow-list of file types and no byte-size ceiling.
+ *
+ * Both used to exist and both rejected legitimate photos. The extension
+ * allow-list turned away formats browsers decode perfectly well — AVIF, TIFF,
+ * BMP, GIF — and also anything arriving with an empty or wrong MIME type,
+ * which is common for files that have been through a messaging app. The
+ * question "can this be decoded" has one reliable answer, and it is decoding
+ * it: `loadImage` throws if it cannot, so that is the only gate now.
+ *
+ * Large files are safe because everything is drawn down to MAX_EDGE before a
+ * single pixel is inspected, so peak memory is bounded by the output size, not
+ * the input. A file so large the browser cannot decode it fails at `loadImage`
+ * with a readable message rather than being pre-emptively refused at a
+ * threshold nobody can predict.
+ */
 export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
+  // HEIC/HEIF still need converting first — Safari decodes them natively but
+  // Chrome and Firefox do not, so this cannot wait for loadImage to fail.
   const isHeic =
     file.type === "image/heic" ||
     file.type === "image/heif" ||
     HEIC_NAME.test(file.name);
-  if (!isHeic && !file.type.startsWith("image/") && !SUPPORTED_NAME.test(file.name)) {
-    throw new Error("Choose a JPEG, PNG, WebP, HEIC, or HEIF image.");
-  }
-  if (file.size > 15 * 1024 * 1024) {
-    throw new Error("This image is larger than 15 MB. Choose a smaller photo.");
-  }
 
   const browserImage = isHeic ? await convertHeicToJpeg(file) : file;
   const image = await loadImage(browserImage);
@@ -89,9 +110,21 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
   const mean = lapSum / count;
   const sharpness = lapSquareSum / count - mean * mean;
   const issues: string[] = [];
+  const notes: string[] = [];
 
+  // Low resolution is an ADVISORY, not a rejection.
+  //
+  // It used to block, and that was wrong: a small photo is a worse photo, not
+  // an unusable one, and the people most likely to hit it are those uploading
+  // from a messaging app or an older phone — exactly the people least able to
+  // go and produce a better one. Analysis still runs; the report just carries
+  // the caveat. A blurry or unlit photo is different, because there is nothing
+  // in it to read at all, so those still block below.
   if (image.width < 600 || image.height < 600) {
-    issues.push("The photo is too small. Use the original camera photo.");
+    notes.push(
+      `This photo is ${image.width}x${image.height}, which is smaller than ideal. ` +
+        "It will still be analysed, but a larger photo gives a more reliable reading."
+    );
   }
   if (brightness < 45) {
     issues.push("The photo is too dark. Move to brighter, even lighting.");
@@ -115,6 +148,7 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
       width: image.width,
       height: image.height,
       issues,
+      notes,
     },
   };
 }
@@ -281,7 +315,12 @@ function loadImage(file: Blob): Promise<HTMLImageElement> {
     };
     image.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("This image could not be opened."));
+      reject(
+        new Error(
+          "This file could not be opened as an image. If it is a photo, try " +
+            "saving or exporting it as JPEG and uploading again."
+        )
+      );
     };
     image.src = url;
   });

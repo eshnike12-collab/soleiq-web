@@ -748,128 +748,34 @@ html.has-custom-cursor label {
   top: 0;
   left: 0;
   z-index: 90;
+  /* One size, forever. There is no state that changes these. */
   width: 11px;
   height: 11px;
-  /* A square, always — no radius in any state. */
   border-radius: 0;
   background: #ffffff;
-  border: 0 solid #ffffff;
+  /* Inverts against whatever is behind, so it reads as a black dot on the
+     light screens and stays visible on dark ones. */
   mix-blend-mode: difference;
   pointer-events: none;
   opacity: 0;
-  will-change: transform, width, height;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-width 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 0.24s ease,
-    opacity 0.25s ease;
+  /* Only transform and opacity — width/height are no longer animated because
+     they no longer change. */
+  will-change: transform;
+  transition: opacity 0.25s ease;
 }
 
-/* Over text and headings: big and hollow, so the words stay readable through it. */
-.cursor-box[data-state='text'] {
-  width: 38px;
-  height: 38px;
-  background: transparent;
-  border-width: 1.5px;
-}
 
-.cursor-box[data-state='link'] {
-  width: 48px;
-  height: 48px;
-  background: transparent;
-  border-width: 1.5px;
-}
 
-.cursor-box[data-state='canvas'] {
-  width: 25px;
-  height: 25px;
-  background: transparent;
-  border-width: 1px;
-}
 
-.cursor-box[data-state='pressed'] {
-  width: 9px;
-  height: 9px;
-  background: #ffffff;
-  border-width: 0;
-}
 
-.cursor-label {
-  font-family: 'Inter', sans-serif;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  line-height: 1;
-  color: #ffffff;
-  opacity: 0;
-  transition: opacity 0.16s ease;
-  user-select: none;
-}
 
-.cursor-box[data-state='link'] .cursor-label {
-  opacity: 1;
-}
 
-/* An arrow inside the ring, for a link that leaves the site. Drawn as a glyph
-   rather than an SVG so it inherits the box's difference blend like the label
-   does, and disappears with it in every other cursor state. */
-.cursor-box[data-icon='arrow']::after {
-  content: '↗';
-  font-family: 'Inter', ui-sans-serif, sans-serif;
-  font-size: 1.375rem;
-  font-weight: 600;
-  line-height: 1;
-  color: #ffffff;
-  user-select: none;
-}
 
-.cursor-box[data-icon='arrow']:not([data-state='link'])::after {
-  content: none;
-}
 
-/* The lift a control takes under the pointer, and the settle back down.
-   Transform only — no layout is affected, and nothing below it moves. */
-.cursor-nudge {
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
 
-/*
-  Text that is not a link only deepens in colour.
 
-  Nothing moves, because movement is a promise that something happens when you
-  click, and a paragraph has nothing to give.
 
-  Darkened proportionally rather than set to a fixed colour: the copy on this
-  page runs from muted grey to near-black, and one hover colour cannot serve
-  both — it would haul the grey most of the way to black while leaving anything
-  already dark visibly unchanged.
 
-  Held to the light ground: over the particle scenes the copy is near-white on
-  navy, where "darker" would mean harder to read.
-*/
-.cursor-dim {
-  transition: filter 0.2s ease, transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  /* Grows from its own left edge, so a paragraph swells in place rather than
-     drifting sideways out of its column. */
-  transform-origin: left center;
-}
-
-html:not([data-tone='dark']) .cursor-dim {
-  filter: brightness(0.5);
-  /* Held to 6%. The ask was 10-20%, but a paragraph scaled that far overlaps
-     the line beneath it — transform does not reflow, so the neighbours do not
-     move out of the way. At 6% it reads as a lift without colliding. */
-  transform: scale(1.06);
-}
-
-/* A filter applies to everything inside, so any block carrying a portrait, an
-   icon or a canvas opts out rather than having its picture dimmed too. */
-html:not([data-tone='dark']) .cursor-dim:has(img, svg, canvas, video, picture) {
-  filter: none;
-}
 
 /* Touch devices never get any of this. */
 @media (pointer: coarse) {
@@ -987,35 +893,19 @@ html[data-tone='dark'] .lang-wrap:focus-within {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Right to left
-   Arabic and Urdu. Most of the mirroring is free: the layout uses logical
-   properties and Tailwind's logical utilities, so `dir="rtl"` on the root
-   flips it. What is left here is the handful of things that are drawn rather
-   than laid out, and therefore have no logical equivalent.
+   Right to left — deliberately not implemented.
+
+   Arabic and Urdu are published with the same left-to-right layout as every
+   other language: same logo position, same navigation, same everything, with
+   only the words changing. See `src/i18n/config.ts` for why.
+
+   The script still reads right to left inside a line — that is intrinsic to
+   the characters and needs nothing from this file. What used to live here was
+   a set of `[dir='rtl']` overrides mirroring arrows and pinning labels; with
+   the document never in rtl they matched nothing, and one of them forced
+   translated Arabic into a left-to-right box, which reversed the order its
+   words were read in. The logical properties elsewhere in this file (inline
+   start/end rather than left/right) are kept: under ltr they resolve to
+   exactly what they replaced.
    ─────────────────────────────────────────────────────────────────────────── */
-[dir='rtl'] .scroll-cue-arrow,
-[dir='rtl'] .cursor-box[data-icon='arrow']::after {
-  /* Arrows that mean "onward" point the other way when onward is the other
-     way. The down arrow on the scroll cue is untouched — down is still down. */
-  transform: scaleX(-1);
-}
 
-[dir='rtl'] .lang-select {
-  text-align: start;
-}
-
-/* Numerals in the scene rail and the timeline stay left-to-right even inside
-   an RTL paragraph — `01 / 06` is a number, not a phrase. */
-[dir='rtl'] .scene-rail-count,
-[dir='rtl'] .tabular-nums {
-  direction: ltr;
-  text-align: start;
-}
-
-/* The particle canvases and their labels are positioned in world space by the
-   renderer, which knows nothing about writing direction. Pinning them to LTR
-   keeps a projected label where its anchor actually is. */
-[dir='rtl'] .scene-label,
-[dir='rtl'] .section-label {
-  direction: ltr;
-}

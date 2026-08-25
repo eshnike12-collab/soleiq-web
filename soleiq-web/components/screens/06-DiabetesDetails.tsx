@@ -7,6 +7,7 @@ import { Select } from "@/components/ui/select";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { cn } from "@/lib/utils";
 import type { DiabetesType } from "@/lib/types";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const TYPES: { value: DiabetesType; label: string }[] = [
   { value: "type_1", label: "Type 1" },
@@ -16,6 +17,7 @@ const TYPES: { value: DiabetesType; label: string }[] = [
 ];
 
 export function DiabetesDetails() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -33,9 +35,9 @@ export function DiabetesDetails() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Health history"
-        title="Diabetes details"
-        subtitle="Type and year of diagnosis."
+        eyebrow={d.screens.historyEyebrow}
+        title={d.screens.diabetesTitle}
+        subtitle={d.screens.diabetesSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div>

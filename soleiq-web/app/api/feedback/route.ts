@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { apiHandler } from "@/server/http";
+import { sendEmail } from "@/server/email/client";
+import { escapeHtml } from "@/server/email/templates/reportSummary";
 import { enforceRateLimit } from "@/server/rate-limit";
 import { requireAuth } from "@/server/auth";
 import { invalid } from "@/server/errors";
@@ -46,47 +48,38 @@ export async function POST(request: Request) {
       throw invalid(`Feedback could not be saved: ${insertError.message}`);
     }
 
-    // 2. Email delivery — best effort via Resend; a missing key or a send
-    //    failure never fails the request (the row is already saved).
-    let emailSent = false;
-    const resendKey = process.env.RESEND_API_KEY;
-    if (resendKey) {
-      try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "SoleIQ Feedback <onboarding@resend.dev>",
-            to: [FEEDBACK_RECIPIENT],
-            reply_to: contactEmail ?? undefined,
-            subject: `[SoleIQ feedback] ${body.category} from a ${role}`,
-            text: [
-              `Category: ${body.category}`,
-              `Role: ${role}`,
-              `Contact: ${contactEmail ?? "not provided"}`,
-              `User id: ${user.id}`,
-              "",
-              body.message,
-            ].join("\n"),
-          }),
-        });
-        emailSent = response.ok;
-        if (!response.ok) {
-          console.error(
-            JSON.stringify({
-              level: "error",
-              event: "feedback.email_failed",
-              requestId: meta.requestId,
-              status: response.status,
-            })
-          );
-        }
-      } catch {
-        /* saved to the table; email is best effort */
-      }
+    // 2. Email delivery — best effort through the shared client. A missing
+    //    key or a send failure never fails the request; the row is saved.
+    //    This was a third hand-rolled fetch to the Resend REST API, each with
+    //    its own sender string. They all go through server/email/client.ts now.
+    const internal = [
+      `Category: ${body.category}`,
+      `Role: ${role}`,
+      `Contact: ${contactEmail ?? "not provided"}`,
+      `User id: ${user.id}`,
+      "",
+      body.message,
+    ].join("\n");
+
+    const result = await sendEmail({
+      to: FEEDBACK_RECIPIENT,
+      subject: `[SoleIQ feedback] ${body.category} from a ${role}`,
+      text: internal,
+      // Internal routing mail, deliberately not the patient-facing template:
+      // <pre> keeps the message body exactly as it was typed.
+      html: `<pre style="font:14px/1.5 ui-monospace,Menlo,monospace;white-space:pre-wrap;">${escapeHtml(internal)}</pre>`,
+      ...(contactEmail ? { replyTo: contactEmail } : {}),
+    });
+    const emailSent = result.ok;
+    if (!emailSent && result.reason !== "not_configured") {
+      console.error(
+        JSON.stringify({
+          level: "error",
+          event: "feedback.email_failed",
+          requestId: meta.requestId,
+          reason: result.reason,
+        })
+      );
     }
 
     return {

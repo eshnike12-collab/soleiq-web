@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -16,6 +17,7 @@ const STATES = [
 ];
 
 export function AboutYou() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -42,9 +44,9 @@ export function AboutYou() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Patient intake"
-        title="Patient name"
-        subtitle="And the patient's home location for referral recommendations."
+        eyebrow={d.screens.intakeEyebrow}
+        title={d.screens.nameTitle}
+        subtitle={d.screens.nameSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div className="grid grid-cols-2 gap-2.5">

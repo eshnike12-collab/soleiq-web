@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Camera, Home, LayoutGrid } from "lucide-react";
+import { Box, Camera, Home, LayoutGrid } from "lucide-react";
 
 /**
  * Patient portal bottom navigation. Server-safe on purpose (no hooks, no
@@ -9,7 +9,11 @@ import { Camera, Home, LayoutGrid } from "lucide-react";
  * Pages that render it should add bottom padding (pb-24) or use
  * <PatientNavSpacer /> so content isn't hidden behind the fixed bar.
  */
-export function PatientNav({ active }: { active?: "home" | "features" }) {
+export function PatientNav({
+  active,
+}: {
+  active?: "home" | "features" | "scan";
+}) {
   const itemClass = (isActive: boolean) =>
     `flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl px-4 py-1.5 text-[11px] font-semibold transition-colors ${
       isActive ? "text-primary" : "text-ink-faint"
@@ -26,6 +30,10 @@ export function PatientNav({ active }: { active?: "home" | "features" }) {
             <Camera className="h-5 w-5" />
           </span>
           New check
+        </Link>
+        <Link href="/scan-3d" className={itemClass(active === "scan")} aria-current={active === "scan" ? "page" : undefined}>
+          <Box className="h-5 w-5" />
+          3D scan
         </Link>
         <Link href="/features" className={itemClass(active === "features")} aria-current={active === "features" ? "page" : undefined}>
           <LayoutGrid className="h-5 w-5" />

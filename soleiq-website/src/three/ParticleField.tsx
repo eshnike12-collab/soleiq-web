@@ -41,7 +41,16 @@ interface Props {
    * the art clear of it. Empty until measured, which simply leaves the declared
    * bottom of the safe box in force.
    */
-  copyRectRef: MutableRefObject<{ tops: number[]; rights: number[] }>
+  copyRectRef: MutableRefObject<{ tops: number[]; edges: number[] }>
+  /**
+   * Whether the page reads right to left.
+   *
+   * The canvas has no writing direction of its own, so nothing in here mirrors
+   * on its own account. In Arabic and Urdu the copy moves to the right of the
+   * panel and the art has to move to the left to meet it — otherwise the two
+   * end up stacked on the same side, which is exactly what happened.
+   */
+  rtl: boolean
   /** True while the panel is being looked at: the shape gathers, or comes apart. */
   forming: boolean
   /** False once the panel is far enough away that the canvas has stopped. */
@@ -141,6 +150,7 @@ export default function ParticleField({
   forming,
   rendering,
   sceneCopy,
+  rtl,
   pointer,
 }: Props) {
   const points = useRef<THREE.Points>(null)
@@ -493,7 +503,7 @@ export default function ParticleField({
 
     const placeFor = (sc: (typeof SCENES)[number], i: number) => {
       const above = narrativeBox(state.size.width, state.size.height, copy.tops[i], sc.tallBand)
-      const beside = narrativeSideBox(state.size.width, state.size.height, copy.rights[i])
+      const beside = narrativeSideBox(state.size.width, state.size.height, copy.edges[i], rtl)
       return bestFrame(
         sc.target,
         targets[sc.target]?.positions,
@@ -503,7 +513,9 @@ export default function ParticleField({
         ],
         view,
         {
-          xFraction: wide ? sc.x : 0.5,
+          // `x` is declared as a fraction across the frame reading left to
+          // right; mirrored, it has to be measured from the other edge.
+          xFraction: wide ? (rtl ? 1 - sc.x : sc.x) : 0.5,
           fill: sc.fill,
           yaw: yaw + swingOf(i),
           pitch,
@@ -611,7 +623,10 @@ export default function ParticleField({
         if (scratch.v.z > 1) continue
         out.push({
           text: anchor.text,
-          x: (scratch.v.x * 0.5 + 0.5) * state.size.width + anchor.dx,
+          // `dx` is "this many pixels toward the start of the line", so its
+          // sign flips with the writing direction — otherwise the label that
+          // sits beside the phone in English sits on top of it in Arabic.
+          x: (scratch.v.x * 0.5 + 0.5) * state.size.width + (rtl ? -anchor.dx : anchor.dx),
           y: (-scratch.v.y * 0.5 + 0.5) * state.size.height + anchor.dy,
           opacity: hold,
         })

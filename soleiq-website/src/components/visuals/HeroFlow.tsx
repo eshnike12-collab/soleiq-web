@@ -282,7 +282,9 @@ export default function HeroFlow() {
       // Starts below the fixed navbar and stops short of the bottom, so nothing
       // is hidden behind the bar or runs down into the gradient that carries the
       // hero into the sequence.
-      className="pointer-events-none absolute right-0 top-[5.5rem] hidden h-[min(64vh,64%)] w-[46%] lg:block"
+      // `end-0` rather than `right-0`: this fills the empty half of the first
+      // screen, and which half is empty changes with the writing direction.
+      className="pointer-events-none absolute end-0 top-[5.5rem] hidden h-[min(64vh,64%)] w-[46%] lg:block"
       aria-hidden="true"
     >
       <Canvas

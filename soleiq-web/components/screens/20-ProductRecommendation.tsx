@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, ExternalLink, Info, ShoppingBag } from "lucide-react";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { suggestProducts } from "@/lib/productCatalog";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 type EvidenceLevel = "established" | "emerging" | "investigational";
 
@@ -68,6 +69,7 @@ const EVIDENCE_BADGE: Record<
 };
 
 export function ProductRecommendation() {
+  const d = useT();
   const visit = useSoleiqStore((s) => s.currentVisit);
   const profile = useSoleiqStore((s) => s.profile);
   const goTo = useSoleiqStore((s) => s.goTo);
@@ -92,8 +94,8 @@ export function ProductRecommendation() {
   return (
     <div className="-mx-1 flex h-full flex-col overflow-y-auto px-1 pb-2">
       <ScreenHeader
-        eyebrow="Therapy options"
-        title="Adjunctive products"
+        eyebrow={d.screens.productsEyebrow}
+        title={d.screens.productsTitle}
         subtitle={
           risk === "low"
             ? "At this risk level no offloading or therapy product is indicated. These are informational only."

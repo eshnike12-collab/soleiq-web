@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, Check, ImagePlus, Loader2, RotateCcw } from "lucide-react";
+import { Camera, Check, ImagePlus, Loader2, RotateCcw, SkipForward, X } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
 import { prepareFootPhoto } from "@/lib/photoQuality";
 import type { CaptureView, FootSide } from "@/lib/types";
@@ -42,6 +42,21 @@ const SHOTS: {
   },
 ];
 
+/**
+ * Reasons a view might not be photographable, offered as one tap each.
+ *
+ * Presets rather than a free-text box because the common cases are few and
+ * typing on a phone with one hand while holding a foot is not realistic. The
+ * reason is optional in every case — nobody is blocked from skipping by
+ * declining to explain why.
+ */
+const SKIP_REASONS = [
+  "Limb amputated",
+  "Can't reach or position it",
+  "Bandaged or dressed",
+  "Prefer not to",
+] as const;
+
 /** Human-friendly slot label, e.g. "Right foot · top". Display only. */
 const slotLabel = (side: FootSide, view: "top" | "sole") =>
   `${side === "right" ? "Right" : "Left"} foot · ${view === "top" ? "top" : "sole"}`;
@@ -49,36 +64,63 @@ const slotLabel = (side: FootSide, view: "top" | "sole") =>
 export function FourPhotoCapture() {
   const visit = useSoleiqStore((state) => state.currentVisit);
   const addImage = useSoleiqStore((state) => state.addImage);
+  const skipSlot = useSoleiqStore((state) => state.skipSlot);
+  const unskipSlot = useSoleiqStore((state) => state.unskipSlot);
   const goNext = useSoleiqStore((state) => state.goNext);
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [skipOpen, setSkipOpen] = useState(false);
+  // Advisories from the quality check. Never block submission.
+  const [notes, setNotes] = useState<string[]>([]);
   const lastSource = useRef<"camera" | "upload">("camera");
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const reviewing = index === SHOTS.length;
   const shot = SHOTS[Math.min(index, SHOTS.length - 1)];
   const images = visit?.images ?? [];
+  const skipped = visit?.skippedSlots ?? [];
   const current = images.find(
     (image) => image.side === shot.side && image.view === shot.view
   );
-  const complete = SHOTS.every(({ side, view }) =>
+  const isSkipped = (side: FootSide, view: "top" | "sole") =>
+    skipped.some((slot) => slot.side === side && slot.view === view);
+  const skipReason = (side: FootSide, view: "top" | "sole") =>
+    skipped.find((slot) => slot.side === side && slot.view === view)?.reason;
+  const captured = SHOTS.filter(({ side, view }) =>
     images.some(
       (image) =>
         image.side === side && image.view === view && image.quality?.passed
     )
   );
+  // Every slot must be resolved — photographed or deliberately skipped — and
+  // at least one has to be a real photo. Skipping all four would produce a
+  // report about nothing.
+  const complete =
+    captured.length > 0 &&
+    SHOTS.every(
+      ({ side, view }) =>
+        isSkipped(side, view) ||
+        images.some(
+          (image) =>
+            image.side === side && image.view === view && image.quality?.passed
+        )
+    );
 
   const choosePhoto = async (file?: File) => {
     if (!file) return;
     setBusy(true);
     setError(null);
+    setNotes([]);
     try {
       const prepared = await prepareFootPhoto(file);
       if (!prepared.quality.passed) {
         setError(prepared.quality.issues.join(" "));
+        setNotes([]);
         return;
       }
+      // Kept, with its caveats attached rather than as a reason to refuse it.
+      setNotes(prepared.quality.notes);
       addImage({
         side: shot.side,
         view: shot.view,
@@ -91,6 +133,14 @@ export function FourPhotoCapture() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const confirmSkip = (reason?: string) => {
+    setError(null);
+    setSkipOpen(false);
+    setCameraOpen(false);
+    skipSlot(shot.side, shot.view, reason);
+    setIndex((value) => value + 1);
   };
 
   const retry = () => {
@@ -123,9 +173,15 @@ export function FourPhotoCapture() {
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
             Review photos
           </p>
-          <h1 className="text-xl font-bold text-ink">All four views</h1>
+          <h1 className="text-xl font-bold text-ink">
+            {skipped.length > 0
+              ? `${captured.length} of ${SHOTS.length} views`
+              : "All four views"}
+          </h1>
           <p className="mt-1 text-[15px] leading-snug text-ink-soft">
-            Check that each photo shows the whole foot in focus. Retake anything unclear.
+            {skipped.length > 0
+              ? "Skipped views are left out of your report entirely — nothing is guessed for them."
+              : "Check that each photo shows the whole foot in focus. Retake anything unclear."}
           </p>
         </header>
         <div className="grid min-h-0 flex-1 grid-cols-2 gap-2.5 overflow-y-auto pb-2">
@@ -133,13 +189,14 @@ export function FourPhotoCapture() {
             const image = images.find(
               (candidate) => candidate.side === item.side && candidate.view === item.view
             );
+            const slotSkipped = isSkipped(item.side, item.view);
             return (
               <div
                 key={`${item.side}-${item.view}`}
                 className="rounded-2xl border border-slate-200 bg-surface-raised p-2 shadow-card"
               >
                 <div className="relative aspect-square overflow-hidden rounded-xl bg-surface-sunken">
-                  {image && (
+                  {image ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -152,7 +209,17 @@ export function FourPhotoCapture() {
                         <Check className="h-3.5 w-3.5" strokeWidth={3} />
                       </span>
                     </motion.div>
-                  )}
+                  ) : slotSkipped ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center">
+                      <SkipForward className="h-5 w-5 text-ink-faint" />
+                      <span className="text-[11px] font-bold text-ink-soft">Skipped</span>
+                      {skipReason(item.side, item.view) && (
+                        <span className="text-[10px] leading-tight text-ink-faint">
+                          {skipReason(item.side, item.view)}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
                 <p className="mt-1.5 text-xs font-bold text-ink">
                   {slotLabel(item.side, item.view)}
@@ -161,19 +228,35 @@ export function FourPhotoCapture() {
                   type="button"
                   onClick={() => {
                     setError(null);
+                    if (slotSkipped) unskipSlot(item.side, item.view);
                     setIndex(shotIndex);
                   }}
                   className="mt-1.5 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl bg-surface-sunken text-sm font-bold text-primary"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" /> Retake
+                  {slotSkipped ? (
+                    <>
+                      <Camera className="h-3.5 w-3.5" /> Take it
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-3.5 w-3.5" /> Retake
+                    </>
+                  )}
                 </button>
               </div>
             );
           })}
         </div>
         <div className="shrink-0 pt-3">
+          {captured.length === 0 && (
+            <p className="mb-2 text-center text-[13px] font-semibold text-ink-soft">
+              At least one photo is needed before anything can be analyzed.
+            </p>
+          )}
           <Button fullWidth disabled={!complete} onClick={goNext}>
-            Analyze these photos
+            {captured.length > 0 && captured.length < SHOTS.length
+              ? `Analyze ${captured.length} photo${captured.length === 1 ? "" : "s"}`
+              : "Analyze these photos"}
           </Button>
         </div>
       </div>
@@ -232,6 +315,8 @@ export function FourPhotoCapture() {
                       <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
                     </span>
                   </motion.div>
+                ) : isSkipped(item.side, item.view) ? (
+                  <SkipForward className="h-4 w-4 text-ink-faint" />
                 ) : (
                   <Camera className="h-4 w-4 text-ink-faint" />
                 )}
@@ -265,6 +350,24 @@ export function FourPhotoCapture() {
         ) : current ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={current.dataUrl} alt={shot.title} className="h-full w-full object-contain" />
+        ) : isSkipped(shot.side, shot.view) ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+            <SkipForward className="h-7 w-7 text-ink-faint" />
+            <p className="text-sm font-bold text-ink">Skipped</p>
+            <p className="max-w-xs text-[13px] leading-snug text-ink-soft">
+              {skipReason(shot.side, shot.view)
+                ? `Reason given: ${skipReason(shot.side, shot.view)}.`
+                : "No reason given."}{" "}
+              This view won&apos;t appear in your report.
+            </p>
+            <button
+              type="button"
+              onClick={() => unskipSlot(shot.side, shot.view)}
+              className="mt-1 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-surface-raised px-4 text-sm font-bold text-primary shadow-card"
+            >
+              Take it after all
+            </button>
+          </div>
         ) : (
           <PhotoGuideAnimation side={shot.side} view={shot.view} />
         )}
@@ -300,13 +403,24 @@ export function FourPhotoCapture() {
         </div>
       )}
 
+      {notes.length > 0 && !error && (
+        <div className="mt-2 rounded-2xl border border-amber-200 bg-warn-soft px-3 py-2.5">
+          <p className="text-sm font-bold text-ink">Photo accepted</p>
+          {notes.map((note) => (
+            <p key={note} className="mt-0.5 text-sm leading-snug text-ink-soft">
+              {note}
+            </p>
+          ))}
+        </div>
+      )}
+
       <div className="mt-3 grid shrink-0 grid-cols-2 gap-2">
         <label className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-surface-raised text-sm font-bold text-primary shadow-card">
           <ImagePlus className="mr-1.5 h-4 w-4" /> Upload photo
           <input
             ref={uploadInputRef}
             type="file"
-            accept="image/*,.heic,.heif"
+            accept="image/*,.heic,.heif,.avif,.tif,.tiff,.bmp,.gif,.webp"
             className="sr-only"
             disabled={busy}
             onChange={(event) => {
@@ -337,6 +451,65 @@ export function FourPhotoCapture() {
         >
           {index === SHOTS.length - 1 ? "Review all photos" : "Use this photo"}
         </Button>
+      </div>
+
+      {/* Skip. Deliberately always available and never disabled: a patient
+          with an amputation or a dressing cannot produce this photo at all,
+          and a flow that traps them on it is a flow they abandon. */}
+      <div className="shrink-0 pt-2">
+        {skipOpen ? (
+          <div className="rounded-2xl border border-slate-200 bg-surface-raised p-3 shadow-card">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-bold text-ink">
+                Skip {slotLabel(shot.side, shot.view).toLowerCase()}?
+              </p>
+              <button
+                type="button"
+                onClick={() => setSkipOpen(false)}
+                aria-label="Close skip options"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-faint hover:bg-surface-sunken"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-0.5 text-[13px] leading-snug text-ink-soft">
+              This view won&apos;t appear in your report. Telling us why is
+              optional.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {SKIP_REASONS.map((reason) => (
+                <button
+                  key={reason}
+                  type="button"
+                  onClick={() => confirmSkip(reason)}
+                  className="min-h-[44px] rounded-xl border border-slate-200 bg-surface-sunken px-3 text-[13px] font-semibold text-ink transition-colors hover:border-primary hover:text-primary"
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => confirmSkip()}
+              className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-surface-sunken text-sm font-bold text-primary"
+            >
+              Skip without a reason
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setCameraOpen(false);
+              setSkipOpen(true);
+            }}
+            className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl text-sm font-bold text-ink-soft transition-colors hover:text-primary"
+          >
+            <SkipForward className="h-4 w-4" />
+            Can&apos;t take this photo — skip it
+          </button>
+        )}
       </div>
     </div>
   );

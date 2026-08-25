@@ -14,6 +14,7 @@ import {
   FOOT_REGION_LABEL,
   type FootRegion,
 } from "@/lib/types";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 type Event = {
   type: "ulcer" | "amputation";
@@ -83,6 +84,7 @@ const SidePicker = ({
 );
 
 export function FootHistory() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -126,9 +128,9 @@ export function FootHistory() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Health history"
-        title="Foot history"
-        subtitle="Prior ulcers, amputations, or recent surgeries."
+        eyebrow={d.screens.historyEyebrow}
+        title={d.screens.footHistoryTitle}
+        subtitle={d.screens.footHistorySubtitle}
       />
       <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div>

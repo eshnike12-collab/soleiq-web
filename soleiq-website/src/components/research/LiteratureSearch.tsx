@@ -73,7 +73,7 @@ export default function LiteratureSearch() {
           <Search
             size={17}
             aria-hidden="true"
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-clr-muted"
+            className="pointer-events-none absolute start-4 top-1/2 -translate-y-1/2 text-clr-muted"
           />
           <input
             id={inputId}

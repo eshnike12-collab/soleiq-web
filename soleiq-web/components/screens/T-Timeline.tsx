@@ -11,6 +11,7 @@ import { BeforeAfterSlider } from "@/components/timeline/BeforeAfterSlider";
 import { Card } from "@/components/ui/card";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import type { ScreeningLevel, Visit } from "@/lib/types";
+import { fill, useT } from "@/lib/i18n/I18nProvider";
 
 const STATUS: Record<ScreeningLevel, string> = {
   clear: "Looks clear",
@@ -49,6 +50,7 @@ interface TimelineCheck {
 }
 
 export function Timeline() {
+  const d = useT();
   const fallback = useSoleiqStore((state) => state.priorVisits);
   const reset = useSoleiqStore((state) => state.reset);
   const [checks, setChecks] = useState<TimelineCheck[]>(
@@ -131,9 +133,15 @@ export function Timeline() {
   return (
     <div className="-mx-1 flex h-full flex-col overflow-y-auto px-1 pb-2">
       <ScreenHeader
-        eyebrow="Photo history"
-        title="Your foot checks"
-        subtitle={loading ? "Loading your saved checks…" : `${checks.length} saved check${checks.length === 1 ? "" : "s"}.`}
+        eyebrow={d.screens.timelineEyebrow}
+        title={d.screens.timelineTitle}
+        subtitle={
+          loading
+            ? d.screens.timelineLoading
+            : checks.length === 1
+              ? d.screens.timelineCountOne
+              : fill(d.screens.timelineCount, { count: checks.length })
+        }
       />
 
       {!loading && previous && latest && (

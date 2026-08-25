@@ -6,8 +6,10 @@ import { useSoleiqStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export function Consent() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const [a, setA] = useState(false);
   const [b, setB] = useState(false);
@@ -16,9 +18,9 @@ export function Consent() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Step 1"
-        title="Patient consent"
-        subtitle="Confirm with the patient that they agree to each of the following before continuing."
+        eyebrow={d.screens.consentEyebrow}
+        title={d.screens.consentTitle}
+        subtitle={d.screens.consentSubtitle}
       />
       <div className="-mx-1 flex-1 overflow-y-auto px-1 pb-2">
         <div className="rounded-3xl bg-surface-sunken p-3">

@@ -173,15 +173,34 @@ export function narrativeBox(
  * the better answer wins. Null when there is no such column: on a narrow panel
  * the copy sits under the art in the same column.
  */
+/**
+ * The column beside the copy.
+ *
+ * `copyEdgePx` is the edge of the copy that faces the art: its right edge when
+ * the page reads left to right, its left edge when it reads right to left. In
+ * Arabic and Urdu the copy moves to the right-hand side of the panel, and the
+ * art has to move to the left with it — the canvas has no writing direction of
+ * its own, so if this kept measuring from the right the picture would sit on
+ * top of the text.
+ */
 export function narrativeSideBox(
   width: number,
   height: number,
-  copyRightPx: number
+  copyEdgePx: number,
+  rtl = false
 ): SafeBox | null {
-  if (width < 1024 || !Number.isFinite(copyRightPx) || copyRightPx <= 0) return null
+  if (width < 1024 || !Number.isFinite(copyEdgePx) || copyEdgePx <= 0) return null
+  const w = Math.max(1, width)
   const top = Math.max(0.17, (NAV_PX + NAV_GAP_PX) / Math.max(1, height))
-  const left = (copyRightPx + COPY_GAP_PX) / Math.max(1, width)
-  // Not worth having if the copy runs so wide there is no column left.
+
+  if (rtl) {
+    const right = (copyEdgePx - COPY_GAP_PX) / w
+    // Not worth having if the copy runs so wide there is no column left.
+    if (right < 0.28) return null
+    return { top, bottom: 0.88, left: 0.03, right }
+  }
+
+  const left = (copyEdgePx + COPY_GAP_PX) / w
   if (left > 0.72) return null
   return { top, bottom: 0.88, left, right: 0.97 }
 }

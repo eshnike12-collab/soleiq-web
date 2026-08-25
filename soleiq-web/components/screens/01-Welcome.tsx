@@ -11,8 +11,10 @@ import { loadSavedIntake } from "@/lib/intake";
 import { signOut, useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { CenteredScreen } from "@/components/flow/ScreenContainer";
+import { fill, useT } from "@/lib/i18n/I18nProvider";
 
 export function Welcome() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const { profile, memberships } = useAuth();
   const router = useRouter();
@@ -56,21 +58,20 @@ export function Welcome() {
         <BrandLockup large />
       </motion.div>
       <p className="mt-2 max-w-[290px] text-[15px] leading-relaxed text-ink-soft">
-        AI-assisted diabetic foot screening — clinician decision support for
-        primary care and podiatry visits.
+        {d.welcome.intro}
       </p>
       <div className="mt-10 w-full max-w-[300px]">
         <Button fullWidth size="lg" onClick={goNext}>
-          Start patient visit
+          {d.welcome.start}
         </Button>
         <Link
           href="/home"
           className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-surface-raised text-sm font-bold text-primary transition-all duration-150 hover:border-slate-300 active:scale-[0.98]"
         >
-          <FolderOpen className="h-4 w-4" /> My dashboard
+          <FolderOpen className="h-4 w-4" /> {d.nav.dashboard}
         </Link>
         <p className="mt-3 text-xs text-ink-faint">
-          ~4 minutes per patient. For clinical use.
+          {d.welcome.duration}
         </p>
 
         {/* View switcher — admins can enter any point of view; doctors get
@@ -83,7 +84,7 @@ export function Welcome() {
                 href={`/h/${adminMembership.organizations.slug}/admin`}
                 className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl bg-ink text-xs font-semibold text-white transition-all duration-150 active:scale-[0.98]"
               >
-                <ShieldCheck className="h-3.5 w-3.5" /> Admin console
+                <ShieldCheck className="h-3.5 w-3.5" /> {d.nav.adminConsole}
               </Link>
             )}
             {doctorMembership?.organizations?.slug && (
@@ -91,7 +92,7 @@ export function Welcome() {
                 href={`/h/${doctorMembership.organizations.slug}/doctor`}
                 className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-surface-raised text-xs font-semibold text-ink transition-all duration-150 hover:border-slate-300 active:scale-[0.98]"
               >
-                <Stethoscope className="h-3.5 w-3.5" /> Doctor dashboard
+                <Stethoscope className="h-3.5 w-3.5" /> {d.nav.doctorDashboard}
               </Link>
             )}
           </div>
@@ -101,13 +102,12 @@ export function Welcome() {
       {profile && (
         <div className="mt-8 flex items-center gap-2 text-xs text-ink-faint">
           <span>
-            Signed in as{" "}
-            <span className="font-semibold text-ink-soft">
-              {profile.email ?? "your account"}
-            </span>{" "}
+            {fill(d.nav.signedInAs, {
+              email: profile.email ?? d.nav.yourAccount,
+            })}{" "}
             {memberships.length > 0
               ? `(${memberships.map((membership) => membership.role).join(", ")})`
-              : "(no hospital membership)"}
+              : `(${d.nav.noMembership})`}
           </span>
           <button
             type="button"
@@ -116,7 +116,7 @@ export function Welcome() {
             }}
             className="inline-flex min-h-[44px] items-center gap-1 font-semibold text-primary"
           >
-            <LogOut className="h-3 w-3" /> Sign out
+            <LogOut className="h-3 w-3" /> {d.nav.signOut}
           </button>
         </div>
       )}

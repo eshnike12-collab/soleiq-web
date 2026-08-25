@@ -1,14 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { fill, useT } from "@/lib/i18n/I18nProvider";
+import type { Dictionary } from "@/lib/i18n/locales/en";
 
 /** Encouraging step copy keyed to how far along the check is. */
-function encouragement(pct: number): string {
-  if (pct >= 100) return "All done — great job!";
-  if (pct >= 75) return "Almost there";
-  if (pct >= 45) return "Great progress";
-  if (pct >= 15) return "You're on your way";
-  return "Let's get started";
+function encouragement(d: Dictionary, pct: number): string {
+  if (pct >= 100) return d.flow.encouragementDone;
+  if (pct >= 75) return d.flow.encouragementAlmost;
+  if (pct >= 45) return d.flow.encouragementGood;
+  if (pct >= 15) return d.flow.encouragementUnderway;
+  return d.flow.encouragementStart;
 }
 
 export function ProgressDots({
@@ -18,13 +20,14 @@ export function ProgressDots({
   total: number;
   current: number;
 }) {
+  const d = useT();
   const pct = total > 1 ? (current / (total - 1)) * 100 : 0;
   const complete = pct >= 100;
   return (
     <div className="mb-5">
       <div className="mb-1.5 flex items-baseline justify-between">
         <span className="text-xs font-bold text-ink-soft">
-          Step {current + 1} of {total}
+          {fill(d.flow.step, { current: current + 1, total })}
         </span>
         <span
           className={
@@ -33,7 +36,7 @@ export function ProgressDots({
               : "text-xs font-semibold text-ink-faint"
           }
         >
-          {encouragement(pct)}
+          {encouragement(d, pct)}
         </span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">

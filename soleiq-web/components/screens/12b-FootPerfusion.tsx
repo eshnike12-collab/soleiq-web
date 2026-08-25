@@ -45,6 +45,7 @@ import {
 } from "@/lib/perfusion";
 import { adaptToSubject } from "@/lib/vitals";
 import type { FootSide } from "@/lib/types";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const PULSE_SECONDS = 20;
 const REFILL_SECONDS = 12;
@@ -62,6 +63,7 @@ const CONCERN_STYLE: Record<string, string> = {
 };
 
 export function FootPerfusion() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const profile = useSoleiqStore((s) => s.profile);
   const setPerfusion = useSoleiqStore((s) => s.setPerfusion);
@@ -151,8 +153,8 @@ export function FootPerfusion() {
     return (
       <div className="flex h-full flex-col">
         <ScreenHeader
-          eyebrow={step.side === "left" ? "Left foot" : "Right foot"}
-          title={step.mode === "pulse" ? "Pulse signal" : "Capillary refill"}
+          eyebrow={step.side === "left" ? d.screens.leftFoot : d.screens.rightFoot}
+          title={step.mode === "pulse" ? d.screens.perfusionPulse : d.screens.perfusionRefill}
         />
         <div className="min-h-0 flex-1">
           <FootTraceCapture
@@ -170,9 +172,9 @@ export function FootPerfusion() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Optional"
-        title="Foot circulation"
-        subtitle="Camera checks of blood flow in each foot. Skippable — the foot photo exam does not depend on it."
+        eyebrow={d.screens.perfusionEyebrow}
+        title={d.screens.perfusionTitle}
+        subtitle={d.screens.perfusionSubtitle}
       />
 
       <div className="-mx-1 flex-1 space-y-3 overflow-y-auto px-1 pb-2">

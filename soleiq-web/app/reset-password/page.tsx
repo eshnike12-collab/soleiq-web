@@ -18,13 +18,23 @@ import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
 import type { EmailOtpType, SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 import { validatePassword } from "@/lib/auth";
+import { useT } from "@/lib/i18n/I18nProvider";
+import type { Dictionary } from "@/lib/i18n/locales/en";
+import { AppTopBar } from "@/components/chrome/AppTopBar";
 
 type Stage = "verifying" | "ready" | "saving" | "done" | "invalid";
 
-const EXPIRED_MESSAGE =
-  "This reset link has expired or was already used. Request a new one from the sign-in page.";
-const SAME_BROWSER_MESSAGE =
-  "This link has to be opened in the same browser that asked for it. Request a new reset email and open it on this device.";
+/**
+ * What went wrong, held as a dictionary key rather than as finished text.
+ *
+ * The link-verification effect below runs on mount, and at that moment the
+ * reader's language may still be downloading — the dictionary in hand is
+ * English. Storing the key and resolving it at render time is what lets a
+ * late-arriving language correct the message, instead of leaving an English
+ * sentence stranded on an otherwise translated screen. Errors that come back
+ * from Supabase itself have no key, so they carry their own text.
+ */
+type Problem = { key: keyof Dictionary["reset"] } | { text: string };
 
 /** Poll for a session the auth client may still be establishing. */
 async function waitForSession(sb: SupabaseClient, timeoutMs: number) {
@@ -38,9 +48,10 @@ async function waitForSession(sb: SupabaseClient, timeoutMs: number) {
 }
 
 function ResetPasswordContent() {
+  const d = useT();
   const params = useSearchParams();
   const [stage, setStage] = useState<Stage>("verifying");
-  const [error, setError] = useState<string | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [show, setShow] = useState(false);
@@ -50,10 +61,15 @@ function ResetPasswordContent() {
   // form away from someone already typing their new password.
   const succeed = () =>
     setStage((current) => (current === "verifying" ? "ready" : current));
-  const fail = (message: string) => {
+  const fail = (key: keyof Dictionary["reset"]) => {
     setStage((current) => (current === "verifying" ? "invalid" : current));
-    setError(message);
+    setProblem({ key });
   };
+  const message = problem
+    ? "key" in problem
+      ? d.reset[problem.key]
+      : problem.text
+    : null;
 
   // The client establishes the recovery session itself for the link shapes it
   // understands, and does it asynchronously — listening as well as polling
@@ -76,19 +92,30 @@ function ResetPasswordContent() {
     const sb = getSupabase();
     if (!sb) {
       setStage("invalid");
-      setError("SoleIQ isn't configured for sign-in on this environment.");
+      // Missing environment configuration — an operator's problem, not a
+      // reader's, and never reached on a correctly deployed instance. Left in
+      // English deliberately: it is a deployment error.
+      setProblem({
+        text: "SoleIQ isn't configured for sign-in on this environment.",
+      });
       return;
     }
 
     (async () => {
       try {
         const hash = new URLSearchParams(
-          typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : ""
+          typeof window !== "undefined"
+            ? window.location.hash.replace(/^#/, "")
+            : "",
         );
         // An expired or already-used token comes back as an error on the URL
         // rather than as a session that never arrives.
-        if (hash.get("error") || hash.get("error_code") || params?.get("error")) {
-          fail(EXPIRED_MESSAGE);
+        if (
+          hash.get("error") ||
+          hash.get("error_code") ||
+          params?.get("error")
+        ) {
+          fail("expiredBody");
           return;
         }
 
@@ -107,7 +134,7 @@ function ResetPasswordContent() {
           window.history.replaceState(
             window.history.state,
             "",
-            window.location.pathname
+            window.location.pathname,
           );
           succeed();
           return;
@@ -139,20 +166,19 @@ function ResetPasswordContent() {
           return;
         }
         if (code) {
-          const { error: exchangeError } = await sb.auth.exchangeCodeForSession(code);
+          const { error: exchangeError } =
+            await sb.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
           succeed();
           return;
         }
-        fail(
-          "Open the reset link from your email to set a new password, or request a new one from the sign-in page."
-        );
+        fail("openFromEmail");
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
         fail(
           /code verifier|both auth code/i.test(message)
-            ? SAME_BROWSER_MESSAGE
-            : EXPIRED_MESSAGE
+            ? "sameBrowser"
+            : "expiredBody",
         );
       }
     })();
@@ -163,24 +189,24 @@ function ResetPasswordContent() {
     event.preventDefault();
     const sb = getSupabase();
     if (!sb || stage === "saving") return;
-    setError(null);
+    setProblem(null);
     const policyError = validatePassword(password);
     if (policyError) {
-      setError(policyError);
+      setProblem({ text: policyError });
       return;
     }
     if (password !== confirm) {
-      setError("The two passwords don't match.");
+      setProblem({ key: "mismatch" });
       return;
     }
     setStage("saving");
     const { error: updateError } = await sb.auth.updateUser({ password });
     if (updateError) {
       setStage("ready");
-      setError(
+      setProblem(
         /same password/i.test(updateError.message)
-          ? "That's already your current password — pick a different one."
-          : updateError.message
+          ? { key: "samePassword" }
+          : { text: updateError.message },
       );
       return;
     }
@@ -190,107 +216,118 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-5 py-10">
-      <main className="w-full max-w-md rounded-3xl border border-slate-200 bg-surface-raised p-7 shadow-card">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
-          <KeyRound className="h-6 w-6" />
-        </span>
-        <h1 className="mt-4 text-2xl font-bold text-ink">
-          Set a new password
-        </h1>
+    <div className="flex min-h-screen flex-col">
+      <AppTopBar />
+      <div className="flex flex-1 items-center justify-center px-5 py-10">
+        <main className="w-full max-w-md rounded-3xl border border-slate-200 bg-surface-raised p-7 shadow-card">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+            <KeyRound className="h-6 w-6" />
+          </span>
+          <h1 className="mt-4 text-2xl font-bold text-ink">{d.reset.title}</h1>
 
-        {stage === "verifying" && (
-          <p className="mt-4 flex items-center gap-2 text-[15px] text-ink-soft">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" /> Checking your reset link…
-          </p>
-        )}
-
-        {stage === "invalid" && (
-          <>
-            <p className="mt-3 rounded-2xl bg-urgent-soft p-4 text-sm leading-relaxed text-red-800">
-              {error}
+          {stage === "verifying" && (
+            <p className="mt-4 flex items-center gap-2 text-[15px] text-ink-soft">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />{" "}
+              {d.reset.checking}
             </p>
-            <Link
-              href="/login"
-              className="mt-4 inline-block w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
-            >
-              Back to sign in
-            </Link>
-          </>
-        )}
+          )}
 
-        {(stage === "ready" || stage === "saving") && (
-          <form onSubmit={submit} className="mt-4 space-y-3">
-            <p className="text-[15px] text-ink-soft">
-              Longer than 6 characters, with at least one number or symbol.
-            </p>
-            {error && (
-              <p className="rounded-2xl bg-urgent-soft p-3 text-sm text-red-800">{error}</p>
-            )}
-            <label className="block">
-              <span className="text-[13px] font-semibold text-ink-soft">New password</span>
-              <div className="mt-1 flex min-h-[48px] items-center gap-2 rounded-2xl border border-slate-200 bg-surface-raised px-3 py-2 transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary-soft">
+          {stage === "invalid" && (
+            <>
+              <p className="mt-3 rounded-2xl bg-urgent-soft p-4 text-sm leading-relaxed text-red-800">
+                {message}
+              </p>
+              <Link
+                href="/login"
+                className="mt-4 inline-block w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
+              >
+                {d.reset.backToSignIn}
+              </Link>
+            </>
+          )}
+
+          {(stage === "ready" || stage === "saving") && (
+            <form onSubmit={submit} className="mt-4 space-y-3">
+              <p className="text-[15px] text-ink-soft">{d.auth.passwordHint}</p>
+              {message && (
+                <p className="rounded-2xl bg-urgent-soft p-3 text-sm text-red-800">
+                  {message}
+                </p>
+              )}
+              <label className="block">
+                <span className="text-[13px] font-semibold text-ink-soft">
+                  {d.reset.newPassword}
+                </span>
+                <div className="mt-1 flex min-h-[48px] items-center gap-2 rounded-2xl border border-slate-200 bg-surface-raised px-3 py-2 transition-colors focus-within:border-primary focus-within:ring-4 focus-within:ring-primary-soft">
+                  <input
+                    type={show ? "text" : "password"}
+                    required
+                    autoFocus
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-transparent text-base text-ink outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow((s) => !s)}
+                    aria-label={
+                      show ? d.auth.hidePassword : d.auth.showPassword
+                    }
+                    className="-my-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-faint transition-colors hover:text-primary"
+                  >
+                    {show ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </label>
+              <label className="block">
+                <span className="text-[13px] font-semibold text-ink-soft">
+                  {d.reset.confirmPassword}
+                </span>
                 <input
                   type={show ? "text" : "password"}
                   required
-                  autoFocus
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent text-base text-ink outline-none"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  className="mt-1 min-h-[48px] w-full rounded-2xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-base text-ink outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary-soft"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShow((s) => !s)}
-                  aria-label={show ? "Hide password" : "Show password"}
-                  className="-my-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-faint transition-colors hover:text-primary"
-                >
-                  {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </label>
-            <label className="block">
-              <span className="text-[13px] font-semibold text-ink-soft">
-                Confirm new password
-              </span>
-              <input
-                type={show ? "text" : "password"}
-                required
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="mt-1 min-h-[48px] w-full rounded-2xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-base text-ink outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-primary-soft"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={stage === "saving"}
-              className="min-h-[48px] w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
-            >
-              {stage === "saving" ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Saving…
-                </span>
-              ) : (
-                "Save new password"
-              )}
-            </button>
-          </form>
-        )}
+              </label>
+              <button
+                type="submit"
+                disabled={stage === "saving"}
+                className="min-h-[48px] w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
+              >
+                {stage === "saving" ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />{" "}
+                    {d.reset.submitting}
+                  </span>
+                ) : (
+                  d.reset.submit
+                )}
+              </button>
+            </form>
+          )}
 
-        {stage === "done" && (
-          <>
-            <p className="mt-3 flex items-start gap-2 rounded-2xl bg-secondary-soft p-4 text-sm leading-relaxed text-teal-800">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              Your password was updated. Sign in with it now.
-            </p>
-            <Link
-              href="/login"
-              className="mt-4 inline-block w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
-            >
-              Sign in
-            </Link>
-          </>
-        )}
-      </main>
+          {stage === "done" && (
+            <>
+              <p className="mt-3 flex items-start gap-2 rounded-2xl bg-secondary-soft p-4 text-sm leading-relaxed text-teal-800">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                {d.reset.doneBody}
+              </p>
+              <Link
+                href="/login"
+                className="mt-4 inline-block w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98]"
+              >
+                {d.auth.signIn}
+              </Link>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

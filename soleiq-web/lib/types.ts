@@ -377,11 +377,28 @@ export interface AnalysisResult {
   ulcers?: UlcerAnalysis[];
 }
 
+/**
+ * A view the patient chose not to photograph.
+ *
+ * Recorded rather than simply left absent, because "no photo of the left
+ * sole" and "the left foot was amputated" mean very different things to a
+ * clinician reading the report. An absent image is ambiguous; this is not.
+ */
+export interface SkippedSlot {
+  side: FootSide;
+  view: CaptureView;
+  /** Free text from the patient. Optional — never required to proceed. */
+  reason?: string;
+  skippedAt: number;
+}
+
 export interface Visit {
   id: string;
   startedAt: number;
   completedAt?: number;
   images: CapturedImage[];
+  /** Views the patient explicitly skipped. Absent means none were skipped. */
+  skippedSlots?: SkippedSlot[];
   meshes: FootMesh[];
   result?: AnalysisResult;
   /** Camera + measured-pressure circulation check (lib/perfusion). */

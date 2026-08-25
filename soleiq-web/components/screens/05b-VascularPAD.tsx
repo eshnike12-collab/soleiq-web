@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 type Status = "diagnosed" | "suspected" | "none" | "unknown";
 
@@ -27,6 +28,7 @@ const PAD_SIGNS = [
 ];
 
 export function VascularPAD() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -77,9 +79,9 @@ export function VascularPAD() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Vascular screening"
-        title="Peripheral artery disease"
-        subtitle="PAD is independently linked to delayed wound healing and amputation risk — we screen for it separately from neuropathy."
+        eyebrow={d.screens.vascularEyebrow}
+        title={d.screens.vascularTitle}
+        subtitle={d.screens.vascularSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div>

@@ -14,6 +14,7 @@ import {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { A1cReferenceChart } from "./A1cReferenceChart";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const SEVERITY_STYLES: Record<
   GlucoseSeverity,
@@ -40,6 +41,7 @@ const SEVERITY_STYLES: Record<
 };
 
 export function GlucoseMarkers() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -96,9 +98,9 @@ export function GlucoseMarkers() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Health history"
-        title="Glucose markers"
-        subtitle="HbA1c plus the most recent glucose meter reading. Both optional."
+        eyebrow={d.screens.historyEyebrow}
+        title={d.screens.glucoseTitle}
+        subtitle={d.screens.glucoseSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div>

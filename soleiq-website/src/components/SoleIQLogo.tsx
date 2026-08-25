@@ -9,8 +9,8 @@ interface SoleIQLogoProps {
 }
 
 /**
- * The lockup: the square mark, "SoleIQ" set in type, and "Health" beside it at
- * a smaller size and lighter weight.
+ * The lockup: the mark, "SoleIQ" set in type, and "Health" beside it at a
+ * smaller size and lighter weight.
  *
  * The wordmark is type rather than baked into the image so it stays crisp at
  * nav sizes, and `items-center` on the row is what keeps the mark, the words
@@ -23,7 +23,15 @@ export default function SoleIQLogo({
   className,
 }: SoleIQLogoProps) {
   return (
-    <span className={`inline-flex items-center gap-2.5 ${className ?? ''}`}>
+    /* `dir="ltr"`, even in Arabic and Urdu.
+       A lockup is a fixed piece of artwork, not a sentence. Left to the page's
+       direction it reversed: the mark jumped to the right of the words and
+       "Health" landed before "SoleIQ". The cluster still moves to the right of
+       an RTL bar, which is correct — what must not flip is the inside of it. */
+    <span
+      dir="ltr"
+      className={`inline-flex items-center gap-2.5 ${className ?? ''}`}
+    >
       {/* The mark on its own, with no tile behind it.
           Sized by height with the width left to follow: it is taller than it
           is wide, so forcing it into the square the old app-icon tile occupied

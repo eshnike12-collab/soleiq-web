@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { GLUCOSE_RANGES, FOOT_REGION_LABEL, type FootRegion } from "@/lib/types";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 const stepIndex = (id: string) =>
   SCREEN_ORDER.findIndex((screen) => screen.id === id);
@@ -24,6 +25,7 @@ const titleCase = (value: string) =>
   value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 export function ReturningReview() {
+  const d = useT();
   const profile = useSoleiqStore((s) => s.profile);
   const goTo = useSoleiqStore((s) => s.goTo);
   const goNext = useSoleiqStore((s) => s.goNext);
@@ -149,9 +151,9 @@ export function ReturningReview() {
   return (
     <div className="-mx-1 flex h-full flex-col overflow-y-auto px-1 pb-2">
       <ScreenHeader
-        eyebrow="Welcome back"
-        title="Review your answers"
-        subtitle="We saved everything from your last check. Update anything that changed — the rest carries over. New photos are always taken fresh."
+        eyebrow={d.screens.returningEyebrow}
+        title={d.screens.returningTitle}
+        subtitle={d.screens.returningSubtitle}
       />
 
       <div className="space-y-2">

@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export function CapturePrep() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const startVisit = useSoleiqStore((s) => s.startVisit);
   const [consented, setConsented] = useState(false);
@@ -34,9 +36,9 @@ export function CapturePrep() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Capture"
-        title="Begin foot exam"
-        subtitle="Take or upload four color photos: the top and sole of each foot. You can retake any photo before the check."
+        eyebrow={d.screens.captureEyebrow}
+        title={d.screens.captureTitle}
+        subtitle={d.screens.captureSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-2.5 overflow-y-auto px-1 pb-2">
         {items.map(({ icon: Icon, title, body }) => (

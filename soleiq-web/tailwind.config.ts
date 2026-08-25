@@ -30,8 +30,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      letterSpacing: {
+        // Matches the marketing site, so "SoleIQ" sets identically on both.
+        tightest: "-0.035em",
+      },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        // Only the brand lockup uses this — see app/layout.tsx.
+        display: ["'Inter Tight'", "Inter", "system-ui", "sans-serif"],
       },
       colors: {
         // ---- Semantic tokens (CSS-variable driven) ----------------------
@@ -60,6 +66,9 @@ const config: Config = {
 
         // ---- Brand aliases ----------------------------------------------
         brand: v("--c-primary"),
+        // The marketing site's values, for the shared top bar only.
+        "brand-ink": v("--c-brand-ink"),
+        "brand-muted": v("--c-brand-muted"),
         accent: v("--c-urgent"),
         risk: {
           low: "#337A62",

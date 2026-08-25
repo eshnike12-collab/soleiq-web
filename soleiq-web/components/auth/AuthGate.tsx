@@ -9,6 +9,7 @@ import {
   useAuth,
 } from "@/lib/auth";
 import { AuthConfigurationError } from "./AuthConfigurationError";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 /**
  * Hard gate in front of the patient flow: unauthenticated users are sent to
@@ -18,6 +19,7 @@ import { AuthConfigurationError } from "./AuthConfigurationError";
  * the actual security boundary is RLS in Postgres.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
+  const d = useT();
   const { loading, userId, configurationError } = useAuth();
   const router = useRouter();
 
@@ -38,7 +40,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (loading || !userId) {
     return (
       <div className="flex h-full min-h-screen items-center justify-center gap-2 text-[15px] text-ink-soft">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" /> Loading…
+        <Loader2 className="h-5 w-5 animate-spin text-primary" /> {d.common.loading}
       </div>
     );
   }

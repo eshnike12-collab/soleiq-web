@@ -12,7 +12,7 @@ import { copyOpacity, SCENE_BOUNDS, SCENES } from '../three/scenes'
 import { INITIAL_CAMERA } from '../three/framing'
 import { usePointerInside } from '../hooks/usePointerInside'
 import type { BuiltTarget } from '../three/sampleTargets'
-import { useT } from '../i18n/I18nProvider'
+import { useI18n, useT } from '../i18n/I18nProvider'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -22,6 +22,8 @@ const VH_PER_UNIT = 155
 
 export default function ParticleNarrative() {
   const d = useT()
+  const { dir } = useI18n()
+  const rtl = dir === 'rtl'
   const caps = useMemo<Capabilities>(detectCapabilities, [])
   const [targets, setTargets] = useState<Record<string, BuiltTarget> | null>(null)
   const [built, setBuilt] = useState(0)
@@ -46,7 +48,9 @@ export default function ParticleNarrative() {
    * width — pushed it past the whole panel, and every other scene lost the
    * column beside its copy as a result.
    */
-  const copyRectRef = useRef<{ tops: number[]; rights: number[] }>({ tops: [], rights: [] })
+  /* `edges` is the side of each scene's copy that faces the art — its right
+     edge reading left to right, its left edge reading right to left. */
+  const copyRectRef = useRef<{ tops: number[]; edges: number[] }>({ tops: [], edges: [] })
   // Written by the canvas each frame, applied to the DOM by the ticker below.
   const labelsRef = useRef<LabelScreenPos[]>([])
   const labelElsRef = useRef<(HTMLDivElement | null)[]>([])
@@ -167,7 +171,7 @@ export default function ParticleNarrative() {
       if (!panel) return
       const panelRect = panel.getBoundingClientRect()
       const tops: number[] = []
-      const rights: number[] = []
+      const edges: number[] = []
       copyRefs.current.forEach((el, i) => {
         // The text block, not the full-width wrapper it is positioned by.
         const block = el?.firstElementChild as HTMLElement | null
@@ -176,9 +180,9 @@ export default function ParticleNarrative() {
         // copy can be measured without any of it being shown.
         const r = block.getBoundingClientRect()
         tops[i] = r.top - panelRect.top
-        rights[i] = r.right - panelRect.left
+        edges[i] = rtl ? r.left - panelRect.left : r.right - panelRect.left
       })
-      copyRectRef.current = { tops, rights }
+      copyRectRef.current = { tops, edges }
     }
     const raf = requestAnimationFrame(measure)
     window.addEventListener('resize', measure)
@@ -188,7 +192,7 @@ export default function ParticleNarrative() {
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', measure)
     }
-  }, [useCanvas, targets])
+  }, [useCanvas, targets, rtl])
 
   /* ── Stop rendering when off-screen or backgrounded ────────────────────── */
   useEffect(() => {
@@ -337,6 +341,7 @@ export default function ParticleNarrative() {
                 progressRef={progressRef}
                 labelsRef={labelsRef}
                 copyRectRef={copyRectRef}
+                rtl={rtl}
                 forming={formed}
                 rendering={active}
                 pointer={pointer}
@@ -360,7 +365,7 @@ export default function ParticleNarrative() {
               Not decoration: it says which step you are on, what it is called,
               and how far through the sequence you have come. */}
           <nav
-            className="scene-rail pointer-events-none absolute left-6 top-1/2 hidden -translate-y-1/2 md:block"
+            className="scene-rail pointer-events-none absolute start-6 top-1/2 hidden -translate-y-1/2 md:block"
             aria-label="Sequence progress"
           >
             <ol className="flex flex-col gap-4">

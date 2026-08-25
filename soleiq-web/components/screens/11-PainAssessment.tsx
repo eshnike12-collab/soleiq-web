@@ -7,8 +7,10 @@ import { PainMap } from "@/components/pain-map/PainMap";
 import { Button } from "@/components/ui/button";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export function PainAssessment() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const update = useSoleiqStore((s) => s.updateProfile);
   const profile = useSoleiqStore((s) => s.profile);
@@ -19,9 +21,9 @@ export function PainAssessment() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Symptoms"
-        title="Pain assessment"
-        subtitle="Ask the patient: any pain in their feet right now?"
+        eyebrow={d.screens.painEyebrow}
+        title={d.screens.painTitle}
+        subtitle={d.screens.painSubtitle}
       />
       <div className="-mx-1 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
         <div className="grid grid-cols-2 gap-2.5">

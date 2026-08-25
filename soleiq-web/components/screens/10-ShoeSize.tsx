@@ -4,8 +4,10 @@ import { useSoleiqStore } from "@/lib/store";
 import { ShoeSizeChart } from "@/components/shoe-size/ShoeSizeChart";
 import { Button } from "@/components/ui/button";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export function ShoeSize() {
+  const d = useT();
   const goNext = useSoleiqStore((s) => s.goNext);
   const profile = useSoleiqStore((s) => s.profile);
   const ready = !!profile.shoeSizeUS;
@@ -13,8 +15,8 @@ export function ShoeSize() {
   return (
     <div className="flex h-full flex-col">
       <ScreenHeader
-        eyebrow="Sizing"
-        title="Your shoe size"
+        eyebrow={d.screens.sizingEyebrow}
+        title={d.screens.sizingTitle}
         subtitle={
           profile.footLengthMm
             ? `≈ ${profile.footLengthMm} mm foot length`

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Camera, FileClock, ShieldCheck } from "lucide-react";
-import { BrandLogo } from "@/components/brand/Logo";
+import { AppTopBar } from "@/components/chrome/AppTopBar";
+import { T } from "@/components/chrome/T";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { AuthConfigurationError } from "@/components/auth/AuthConfigurationError";
@@ -27,23 +28,19 @@ export default async function PatientHomePage() {
   const latestSummary = latest?.patient_summary as any;
   return (
     <div className="min-h-screen ">
-      <header className="border-b border-slate-200 bg-surface-raised">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3">
-            <BrandLogo size={44} />
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">SoleIQ</p>
-              <h1 className="text-lg font-bold text-ink">
-                {data.patient?.full_name || data.profile?.full_name || "My foot health"}
-              </h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
+      <AppTopBar
+        title={
+          <h1 className="truncate text-lg font-bold text-ink">
+            {data.patient?.full_name || data.profile?.full_name || <T k="nav.footHealth" />}
+          </h1>
+        }
+        actions={
+          <>
             <FeedbackButton prefillEmail={data.profile?.email ?? null} />
             <SignOutButton />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
       <main className="mx-auto max-w-5xl space-y-6 px-5 py-8 pb-24">
         <SharedWithMeCard />
         <section className="grid gap-4 md:grid-cols-[1.4fr_1fr]">

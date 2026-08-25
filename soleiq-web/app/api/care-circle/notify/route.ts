@@ -2,6 +2,12 @@ import { z } from "zod";
 import { apiHandler } from "@/server/http";
 import { enforceRateLimit } from "@/server/rate-limit";
 import { requireAuth } from "@/server/auth";
+import { appBaseUrl, sendEmail } from "@/server/email/client";
+import {
+  careCircleInviteSubject,
+  renderCareCircleInviteHtml,
+  renderCareCircleInviteText,
+} from "@/server/email/templates/careCircleInvite";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,45 +31,24 @@ export async function POST(request: Request) {
     const { user } = await requireAuth();
     const body = NotifySchema.parse(await request.json());
 
-    const inviter = body.inviterName || user.email || "A SoleIQ patient";
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.soleiqhealth.com";
+    const invite = {
+      inviterName: body.inviterName || user.email || "A SoleIQ patient",
+      inviteeEmail: body.email.toLowerCase(),
+      role: body.role,
+      appUrl: appBaseUrl(),
+    };
 
-    let emailSent = false;
-    const resendKey = process.env.RESEND_API_KEY;
-    if (resendKey) {
-      try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "SoleIQ <onboarding@resend.dev>",
-            to: [body.email.toLowerCase()],
-            subject: `${inviter} shared their SoleIQ foot-check results with you`,
-            text: [
-              `${inviter} added you to their SoleIQ care circle as ${
-                body.role === "clinician" ? "a clinician" : `a ${body.role} member`
-              }.`,
-              "",
-              `To see their results, sign in to SoleIQ with this email address (${body.email.toLowerCase()}):`,
-              appUrl,
-              "",
-              body.role === "clinician"
-                ? "You'll see the clinical detail view of their reports."
-                : "You'll see their results exactly as they see them.",
-              "",
-              "If you don't have an account yet, create one with this same email — access connects automatically.",
-            ].join("\n"),
-          }),
-        });
-        emailSent = response.ok;
-      } catch {
-        /* grant already exists; email is best effort */
-      }
-    }
+    // One email path for the whole app — see server/email/client.ts. This
+    // used to be a raw fetch to the Resend REST API with its own hardcoded
+    // sender, which meant two places to change the from-address and only a
+    // plain-text body.
+    const result = await sendEmail({
+      to: body.email.toLowerCase(),
+      subject: careCircleInviteSubject(invite),
+      html: renderCareCircleInviteHtml(invite),
+      text: renderCareCircleInviteText(invite),
+    });
 
-    return { emailSent };
+    return { emailSent: result.ok };
   });
 }

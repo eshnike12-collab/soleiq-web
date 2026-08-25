@@ -41,6 +41,8 @@ interface SoleiqStore {
   currentVisit: Visit | null;
   startVisit: () => void;
   addImage: (img: CapturedImage) => void;
+  skipSlot: (side: FootSide, view: CaptureView, reason?: string) => void;
+  unskipSlot: (side: FootSide, view: CaptureView) => void;
   setImageAiResult: (
     side: FootSide,
     view: CaptureView,
@@ -187,6 +189,39 @@ export const useSoleiqStore = create<SoleiqStore>()(
               }
             : {}
         ),
+      skipSlot: (side, view, reason) =>
+        set((s) => {
+          if (!s.currentVisit) return {};
+          return {
+            currentVisit: {
+              ...s.currentVisit,
+              // Any photo already taken for this slot is dropped. Holding both
+              // a picture and a "skipped" marker for one view would leave the
+              // report describing a foot the patient said not to look at.
+              images: s.currentVisit.images.filter(
+                (image) => image.side !== side || image.view !== view
+              ),
+              skippedSlots: [
+                ...(s.currentVisit.skippedSlots ?? []).filter(
+                  (slot) => slot.side !== side || slot.view !== view
+                ),
+                { side, view, reason, skippedAt: Date.now() },
+              ],
+            },
+          };
+        }),
+      unskipSlot: (side, view) =>
+        set((s) => {
+          if (!s.currentVisit) return {};
+          return {
+            currentVisit: {
+              ...s.currentVisit,
+              skippedSlots: (s.currentVisit.skippedSlots ?? []).filter(
+                (slot) => slot.side !== side || slot.view !== view
+              ),
+            },
+          };
+        }),
       setImageAiResult: (side, view, aiResult) =>
         set((s) => {
           if (!s.currentVisit) return {};
