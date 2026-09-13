@@ -764,6 +764,26 @@ html.has-custom-cursor label {
   transition: opacity 0.25s ease;
 }
 
+/* ── Hovered text ────────────────────────────────────────────────────────────
+   A hint that the pointer is over a block of prose, and nothing more.
+
+   The previous version darkened to `brightness(0.5)` and scaled to 1.06 — half
+   the brightness and a six percent jump, which read as the paragraph lurching
+   toward you. This is an eight percent darkening and no scale at all: nothing
+   moves, nothing reflows, the line just settles slightly. Pure CSS, so the
+   cursor keeps its promise of having no hover machinery.
+
+   Skipped on anything holding media, because `filter` applies to the whole
+   subtree and would dim a photograph along with its caption. Skipped on the
+   dark sequence, where dimming light text on a dark ground reads as the text
+   going out rather than coming forward. */
+@media (hover: hover) and (pointer: fine) {
+  html:not([data-tone='dark']) main :is(p, h2, h3, li, dd, dt):hover:not(:has(img, svg, canvas, video, picture)) {
+    filter: brightness(0.92);
+    transition: filter 0.18s ease;
+  }
+}
+
 
 
 
@@ -893,19 +913,15 @@ html[data-tone='dark'] .lang-wrap:focus-within {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Right to left — deliberately not implemented.
+   Right to left — nothing here, because nothing published needs it.
 
-   Arabic and Urdu are published with the same left-to-right layout as every
-   other language: same logo position, same navigation, same everything, with
-   only the words changing. See `src/i18n/config.ts` for why.
+   Arabic and Urdu were the only right-to-left languages on the site and have
+   been withdrawn; `src/i18n/config.ts` says why. Every remaining language
+   reads left to right, so `[dir='rtl']` would match no document ever served.
 
-   The script still reads right to left inside a line — that is intrinsic to
-   the characters and needs nothing from this file. What used to live here was
-   a set of `[dir='rtl']` overrides mirroring arrows and pinning labels; with
-   the document never in rtl they matched nothing, and one of them forced
-   translated Arabic into a left-to-right box, which reversed the order its
-   words were read in. The logical properties elsewhere in this file (inline
-   start/end rather than left/right) are kept: under ltr they resolve to
-   exactly what they replaced.
+   The logical properties used elsewhere in this file — inline start/end
+   rather than left/right — are kept anyway. Under ltr they resolve to exactly
+   what they replaced, so they cost nothing, and they are most of the work
+   already done if a right-to-left language is ever added back.
    ─────────────────────────────────────────────────────────────────────────── */
 

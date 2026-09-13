@@ -42,11 +42,9 @@ const LOADERS: Record<Locale, () => Promise<{ default: Dictionary }>> = {
   hi: () => import('./locales/hi'),
   'zh-Hans': () => import('./locales/zh-Hans'),
   'zh-Hant': () => import('./locales/zh-Hant'),
-  ar: () => import('./locales/ar'),
   bn: () => import('./locales/bn'),
   pt: () => import('./locales/pt'),
   ru: () => import('./locales/ru'),
-  ur: () => import('./locales/ur'),
   id: () => import('./locales/id'),
   ja: () => import('./locales/ja'),
   mr: () => import('./locales/mr'),
@@ -59,7 +57,7 @@ const LOADERS: Record<Locale, () => Promise<{ default: Dictionary }>> = {
 
 interface I18nValue {
   locale: Locale
-  /** `rtl` for Arabic and Urdu, `ltr` for the rest. */
+  /** `ltr` for every published language. See `config.ts`. */
   dir: Direction
   setLocale: (next: Locale) => void
   /** The active dictionary. English until another language has loaded. */
@@ -120,11 +118,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const meta = localeMeta(locale)
     document.documentElement.lang = meta.html
-    /* Arabic and Urdu are read right to left. `dir` on the root is what flips
-       the whole document — text alignment, the order of flex and grid tracks,
-       scrollbar side — and it is also what makes the logical CSS below mean
-       the right thing. Set here rather than in the markup because it changes
-       with the language. */
+    /* `dir` on the root is what would flip the whole document — text
+       alignment, the order of flex and grid tracks, scrollbar side — and it is
+       what makes the logical CSS mean the right thing. Every published
+       language is `ltr`, so this writes the same value each time; it is still
+       written from the locale rather than hard-coded, so adding a
+       right-to-left language is a change in one file. */
     document.documentElement.dir = meta.dir
 
     const url = new URL(window.location.href)

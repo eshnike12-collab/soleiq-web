@@ -58,7 +58,7 @@ export default function FeaturedPaper() {
 
       {/* Authors, as they are credited on the paper itself. Each links to their
           own profile where there is one. */}
-      <ul className="mt-8 flex flex-wrap gap-x-12 gap-y-6">
+      <ul className="mt-8 flex flex-wrap gap-x-14 gap-y-8">
         {paper.authors.map((author) => {
           const profile = PROFILE_LINKS[author.name]
           const body = (
@@ -72,15 +72,15 @@ export default function FeaturedPaper() {
                   height={220}
                   loading="lazy"
                   decoding="async"
-                  className="author-photo h-14 w-14 shrink-0 rounded-full object-cover"
+                  className="author-photo h-[4.25rem] w-[4.25rem] shrink-0 rounded-full object-cover sm:h-[5.25rem] sm:w-[5.25rem]"
                 />
               )}
               <span className="min-w-0">
-                <span className="author-name flex items-center gap-1.5 font-display text-[1.0625rem] font-medium tracking-tight text-clr-text">
+                <span className="author-name flex items-center gap-2 font-display text-[1.1875rem] font-medium tracking-tight text-clr-text sm:text-[1.375rem]">
                   {author.name}
                   {profile && (
                     <Linkedin
-                      size={14}
+                      size={17}
                       className="shrink-0 text-clr-muted"
                       aria-hidden="true"
                     />
@@ -93,7 +93,7 @@ export default function FeaturedPaper() {
                   {author.credit}
                 </span>
                 {author.title && (
-                  <span className="mt-1 block max-w-xs text-[0.8125rem] leading-snug text-clr-muted">
+                  <span className="mt-1 block max-w-xs text-[0.875rem] leading-snug text-clr-muted">
                     {author.title}
                   </span>
                 )}
@@ -108,13 +108,13 @@ export default function FeaturedPaper() {
                   href={profile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="author-link flex items-center gap-4"
+                  className="author-link flex items-center gap-4 sm:gap-5"
                   aria-label={`${author.name} on LinkedIn`}
                 >
                   {body}
                 </a>
               ) : (
-                <div className="flex items-center gap-4">{body}</div>
+                <div className="flex items-center gap-4 sm:gap-5">{body}</div>
               )}
             </li>
           )

@@ -23,11 +23,11 @@ export default function SoleIQLogo({
   className,
 }: SoleIQLogoProps) {
   return (
-    /* `dir="ltr"`, even in Arabic and Urdu.
+    /* `dir="ltr"`, stated rather than inherited.
        A lockup is a fixed piece of artwork, not a sentence. Left to the page's
-       direction it reversed: the mark jumped to the right of the words and
-       "Health" landed before "SoleIQ". The cluster still moves to the right of
-       an RTL bar, which is correct — what must not flip is the inside of it. */
+       direction it reversed under rtl: the mark jumped to the right of the
+       words and "Health" landed before "SoleIQ". No published language is rtl
+       any more, but the lockup should not depend on that staying true. */
     <span
       dir="ltr"
       className={`inline-flex items-center gap-2.5 ${className ?? ''}`}

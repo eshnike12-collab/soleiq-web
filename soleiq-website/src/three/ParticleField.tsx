@@ -43,12 +43,13 @@ interface Props {
    */
   copyRectRef: MutableRefObject<{ tops: number[]; edges: number[] }>
   /**
-   * Whether the page reads right to left.
+   * Whether the page reads right to left. Always false as the site ships —
+   * Arabic and Urdu were the only two and have been withdrawn.
    *
    * The canvas has no writing direction of its own, so nothing in here mirrors
-   * on its own account. In Arabic and Urdu the copy moves to the right of the
-   * panel and the art has to move to the left to meet it — otherwise the two
-   * end up stacked on the same side, which is exactly what happened.
+   * on its own account; this is the switch that would have to be honoured, and
+   * the reason it exists is that without it the copy and the art stacked on
+   * the same side of the panel.
    */
   rtl: boolean
   /** True while the panel is being looked at: the shape gathers, or comes apart. */
@@ -624,8 +625,8 @@ export default function ParticleField({
         out.push({
           text: anchor.text,
           // `dx` is "this many pixels toward the start of the line", so its
-          // sign flips with the writing direction — otherwise the label that
-          // sits beside the phone in English sits on top of it in Arabic.
+          // sign flips with the writing direction. Moot while `rtl` is always
+          // false, but it is the correct reading of `dx` either way.
           x: (scratch.v.x * 0.5 + 0.5) * state.size.width + (rtl ? -anchor.dx : anchor.dx),
           y: (-scratch.v.y * 0.5 + 0.5) * state.size.height + anchor.dy,
           opacity: hold,

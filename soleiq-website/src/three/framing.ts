@@ -177,11 +177,13 @@ export function narrativeBox(
  * The column beside the copy.
  *
  * `copyEdgePx` is the edge of the copy that faces the art: its right edge when
- * the page reads left to right, its left edge when it reads right to left. In
- * Arabic and Urdu the copy moves to the right-hand side of the panel, and the
- * art has to move to the left with it — the canvas has no writing direction of
- * its own, so if this kept measuring from the right the picture would sit on
- * top of the text.
+ * the page reads left to right, its left edge when it reads right to left.
+ *
+ * `rtl` is always false as the site currently ships — no published language
+ * reads right to left. The branch is kept because the canvas has no writing
+ * direction of its own: if one is ever added back, a mirrored page would put
+ * the copy on the right and this is what stops the picture landing on top of
+ * it. Anything else in here that needs to mirror has to be found by hand.
  */
 export function narrativeSideBox(
   width: number,

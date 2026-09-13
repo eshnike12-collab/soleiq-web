@@ -1,9 +1,9 @@
 /**
- * The twenty languages this site is published in.
+ * The eighteen languages this site is published in.
  *
  * The list is the world's most-spoken languages by total speakers (Ethnologue,
  * L1 + L2), resolved into locales a website can actually be published in.
- * Three entries on that list do not survive that resolution, and it is worth
+ * Several entries on that list do not survive that resolution, and it is worth
  * saying which and why:
  *
  *   Mandarin is a spoken variety, and a page has no spoken form. What written
@@ -17,23 +17,17 @@
  *   Nigerian Pidgin is 14th by speakers and has no standardised orthography.
  *   Publishing clinical copy in it would mean inventing spellings.
  *
- * Those three slots go to the next languages down the list instead:
- * Vietnamese and Korean. Say the word if you would rather have Cantonese or
- * Pidgin and I will swap them in.
- */
-
-/**
- * Text direction is `ltr` for every language, including Arabic and Urdu.
+ *   Arabic and Urdu were published here and have been withdrawn. Both were
+ *   asked to run in the same left-to-right layout as every other language,
+ *   and right-to-left script in a left-to-right layout reads wrong to anyone
+ *   who actually reads it: the eye starts at the wrong edge, and the furniture
+ *   around the words contradicts the words. Rather than ship that, the two
+ *   were removed. The dictionaries are in git history if they are wanted back,
+ *   and bringing them back properly means letting the page mirror.
  *
- * That is a deliberate product decision, not an oversight. The typographic
- * convention for those two is to mirror the whole page — logo to the right,
- * navigation to the left — and this site did that for a while. It was asked
- * for the opposite: one layout everywhere, so the brand and the furniture sit
- * in the same place in all twenty languages and only the words change.
- *
- * Arabic and Urdu still *read* right to left. That is intrinsic to the
- * characters and the browser handles it per line whatever this says; `dir`
- * governs the arrangement of boxes, not the shaping of script.
+ * What remains all reads left to right, so there is no direction left to
+ * negotiate. `dir` is `ltr` throughout; the field stays because `<html dir>`
+ * is worth stating rather than leaving to a default.
  */
 export const LOCALES = [
   { code: 'en', name: 'English', native: 'English', html: 'en', dir: 'ltr' },
@@ -41,12 +35,10 @@ export const LOCALES = [
   { code: 'zh-Hant', name: 'Chinese (Traditional)', native: '繁體中文', html: 'zh-Hant', dir: 'ltr' },
   { code: 'hi', name: 'Hindi', native: 'हिन्दी', html: 'hi', dir: 'ltr' },
   { code: 'es', name: 'Spanish', native: 'Español', html: 'es', dir: 'ltr' },
-  { code: 'ar', name: 'Arabic', native: 'العربية', html: 'ar', dir: 'ltr' },
   { code: 'fr', name: 'French', native: 'Français', html: 'fr', dir: 'ltr' },
   { code: 'bn', name: 'Bengali', native: 'বাংলা', html: 'bn', dir: 'ltr' },
   { code: 'pt', name: 'Portuguese', native: 'Português', html: 'pt-BR', dir: 'ltr' },
   { code: 'ru', name: 'Russian', native: 'Русский', html: 'ru', dir: 'ltr' },
-  { code: 'ur', name: 'Urdu', native: 'اردو', html: 'ur', dir: 'ltr' },
   { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia', html: 'id', dir: 'ltr' },
   { code: 'de', name: 'German', native: 'Deutsch', html: 'de', dir: 'ltr' },
   { code: 'ja', name: 'Japanese', native: '日本語', html: 'ja', dir: 'ltr' },
