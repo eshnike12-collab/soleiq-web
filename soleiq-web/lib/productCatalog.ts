@@ -14,6 +14,58 @@
  */
 
 import type { PatientProfile, PhotoScreeningResult } from "./types";
+import type { Locale } from "./i18n/config";
+
+// ---------------------------------------------------------------------------
+// Regional storefronts
+// ---------------------------------------------------------------------------
+
+/**
+ * Languages read overwhelmingly in India, which are served by Amazon India.
+ *
+ * Language is a proxy for country, and an imperfect one — it is simply the
+ * only signal the app has, since nothing here asks where someone lives. The
+ * five below are the ones where the guess is safe: each is an official
+ * language of India or one of its states, and none is the main language of
+ * another country with its own Amazon storefront.
+ *
+ * Bengali is the debatable one: more of its speakers are in Bangladesh than in
+ * India. Amazon has no Bangladeshi storefront, so amazon.in is the closer of
+ * the two available answers for a Bengali reader either way.
+ */
+const INDIA_LOCALES = new Set<string>(["hi", "bn", "mr", "te", "ta"]);
+
+/** Amazon storefront for a reader's language. Everything else gets the US. */
+export function amazonHostFor(locale: Locale | string): string {
+  return INDIA_LOCALES.has(locale) ? "www.amazon.in" : "www.amazon.com";
+}
+
+/**
+ * Point a catalog link at the reader's own Amazon storefront.
+ *
+ * Applied when the link is rendered, not when the catalog is written, for one
+ * specific reason: recommendation records are frozen and stored with each
+ * report, so a report analyzed last year has `amazon.com` baked into it. The
+ * frozen record is a clinical artifact and must not be rewritten — but the
+ * link a patient taps today should still reach a store that ships to them.
+ * Rewriting the host at render time gives both.
+ *
+ * Catalog URLs are search links rather than listings, which is what makes this
+ * safe to do: `/s?k=urea+40%25+foot+cream` returns whatever that market
+ * actually stocks, where a specific ASIN would 404 in every country but one.
+ * Anything that is not an Amazon URL is returned untouched.
+ */
+export function localizeStoreUrl(url: string, locale: Locale | string): string {
+  try {
+    const parsed = new URL(url);
+    if (!/^(?:.+\.)?amazon\.[a-z][a-z.]*$/i.test(parsed.hostname)) return url;
+    parsed.hostname = amazonHostFor(locale);
+    return parsed.toString();
+  } catch {
+    // Relative or malformed: nothing sensible to rewrite.
+    return url;
+  }
+}
 
 export type ProductCategory =
   | "dryness"

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, ExternalLink, Info, ShoppingBag } from "lucide-react";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { suggestProducts } from "@/lib/productCatalog";
+import { StoreLink } from "@/components/result/StoreLink";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 type EvidenceLevel = "established" | "emerging" | "investigational";
@@ -142,14 +143,12 @@ export function ProductRecommendation() {
                     {product.caution}
                   </p>
                 )}
-                <a
-                  href={product.url}
-                  target="_blank"
-                  rel="noreferrer"
+                <StoreLink
+                  url={product.url}
                   className="mt-1 inline-flex min-h-[44px] items-center text-sm font-bold text-primary underline decoration-primary/30 underline-offset-4"
                 >
                   View product <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                </a>
+                </StoreLink>
               </Card>
             ))}
           </div>

@@ -15,6 +15,7 @@ import {
   listMyRecommendations,
   type MyRecommendation,
 } from "@/lib/canonicalScreenings";
+import { StoreLink } from "@/components/result/StoreLink";
 
 const riskChip: Record<string, string> = {
   clear: "bg-teal-100 text-teal-900",
@@ -126,14 +127,12 @@ function RecommendationsContent() {
                           {product.caution}
                         </p>
                       )}
-                      <a
-                        href={product.url}
-                        target="_blank"
-                        rel="noreferrer"
+                      <StoreLink
+                        url={product.url}
                         className="mt-1 inline-flex min-h-[44px] items-center gap-1 py-2 text-[13px] font-bold text-primary transition-colors hover:text-primary-deep"
                       >
                         Where to find it <ExternalLink className="h-3 w-3" />
-                      </a>
+                      </StoreLink>
                     </div>
                   ))}
                 </div>

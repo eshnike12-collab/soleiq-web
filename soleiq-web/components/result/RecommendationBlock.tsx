@@ -4,7 +4,14 @@
  * in report_recommendations) — never re-computed. The `audience` prop only
  * switches which "why" signals show: plain language for patients, clinical
  * detail for clinicians. Server-renderable.
+ *
+ * The one thing that is not frozen is which Amazon storefront the links point
+ * at: `StoreLink` sends an Indian-language reader to amazon.in, whatever was
+ * stored at the time. The recommendation is the clinical record; the retailer
+ * is just how you get the thing.
  */
+
+import { StoreLink } from "./StoreLink";
 
 interface RecommendedProduct {
   id: string;
@@ -71,14 +78,12 @@ export function RecommendationBlock({
                 {product.caution}
               </p>
             )}
-            <a
-              href={product.url}
-              target="_blank"
-              rel="noreferrer"
+            <StoreLink
+              url={product.url}
               className="mt-1 inline-flex min-h-[44px] items-center text-sm font-bold text-primary underline decoration-primary/30 underline-offset-4"
             >
               Where to find it →
-            </a>
+            </StoreLink>
           </div>
         ))}
       </div>
