@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SoleIQ Foot AI</title>
+  <style>
+    /* SoleIQ brand palette */
+    :root {
+      --brand: #1F4E79;
+      --brand-800: #0C447C;
+      --blue-50: #E6F1FB;
+      --blue-100: #B5D4F4;
+      --teal: #0F6E56;
+      --teal-50: #E1F5EE;
+      --teal-100: #9FE1CB;
+      --amber: #BF8F00;
+      --amber-50: #FAEEDA;
+      --amber-100: #F0DBA8;
+      --risk-high: #C00000;
+      --warmGray-50: #F1EFE8;
+      --warmGray-100: #D3D1C7;
+      --warmGray-400: #8A8884;
+      --warmGray-600: #5F5E5A;
+      --warmGray-800: #2C2C2A;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--warmGray-50);
+      color: var(--warmGray-800);
+      line-height: 1.45;
+    }
+    header {
+      background: white;
+      border-bottom: 1px solid var(--warmGray-100);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo {
+      width: 36px; height: 36px;
+      background: var(--brand);
+      color: white;
+      font-weight: 700;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+    }
+    .title-block { flex: 1; }
+    .title { font-size: 16px; font-weight: 600; color: var(--warmGray-800); }
+    .subtitle { font-size: 11px; color: var(--warmGray-600); }
+    .version-pill {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      padding: 4px 9px;
+      background: var(--blue-50);
+      color: var(--brand);
+      border-radius: 999px;
+      border: 1px solid var(--blue-100);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 80px;
+    }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--warmGray-100);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brand);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    h2 { font-size: 18px; margin: 0 0 14px; color: var(--warmGray-800); }
+    h3 { font-size: 14px; margin: 0 0 8px; color: var(--warmGray-800); }
+    p  { margin: 0 0 10px; color: var(--warmGray-600); font-size: 13px; }
+
+    /* Upload zone */
+    .drop {
+      border: 2px dashed var(--warmGray-100);
+      border-radius: 14px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 120ms ease, background 120ms ease;
+      background: var(--warmGray-50);
+    }
+    .drop:hover { border-color: var(--brand); background: var(--blue-50); }
+    .drop.dragging { border-color: var(--brand); background: var(--blue-50); }
+    .drop-icon {
+      width: 44px; height: 44px;
+      margin: 0 auto 10px;
+      border-radius: 12px;
+      background: var(--blue-50);
+      color: var(--brand);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .drop-text { color: var(--warmGray-800); font-size: 14px; font-weight: 500; }
+    .drop-sub  { color: var(--warmGray-600); font-size: 12px; margin-top: 4px; }
+    #file-input { display: none; }
+
+    /* Preview + actions */
+    .preview-row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 18px;
+      align-items: start;
+      margin-top: 16px;
+    }
+    .preview {
+      width: 220px; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+      background: var(--warmGray-50);
+      border: 1px solid var(--warmGray-100);
+    }
+    .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .actions { display: flex; flex-direction: column; gap: 10px; }
+    .filename {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--warmGray-600);
+      word-break: break-all;
+    }
+    button {
+      appearance: none; border: 0; cursor: pointer;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 12px 20px;
+      transition: filter 120ms ease, opacity 120ms ease;
+    }
+    .btn-primary {
+      background: var(--brand); color: white;
+    }
+    .btn-primary:hover { filter: brightness(1.05); }
+    .btn-primary[disabled] { opacity: 0.45; cursor: not-allowed; filter: none; }
+    .btn-secondary {
+      background: white;
+      color: var(--brand);
+      border: 1px solid var(--warmGray-100);
+    }
+
+    /* ---- Clinical reading (PRIMARY card, powered by Claude) ---- */
+    .clinical-reading {
+      margin-bottom: 18px;
+      border: 1px solid var(--brand);
+      background: linear-gradient(180deg, #F0F6FC 0%, #FFFFFF 60%);
+      border-radius: 16px;
+      padding: 22px 24px;
+    }
+    .cr-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 12px;
+    }
+    .cr-eyebrow {
+      font-size: 11px; font-weight: 600; color: var(--brand);
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .cr-title {
+      font-size: 20px; font-weight: 600; color: var(--warmGray-800);
+      margin: 2px 0 0;
+    }
+    .cr-subtitle {
+      font-size: 11px;
+      color: var(--warmGray-600);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      margin-top: 2px;
+    }
+    .cr-summary {
+      font-size: 14.5px; line-height: 1.6; color: var(--warmGray-800);
+      margin: 12px 0 14px;
+      border-left: 3px solid var(--brand);
+      padding-left: 12px;
+    }
+    .cr-columns {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+      margin-top: 12px;
+    }
+    @media (max-width: 760px) { .cr-columns { grid-template-columns: 1fr; } }
+    .clinical-reading h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand);
+      margin: 14px 0 6px;
+    }
+    .clinical-reading ul, .clinical-reading ol {
+      margin: 0; padding-left: 20px;
+      font-size: 14px; color: var(--warmGray-800);
+    }
+    .clinical-reading li { margin-bottom: 5px; line-height: 1.5; }
+    .cr-footer {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--warmGray-100);
+      font-size: 11px;
+      color: var(--warmGray-600);
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    }
+    .cr-pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+    .cr-pill.agree    { background: var(--teal-50);  color: var(--teal); }
+    .cr-pill.disagree { background: var(--amber-50); color: #6B4900; }
+    .cr-pill.conf-high { background: #DDF0E6; color: var(--teal); }
+    .cr-pill.conf-medium { background: var(--amber-50); color: #6B4900; }
+    .cr-pill.conf-low  { background: rgba(192,0,0,0.08); color: var(--risk-high); }
+
+    /* Quantitative reading (the calibrated classifier, demoted) */
+    .quantitative-block {
+      margin-bottom: 18px;
+    }
+    .qb-title {
+      display: flex; align-items: center; gap: 6px;
+      margin: 0 0 12px;
+    }
+    .qb-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 760px) { .qb-grid { grid-template-columns: 1fr; } }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 13px;
+      color: white;
+    }
+    .badge.high { background: var(--risk-high); }
+    .badge.low  { background: var(--teal); }
+    .badge.warning { background: var(--amber); }
+    .badge .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: white;
+    }
+
+    .conf-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 14px; margin-bottom: 6px;
+    }
+    .conf-label { font-size: 12px; color: var(--warmGray-600); display: inline-flex; align-items: center; gap: 4px; }
+    .conf-value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; color: var(--warmGray-800); }
+    .conf-bar { height: 8px; background: var(--warmGray-50); border-radius: 999px; overflow: hidden; }
+    .conf-bar > span {
+      display: block; height: 100%;
+      background: linear-gradient(90deg, var(--brand), var(--brand-800));
+      transition: width 320ms ease;
+    }
+
+    /* Decision-rule kv grid */
+    .kv-grid {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 2fr;
+      row-gap: 6px;
+      column-gap: 14px;
+      font-size: 13px;
+    }
+    .kv-grid > .k {
+      color: var(--warmGray-600);
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .kv-grid > .v {
+      color: var(--warmGray-800);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12.5px;
+    }
+    .kv-grid > .v.span {
+      grid-column: 1 / -1;
+      font-family: inherit;
+      font-size: 12.5px;
+      color: var(--warmGray-600);
+      border-left: 3px solid var(--warmGray-100);
+      padding-left: 10px;
+      margin-top: 2px;
+    }
+    .kv-note {
+      font-size: 12px;
+      color: var(--warmGray-600);
+    }
+
+    /* Capture-quality table */
+    .quality-table {
+      width: 100%;
+      font-size: 13px;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    .quality-table th, .quality-table td {
+      text-align: left;
+      padding: 6px 4px;
+      border-bottom: 1px solid var(--warmGray-100);
+    }
+    .quality-table th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--warmGray-600);
+      font-weight: 600;
+    }
+    .quality-table td.value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      text-align: right;
+      width: 84px;
+    }
+    .band-pill {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .band-pill.ok    { background: var(--teal-50);  color: var(--teal); }
+    .band-pill.warn  { background: var(--amber-50); color: #6B4900; }
+    .band-pill.fail  { background: rgba(192,0,0,0.08); color: var(--risk-high); }
+
+    /* Heatmap side-by-side */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .heatmap-grid figure { margin: 0; }
+    .heatmap-grid img { width: 100%; border-radius: 10px; display: block; border: 1px solid var(--warmGray-100); }
+    .heatmap-grid figcaption {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--warmGray-600);
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    /* Similar-case thumbnails */
+    .similar-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    @media (max-width: 580px) { .similar-list { grid-template-columns: repeat(3, 1fr); } }
+    .similar-card {
+      border: 1px solid var(--warmGray-100);
+      border-radius: 10px;
+      overflow: hidden;
+      background: white;
+    }
+    .similar-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+    .similar-card .meta {
+      padding: 6px 8px;
+      font-size: 11px;
+      color: var(--warmGray-800);
+    }
+    .similar-card .meta .lbl {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .similar-card .meta .lbl.ulcer    { background: rgba(192, 0, 0, 0.08); color: var(--risk-high); }
+    .similar-card .meta .lbl.no_ulcer { background: var(--teal-50); color: var(--teal); }
+    .similar-card .meta .dist {
+      color: var(--warmGray-600);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px;
+      display: block;
+      margin-top: 3px;
+    }
+    .similar-card .agree-tag {
+      display: inline-block;
+      margin-left: 4px;
+      font-size: 9.5px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .similar-card .agree-tag.agrees   { background: var(--teal-50);  color: var(--teal); }
+    .similar-card .agree-tag.disagrees { background: var(--amber-50); color: #6B4900; }
+
+    /* Alerts (quality-gate failures / urgent flags / errors) */
+    .alert {
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .alert.warning {
+      background: var(--amber-50);
+      border: 1px solid var(--amber-100);
+      color: #6B4900;
+    }
+    .alert.error {
+      background: rgba(192, 0, 0, 0.06);
+      border: 1px solid rgba(192, 0, 0, 0.25);
+      color: var(--risk-high);
+    }
+    .alert .alert-icon { font-size: 18px; line-height: 1; }
+    .alert-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .alert-list { margin: 4px 0 0; padding-left: 18px; font-size: 12px; }
+
+    /* Disclaimer (mandatory) */
+    .disclaimer {
+      background: var(--blue-50);
+      border: 1px solid var(--blue-100);
+      color: var(--brand-800);
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-top: 16px;
+    }
+    .disclaimer strong { color: var(--brand-800); }
+
+    /* Spinner */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 3px solid var(--blue-100);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+
+    .footer-meta {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--warmGray-400);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    /* ---- Glossary "?" tooltip pattern ---- */
+    .term {
+      position: relative;
+      display: inline;
+    }
+    .qmark {
+      display: inline-block;
+      width: 14px; height: 14px;
+      line-height: 14px;
+      text-align: center;
+      vertical-align: super;
+      margin-left: 2px;
+      background: var(--blue-100);
+      color: var(--brand-800);
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 50%;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      cursor: help;
+      position: relative;
+      user-select: none;
+      transition: background 120ms ease;
+    }
+    .qmark:hover { background: var(--brand); color: white; }
+    .qmark::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--warmGray-800);
+      color: white;
+      font-size: 12px;
+      font-weight: 400;
+      padding: 8px 10px;
+      border-radius: 8px;
+      width: max-content;
+      max-width: 260px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+      z-index: 1000;
+      white-space: normal;
+      text-align: left;
+      line-height: 1.4;
+      letter-spacing: normal;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 120ms ease;
+    }
+    .qmark::before {
+      content: "";
+      position: absolute;
+      bottom: calc(100% + 2px);
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--warmGray-800);
+      z-index: 1001;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 120ms ease;
+    }
+    .qmark:hover::after,
+    .qmark:hover::before,
+    .qmark.active::after,
+    .qmark.active::before {
+      opacity: 1;
+      visibility: visible;
+    }
+    /* Place tooltip below if it would be cut off at top */
+    .qmark.flip::after { bottom: auto; top: calc(100% + 8px); }
+    .qmark.flip::before {
+      bottom: auto;
+      top: calc(100% + 2px);
+      border-top-color: transparent;
+      border-bottom-color: var(--warmGray-800);
+    }
+
+    /* Technical details (collapsed by default) */
+    .tech-details {
+      margin-top: 20px;
+      border: 1px solid var(--warmGray-100);
+      border-radius: 12px;
+      background: var(--warmGray-50);
+      padding: 12px 16px;
+    }
+    .tech-details > summary {
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--warmGray-600);
+      list-style: none;
+    }
+    .tech-details > summary::before {
+      content: "▶";
+      display: inline-block;
+      margin-right: 6px;
+      font-size: 10px;
+      transition: transform 160ms ease;
+    }
+    .tech-details[open] > summary::before { transform: rotate(90deg); }
+    .tech-details h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--warmGray-600);
+      margin: 14px 0 6px;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 760px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } }
+    .metric-card {
+      border: 1px solid var(--warmGray-100);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: white;
+    }
+    .metric-card .k {
+      font-size: 10.5px;
+      letter-spacing: 0.06em;
+      color: var(--warmGray-600);
+      text-transform: uppercase;
+      font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .metric-card .v {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 18px;
+      color: var(--brand);
+      margin-top: 2px;
+    }
+    .limit-list {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 13px;
+      color: var(--warmGray-800);
+    }
+    .limit-list li { margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">SQ</div>
+    <div class="title-block">
+      <div class="title">SoleIQ Foot AI</div>
+      <div class="subtitle">Diabetic-foot screening — upload an image and run analysis</div>
+    </div>
+    <span class="version-pill" id="version-pill">loading…</span>
+  </header>
+
+  <main>
+    <!-- Step 1: upload -->
+    <section class="panel" id="upload-panel">
+      <div class="eyebrow">Step 1</div>
+      <h2>Select a foot photograph</h2>
+      <p>Drag and drop a JPEG or PNG, or click to choose a file. The image stays on this device until you click <em>Run analysis</em>.</p>
+
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Drop image or click to browse">
+        <div class="drop-icon">↑</div>
+        <div class="drop-text">Drop image here or click to browse</div>
+        <div class="drop-sub">JPEG · PNG · up to 10 MB</div>
+      </div>
+      <!-- Hidden input lives OUTSIDE the drop zone so it can't leak a layout
+           box into it on browsers that misrender display:none inside a label. -->
+      <input type="file" id="file-input" accept="image/jpeg,image/png" hidden style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;" />
+
+      <div class="preview-row hidden" id="preview-row">
+        <div class="preview"><img id="preview-img" alt="selected image preview"/></div>
+        <div class="actions">
+          <div class="filename" id="filename"></div>
+          <button class="btn-primary" id="run-btn">Run analysis</button>
+          <button class="btn-secondary" id="clear-btn">Choose a different image</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Loading -->
+    <section class="panel hidden" id="loading-panel">
+      <div><span class="spinner"></span>Running analysis — this usually takes 5–15 seconds…</div>
+    </section>
+
+    <!-- Step 2: clinical reading -->
+    <section class="panel hidden" id="results-panel">
+      <div class="eyebrow">Step 2</div>
+      <h2 id="result-headline">Clinical reading</h2>
+
+      <div id="server-error-block"></div>
+      <div id="quality-fail-block"></div>
+
+      <div id="result-body" class="hidden">
+
+        <!-- PRIMARY: Claude reading -->
+        <section id="clinical-reading-block" class="clinical-reading">
+          <header class="cr-header">
+            <div>
+              <div class="cr-eyebrow">Clinical reading</div>
+              <h3 class="cr-title">By Claude Opus 4.8</h3>
+              <div class="cr-subtitle" id="cr-subtitle">—</div>
+            </div>
+            <div id="cr-badge"></div>
+          </header>
+
+          <p id="cr-summary" class="cr-summary">—</p>
+
+          <div id="cr-urgent" class="alert error hidden">
+            <span class="alert-icon">!</span>
+            <div>
+              <div class="alert-title">Urgent concerns</div>
+              <ul class="alert-list" id="cr-urgent-list"></ul>
+            </div>
+          </div>
+
+          <div class="cr-columns">
+            <div>
+              <h4>What's visible in the photo</h4>
+              <ul id="cr-findings"></ul>
+            </div>
+            <div>
+              <h4>Possible conditions to consider</h4>
+              <ul id="cr-diff"></ul>
+            </div>
+          </div>
+
+          <h4>Recommended next steps</h4>
+          <ol id="cr-workup"></ol>
+
+          <footer class="cr-footer">
+            <span id="cr-confidence"></span>
+            <span id="cr-agreement"></span>
+            <span id="cr-latency"></span>
+          </footer>
+        </section>
+
+        <div id="clinical-reading-error" class="alert warning hidden">
+          <span class="alert-icon">⚠</span>
+          <div>
+            <div class="alert-title">Clinical reading is unavailable</div>
+            <div id="cr-error-text" style="font-size:12px;">—</div>
+            <div style="font-size:11px; margin-top:4px;">
+              The quantitative reading below is still produced by the trained model.
+            </div>
+          </div>
+        </div>
+
+        <!-- SECONDARY: quantitative reading from the calibrated classifier -->
+        <section class="quantitative-block">
+          <h3 class="qb-title">
+            Quantitative reading
+            <span class="qmark" data-tip="A separate dedicated model trained specifically on diabetic-foot-ulcer images. Provides a numeric probability and a heatmap showing where it looked.">?</span>
+          </h3>
+
+          <div class="qb-grid">
+            <div>
+              <div id="risk-badge"></div>
+
+              <div class="conf-row" style="margin-top:14px;">
+                <span class="conf-label">Chance of ulcer <span class="qmark" data-tip="Model's estimated probability the image shows an ulcer. 0% means definitely not an ulcer, 100% means definitely an ulcer.">?</span></span>
+                <span class="conf-value" id="prob-ulcer-value">—</span>
+              </div>
+              <div class="conf-bar"><span id="prob-ulcer-bar" style="width:0%; background: linear-gradient(90deg,#C00000,#6B0000);"></span></div>
+
+              <div class="conf-row" style="margin-top:10px;">
+                <span class="conf-label">Chance of healthy skin <span class="qmark" data-tip="Model's estimated probability the image shows healthy skin (no ulcer).">?</span></span>
+                <span class="conf-value" id="prob-healthy-value">—</span>
+              </div>
+              <div class="conf-bar"><span id="prob-healthy-bar" style="width:0%; background: linear-gradient(90deg,#0F6E56,#04342C);"></span></div>
+
+              <div class="kv-grid" id="decision-rule" style="margin-top:18px;"></div>
+            </div>
+
+            <div>
+              <h4 style="margin:0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--warmGray-600);">
+                Where the model looked
+                <span class="qmark" data-tip="A colored heatmap showing which parts of the photo most influenced the model's decision. Red areas mattered most. Useful to check the model focused on the wound, not the background.">?</span>
+              </h4>
+              <div class="heatmap-grid">
+                <figure>
+                  <img id="original-img" alt="original" />
+                  <figcaption>Original</figcaption>
+                </figure>
+                <figure>
+                  <img id="heatmap-img" alt="heatmap" />
+                  <figcaption>Attention heatmap</figcaption>
+                </figure>
+              </div>
+            </div>
+          </div>
+
+          <h3 style="margin-top:24px;">
+            Photo quality check
+            <span class="qmark" data-tip="Quick checks done before scoring — is the photo sharp enough, well-lit, and does it actually show skin?">?</span>
+          </h3>
+          <table class="quality-table" id="quality-table"></table>
+        </section>
+
+        <!-- Similar cases -->
+        <h3 style="margin-top:24px;">
+          Similar reference cases
+          <span class="qmark" data-tip="Past images in our reference bank that look most similar to yours. Helps put the result in context.">?</span>
+          <span id="sim-meta" class="kv-note"></span>
+        </h3>
+        <p id="similarity-readout" class="kv-note" style="margin: 0 0 10px;">—</p>
+        <div class="similar-list" id="similar-list"></div>
+
+        <!-- Technical detail (collapsed) -->
+        <details class="tech-details">
+          <summary>Technical details (for developers and clinical review)</summary>
+
+          <h4>How the model performed on its own test set</h4>
+          <p class="kv-note" id="test-set-note" style="margin: 0 0 10px;">—</p>
+          <div class="metric-grid" id="test-metric-grid"></div>
+          <p class="kv-note" id="test-set-caveat" style="margin-top:10px;"></p>
+
+          <h4>Model card</h4>
+          <div class="kv-grid" id="model-card"></div>
+
+          <h4>Known limitations</h4>
+          <ul class="limit-list" id="limit-list"></ul>
+        </details>
+
+        <div class="disclaimer" id="disclaimer">—</div>
+      </div>
+    </section>
+
+    <div class="footer-meta" id="footer-meta">v0.1.0 · pull-to-refresh after redeploys</div>
+  </main>
+
+  <script>
+    // ---------- helpers ----------
+    const $ = (id) => document.getElementById(id);
+    const show = (el) => el.classList.remove("hidden");
+    const hide = (el) => el.classList.add("hidden");
+    const fmtPct = (p) => (p * 100).toFixed(1) + "%";
+
+    // ---------- glossary (plain-English explanations of medical/technical terms) ----------
+    // Keys are matched case-insensitively as whole words. Longer terms are
+    // checked first so "diabetic foot ulcer" wins over "ulcer".
+    const GLOSSARY = {
+      // ---- Clinical / wound terms ----
+      "ulcer": "An open sore on the skin that hasn't healed.",
+      "ulcerative": "Of or causing an ulcer (an open sore).",
+      "ulcerative lesion": "An open sore that's not yet healed.",
+      "diabetic foot ulcer": "An open wound on the foot, common in people with diabetes due to nerve damage and reduced blood flow.",
+      "DFU": "Diabetic Foot Ulcer — an open wound on the foot of a person with diabetes.",
+      "neuropathic ulcer": "An ulcer caused by loss of feeling in the foot (nerve damage), so the patient doesn't notice an injury.",
+      "neuropathy": "Nerve damage. In diabetic foot care, often causes numbness in the feet.",
+      "neurological": "Related to the nerves (sensation, reflexes).",
+      "neurological/sensory testing": "Tests that check whether the patient can feel things on the foot (screens for nerve damage).",
+      "ischemia": "Reduced blood supply to a tissue, which slows healing.",
+      "vascular": "Related to blood vessels and blood flow.",
+      "vascular evaluation": "Tests checking blood flow to the foot — pulses, ABI, ultrasound.",
+      "perfusion": "How well blood is reaching a tissue.",
+      "pedal pulse": "The pulse felt in the foot — a quick check that blood is flowing there.",
+      "pedal pulses": "Pulses felt in the foot — a quick check that blood is flowing there.",
+      "claudication": "Calf or leg pain that comes on with walking — caused by poor blood flow.",
+      "rest pain": "Pain in the foot or leg that comes on at rest — sign of severe poor circulation.",
+      "ABI": "Ankle-Brachial Index — compares ankle blood pressure to arm blood pressure. A low number means poor blood flow in the leg.",
+      "Ankle-Brachial Index": "Compares ankle blood pressure to arm blood pressure. A low number means poor blood flow in the leg.",
+      "monofilament": "A thin nylon thread used to test if a patient can feel light pressure on the foot — screens for nerve damage.",
+      "probe-to-bone": "A doctor inserts a sterile probe into the wound — if it touches bone, the infection may have spread that deep.",
+      "probe-to-bone test": "A doctor inserts a sterile probe into the wound — if it touches bone, the infection may have spread that deep.",
+      "wound culture": "Lab test that grows the bacteria from a wound to identify the infection and choose the right antibiotic.",
+      "granulation tissue": "Pink/red, bumpy tissue that the body grows during healing — usually a good sign.",
+      "fibrin": "A pale yellow protein the body uses for clotting; sometimes coats wounds.",
+      "fibrinous": "Containing fibrin — usually a yellowish wound covering.",
+      "maceration": "Pale, soft, water-logged skin from being wet too long. Increases infection risk.",
+      "macerated": "Pale, soft, and water-logged from too much moisture.",
+      "callus": "A patch of thickened, hardened skin from repeated pressure or friction.",
+      "callused": "Having a thickened, hardened patch of skin.",
+      "hyperkeratotic": "Skin that has thickened from repeated pressure — same idea as a callus.",
+      "eschar": "Dead, dark or black tissue covering a wound. Often needs to be removed.",
+      "erythema": "Redness of the skin, often a sign of inflammation or infection.",
+      "exposed dermis": "The deeper layer of skin is visible — the top layer is no longer covering it.",
+      "exposed bone": "Bone is visible inside a wound — sign of a deep, serious wound.",
+      "tendon": "The tough cord that connects muscle to bone.",
+      "abrasion": "A scrape on the skin.",
+      "deroofed blister": "A blister that has popped or had its top layer removed.",
+      "purulent": "Containing pus — usually a sign of infection.",
+      "drainage": "Fluid coming out of a wound (clear, yellow, green, or bloody).",
+      "tract": "A narrow channel under the skin connecting two areas — sometimes a sign of deeper infection.",
+      "lesion": "An area of damaged skin or tissue — could be a wound, bump, or discoloration.",
+      "lesion extent": "How far across and how deep the damaged area goes.",
+      "anatomic landmarks": "Identifiable features on the body that help locate where you are (e.g. toes, heel).",
+
+      // ---- Quantitative / model terms ----
+      "operating threshold": "The probability cutoff above which the model says 'ulcer'. Set high (0.978) so the model only flags ulcers it's very sure of.",
+      "target sensitivity": "How many real ulcers the model is required to catch. We set this at 90% — we'd rather over-refer than miss a true ulcer.",
+      "uncertainty margin": "If the model's probability is within this distance of the threshold, the result is flagged 'uncertain — clinician review.'",
+      "P(ulcer)": "The model's estimated probability the photo shows an ulcer.",
+      "P(no_ulcer)": "The model's estimated probability the photo shows healthy skin.",
+      "blur": "How sharp the photo is. Blurry photos can't be analyzed reliably.",
+      "Laplacian variance": "A number that measures how sharp a photo is. Higher = sharper. Below ~8 means visibly blurry.",
+      "luminance": "How bright a photo is on average. 0 = pitch black, 1 = pure white.",
+      "skin fraction": "What percentage of the photo looks like skin (vs. background, clothing, etc.). Below 4% probably isn't a foot photo.",
+      "YCbCr": "A color model used to detect skin tones reliably across lighting conditions.",
+      "cosine distance": "A number 0–1 measuring how visually different two images are. 0 = identical, 1 = completely different.",
+      "embedding": "A list of numbers that describes the photo's visual content. Used to find similar past photos.",
+      "Grad-CAM": "A colored map showing which parts of the photo most influenced the model's decision — useful for verifying the model focused on the wound, not background.",
+      "calibrated": "The model's probability numbers reflect how often it is actually right (e.g., 90% confidence means right 90% of the time).",
+      "calibration": "How well the model's confidence numbers match how often it's actually right.",
+      "ECE": "Expected Calibration Error — a number from 0 to 1 measuring how trustworthy the model's confidence numbers are. Lower is better; below 0.05 is well-calibrated.",
+      "AUROC": "Area Under the ROC Curve — an overall measure of how well the model separates ulcers from healthy. 1.0 is perfect, 0.5 is no better than a coin flip.",
+      "AUPRC": "Area Under the Precision-Recall Curve — like AUROC but better for unbalanced data. 1.0 is perfect.",
+      "Sensitivity": "Of all the real ulcers, what fraction does the model catch? Higher is better.",
+      "Specificity": "Of all the healthy cases, what fraction does the model correctly mark as healthy? Higher is better.",
+      "Sensitivity (recall)": "Of all the real ulcers, what fraction does the model catch? Higher is better.",
+      "recall": "Of all the real ulcers, what fraction does the model catch? Higher is better.",
+      "PPV": "Positive Predictive Value — when the model says 'ulcer', how often it's right.",
+      "PPV (precision)": "When the model says 'ulcer', how often it's right.",
+      "precision": "When the model says 'ulcer', how often it's right.",
+      "NPV": "Negative Predictive Value — when the model says 'healthy', how often it's right.",
+      "F1": "A combined score blending sensitivity and precision. 1.0 is perfect.",
+      "confusion matrix": "A table counting how many were correctly/incorrectly classified: true positives, true negatives, false positives, false negatives.",
+      "true positive": "Correctly identified as ulcer.",
+      "true negative": "Correctly identified as healthy.",
+      "false positive": "Healthy photo mistakenly flagged as ulcer (false alarm).",
+      "false negative": "Ulcer mistakenly flagged as healthy (missed ulcer — the dangerous error).",
+      "reference bank": "A curated set of labeled images used to find which past cases look most like yours.",
+      "patient-disjoint splits": "Making sure no patient's photos appear in both the training and the test sets — prevents the model from 'memorizing' a patient.",
+    };
+
+    function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      })[c]);
+    }
+
+    // Wrap glossary terms in clickable/hoverable spans. Operates on plain
+    // text, returns HTML.
+    const GLOSSARY_KEYS_SORTED = Object.keys(GLOSSARY).sort((a, b) => b.length - a.length);
+    const GLOSSARY_REGEX = new RegExp("\\b(" + GLOSSARY_KEYS_SORTED.map(escapeRegex).join("|") + ")\\b", "gi");
+
+    function decorateMedicalTerms(text) {
+      if (!text) return "";
+      const safe = escapeHtml(text);
+      return safe.replace(GLOSSARY_REGEX, (match) => {
+        const key = GLOSSARY_KEYS_SORTED.find(k => k.toLowerCase() === match.toLowerCase());
+        if (!key) return match;
+        const tip = escapeHtml(GLOSSARY[key]);
+        return `${match}<span class="qmark" data-tip="${tip}">?</span>`;
+      });
+    }
+
+    // Tap-to-toggle on touch devices. Hover handles desktop via CSS.
+    document.addEventListener("click", (e) => {
+      const q = e.target.closest(".qmark");
+      document.querySelectorAll(".qmark.active").forEach(el => {
+        if (el !== q) el.classList.remove("active");
+      });
+      if (q) {
+        q.classList.toggle("active");
+        e.stopPropagation();
+      }
+    });
+
+    // ---------- version pill + model info ----------
+    let MODEL_INFO = null;
+    fetch("/version").then(r => r.ok ? r.json() : null).then(v => {
+      if (!v) return;
+      $("version-pill").textContent = v.model_version + " · " + v.reference_bank_version;
+      $("footer-meta").textContent = v.model_version + " · " + v.reference_bank_version;
+    }).catch(() => {});
+    fetch("/model-info").then(r => r.ok ? r.json() : null).then(info => {
+      MODEL_INFO = info;
+    }).catch(() => { MODEL_INFO = null; });
+
+    // ---------- file selection ----------
+    let selectedFile = null;
+    const input = $("file-input");
+    const drop = $("drop");
+    const previewRow = $("preview-row");
+    const previewImg = $("preview-img");
+    const filename = $("filename");
+    const runBtn = $("run-btn");
+    const clearBtn = $("clear-btn");
+
+    function setFile(file) {
+      if (!file) return;
+      if (!/^image\/(jpeg|png)$/.test(file.type)) {
+        alert("Please choose a JPEG or PNG image.");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Image is too large (max 10 MB).");
+        return;
+      }
+      selectedFile = file;
+      const url = URL.createObjectURL(file);
+      previewImg.src = url;
+      filename.textContent = file.name + " · " + (file.size / 1024).toFixed(1) + " KB";
+      show(previewRow);
+      runBtn.disabled = false;
+      hide($("results-panel"));
+    }
+
+    input.addEventListener("change", (e) => setFile(e.target.files && e.target.files[0]));
+    // Drop-zone click opens the file picker — the input is no longer a child
+    // of a <label>, so we trigger it ourselves.
+    drop.addEventListener("click", () => input.click());
+    drop.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        input.click();
+      }
+    });
+    ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, (e) => {
+      e.preventDefault(); drop.classList.add("dragging");
+    }));
+    ["dragleave", "drop"].forEach(t => drop.addEventListener(t, (e) => {
+      e.preventDefault(); drop.classList.remove("dragging");
+    }));
+    drop.addEventListener("drop", (e) => {
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      setFile(f);
+    });
+    clearBtn.addEventListener("click", () => {
+      selectedFile = null;
+      input.value = "";
+      hide(previewRow);
+      hide($("results-panel"));
+      runBtn.disabled = true;
+    });
+    runBtn.disabled = true;
+
+    // ---------- run analysis ----------
+    runBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+      show($("loading-panel"));
+      hide($("results-panel"));
+      try {
+        const form = new FormData();
+        form.append("image", selectedFile, selectedFile.name);
+        const res = await fetch("/predict", { method: "POST", body: form });
+        const data = await res.json();
+        renderResult(data, res.ok);
+      } catch (e) {
+        renderResult({ error: e.message }, false);
+      } finally {
+        hide($("loading-panel"));
+        show($("results-panel"));
+      }
+    });
+
+    // ---------- render ----------
+    function renderResult(data, ok) {
+      const serverErr = $("server-error-block");
+      const qualFail  = $("quality-fail-block");
+      const body      = $("result-body");
+      serverErr.innerHTML = "";
+      qualFail.innerHTML = "";
+      hide(body);
+
+      if (!ok || data.error) {
+        $("result-headline").textContent = "Service error";
+        const msg = (data && (data.detail?.error || data.detail || data.error)) || "Request failed.";
+        serverErr.innerHTML = `
+          <div class="alert error">
+            <span class="alert-icon">!</span>
+            <div>
+              <div class="alert-title">Couldn't reach the inference service</div>
+              <div>${escapeHtml(typeof msg === "string" ? msg : JSON.stringify(msg))}</div>
+            </div>
+          </div>`;
+        return;
+      }
+
+      // Quality-gate failure
+      if (data.quality_ok === false) {
+        $("result-headline").textContent = "Image rejected by quality check";
+        const reasons = (data.quality?.reasons || []).map(r => `<li>${decorateMedicalTerms(r)}</li>`).join("");
+        qualFail.innerHTML = `
+          <div class="alert warning">
+            <span class="alert-icon">⚠</span>
+            <div>
+              <div class="alert-title">The image isn't usable for a confident assessment.</div>
+              <p style="margin:0 0 6px; color: inherit; font-size: 12px;">
+                Retake the photo with better focus, lighting, and the foot clearly in frame.
+              </p>
+              <ul class="alert-list">${reasons}</ul>
+              <table class="quality-table" style="max-width:280px; margin-top:8px;">
+                <tr><td>Blur <span class="qmark" data-tip="${escapeHtml(GLOSSARY['Laplacian variance'])}">?</span></td><td>${data.quality.blur_var.toFixed(1)}</td></tr>
+                <tr><td>Brightness <span class="qmark" data-tip="${escapeHtml(GLOSSARY['luminance'])}">?</span></td><td>${data.quality.luma_mean.toFixed(2)}</td></tr>
+                <tr><td>Skin fraction <span class="qmark" data-tip="${escapeHtml(GLOSSARY['skin fraction'])}">?</span></td><td>${data.quality.skin_fraction.toFixed(2)}</td></tr>
+              </table>
+            </div>
+          </div>
+          <div class="disclaimer">${escapeHtml(data.disclaimer || "")}</div>`;
+        return;
+      }
+
+      // Happy path
+      $("result-headline").textContent = "Clinical reading";
+      show(body);
+
+      // ----- Render Claude's clinical reading (PRIMARY) -----
+      renderClinicalReading(data.second_opinion, data.prediction);
+
+      // ----- Render quantitative classifier readout -----
+      renderQuantitative(data);
+
+      // ----- Render technical details -----
+      renderTechDetails();
+
+      // ----- Disclaimer -----
+      $("disclaimer").innerHTML =
+        "<strong>Decision support, not a diagnosis.</strong> " + escapeHtml(data.disclaimer || "");
+    }
+
+    // ---- Clinical reading (Claude) ----
+    function renderClinicalReading(so, pred) {
+      const block = $("clinical-reading-block");
+      const errBlock = $("clinical-reading-error");
+      block.classList.add("hidden");
+      errBlock.classList.add("hidden");
+
+      if (!so || so.available === false) {
+        const msg = so?.error || "Clinical reading was not enabled for this request.";
+        $("cr-error-text").textContent = msg;
+        errBlock.classList.remove("hidden");
+        return;
+      }
+
+      block.classList.remove("hidden");
+
+      // Subtitle = model + cache + latency
+      const meta = [];
+      if (so.model) meta.push(so.model);
+      meta.push("structured reading");
+      $("cr-subtitle").textContent = meta.join(" · ");
+
+      // ----- Risk badge from CLAUDE's assessment (NOT the classifier) -----
+      // The Clinical Reading card represents Claude's reading. Reading the
+      // classifier's label here would mislead the clinician whenever Claude
+      // and the classifier disagree (the calibrated model has ~10% miss rate
+      // by design — see the test-set sensitivity of 0.903).
+      const BADGE_MAP = {
+        "ulcer_likely":   { cls: "high",    text: "Likely ulcer" },
+        "ulcer_possible": { cls: "warning", text: "Possible ulcer — clinician review" },
+        "no_ulcer":       { cls: "low",     text: "No ulcer detected" },
+        "uncertain":      { cls: "warning", text: "Uncertain — recapture or in-person review" },
+        "non_diagnostic": { cls: "warning", text: "Image not diagnostic" },
+      };
+      let badge = BADGE_MAP[so.assessment];
+      // Fallback if Claude returned no assessment (older response shape):
+      // infer from urgent_flags + classifier agreement.
+      if (!badge) {
+        if ((so.urgent_flags || []).length > 0) {
+          badge = { cls: "high", text: "Likely ulcer (urgent flags raised)" };
+        } else if (so.agrees_with_classifier === true && pred) {
+          badge = pred.label === "ulcer"
+            ? { cls: "high", text: "Likely ulcer" }
+            : { cls: "low", text: "No ulcer detected" };
+        } else {
+          badge = { cls: "warning", text: "Uncertain — clinician review" };
+        }
+      }
+      $("cr-badge").innerHTML =
+        `<span class="badge ${badge.cls}"><span class="dot"></span>${escapeHtml(badge.text)}</span>`;
+
+      // Decorate Claude's prose with glossary tooltips
+      $("cr-summary").innerHTML = decorateMedicalTerms(so.summary || "(no summary returned)");
+
+      const fillList = (id, items, decorate=true) => {
+        const el = $(id);
+        if (!items || items.length === 0) {
+          el.innerHTML = `<li style="color: var(--warmGray-600); font-style: italic;">none reported</li>`;
+          return;
+        }
+        el.innerHTML = items.map(s => `<li>${decorate ? decorateMedicalTerms(s) : escapeHtml(s)}</li>`).join("");
+      };
+      fillList("cr-findings", so.visible_findings);
+      fillList("cr-diff", so.suspected_differential);
+      fillList("cr-workup", so.recommended_workup);
+
+      // Urgent
+      const urgent = $("cr-urgent");
+      if ((so.urgent_flags || []).length > 0) {
+        urgent.classList.remove("hidden");
+        $("cr-urgent-list").innerHTML = so.urgent_flags
+          .map(s => `<li>${decorateMedicalTerms(s)}</li>`).join("");
+      } else {
+        urgent.classList.add("hidden");
+      }
+
+      // Footer chips
+      const confClass = ({low: "conf-low", medium: "conf-medium", high: "conf-high"})[so.confidence] || "conf-medium";
+      $("cr-confidence").innerHTML = so.confidence
+        ? `<span class="cr-pill ${confClass}">Confidence: ${escapeHtml(so.confidence)}</span>`
+        : "";
+      $("cr-agreement").innerHTML = (so.agrees_with_classifier === true || so.agrees_with_classifier === false)
+        ? `<span class="cr-pill ${so.agrees_with_classifier ? 'agree' : 'disagree'}">${so.agrees_with_classifier ? 'Agrees with quantitative model' : 'Disagrees with quantitative model'}</span>`
+        : "";
+      $("cr-latency").textContent = so.latency_ms != null ? `Computed in ${(so.latency_ms/1000).toFixed(1)} s` : "";
+    }
+
+    // ---- Quantitative reading (calibrated classifier) ----
+    function renderQuantitative(data) {
+      const pred = data.prediction;
+      const info = MODEL_INFO || {};
+      const decisionRule = info.decision_rule || {};
+      const bands = info.interpretation_bands || {};
+      const threshold = decisionRule.operating_threshold;
+      const margin = decisionRule.uncertainty_margin;
+
+      const isUlcer = pred.label === "ulcer";
+      const badgeCls = pred.uncertain ? "warning" : (isUlcer ? "high" : "low");
+      const badgeLabel = pred.uncertain
+        ? "Borderline — clinician review"
+        : (isUlcer ? "Flagged as ulcer" : "Flagged as healthy");
+      $("risk-badge").innerHTML =
+        `<span class="badge ${badgeCls}"><span class="dot"></span>${escapeHtml(badgeLabel)}</span>`;
+
+      const pUlcer = pred.probability;
+      const pHealthy = 1 - pUlcer;
+      $("prob-ulcer-value").textContent = fmtPct(pUlcer);
+      $("prob-ulcer-bar").style.width = (pUlcer * 100).toFixed(1) + "%";
+      $("prob-healthy-value").textContent = fmtPct(pHealthy);
+      $("prob-healthy-bar").style.width = (pHealthy * 100).toFixed(1) + "%";
+
+      const thresholdComparison = threshold != null
+        ? `Chance of ulcer (${(pUlcer*100).toFixed(1)}%) was ${pUlcer >= threshold ? "above" : "below"} the cutoff (${(threshold*100).toFixed(1)}%), so the model flagged this as <strong>${escapeHtml(pred.label === 'ulcer' ? 'ulcer' : 'healthy')}</strong>.`
+        : `Model flagged this as <strong>${escapeHtml(pred.label)}</strong>.`;
+      const uncertaintyComparison = (threshold != null && margin != null && pred.uncertain)
+        ? `The probability sat within ±${(margin*100).toFixed(0)}% of the cutoff, so the result is marked <strong>uncertain</strong> — a clinician should make the final call.`
+        : "";
+
+      $("decision-rule").innerHTML = `
+        <div class="k">Cutoff used <span class="qmark" data-tip="${escapeHtml(GLOSSARY['operating threshold'])}">?</span></div>
+        <div class="v">${threshold != null ? (threshold*100).toFixed(1) + "%" : "—"}</div>
+        <div class="k">Required catch-rate <span class="qmark" data-tip="${escapeHtml(GLOSSARY['target sensitivity'])}">?</span></div>
+        <div class="v">${decisionRule.target_recall != null ? "at least " + (decisionRule.target_recall*100).toFixed(0) + "%" : "—"}</div>
+        <div class="k">Borderline window <span class="qmark" data-tip="${escapeHtml(GLOSSARY['uncertainty margin'])}">?</span></div>
+        <div class="v">±${margin != null ? (margin*100).toFixed(0) + "%" : "—"}</div>
+        <div class="v span">${thresholdComparison}${uncertaintyComparison ? "<br/>" + uncertaintyComparison : ""}</div>`;
+
+      // Photo quality
+      const q = data.quality;
+      const blurBand = (q.blur_var >= 200)  ? ["ok", "sharp"]
+                    : (q.blur_var >= 25)   ? ["warn", "acceptable"]
+                    : (q.blur_var >= 8)    ? ["warn", "soft / borderline"]
+                    : ["fail", "too blurry"];
+      const lumaBand = (q.luma_mean < 0.10) ? ["fail", "too dark"]
+                    : (q.luma_mean > 0.95) ? ["fail", "overexposed"]
+                    : ["ok", "well-lit"];
+      const skinBand = (q.skin_fraction < 0.04)
+                    ? ["fail", "no foot/skin region"]
+                    : ["ok", "in range"];
+
+      $("quality-table").innerHTML = `
+        <tr>
+          <th>Check</th><th>Value</th><th>Reading</th>
+        </tr>
+        <tr>
+          <td>Overall photo quality</td>
+          <td class="value">${q.ok ? "PASS" : "FAIL"}</td>
+          <td><span class="band-pill ${q.ok ? "ok" : "fail"}">${q.ok ? "usable" : "not usable"}</span></td>
+        </tr>
+        <tr>
+          <td>Sharpness <span class="qmark" data-tip="${escapeHtml(GLOSSARY['Laplacian variance'])}">?</span></td>
+          <td class="value">${q.blur_var.toFixed(1)}</td>
+          <td><span class="band-pill ${blurBand[0]}">${blurBand[1]}</span></td>
+        </tr>
+        <tr>
+          <td>Brightness <span class="qmark" data-tip="${escapeHtml(GLOSSARY['luminance'])}">?</span></td>
+          <td class="value">${q.luma_mean.toFixed(2)}</td>
+          <td><span class="band-pill ${lumaBand[0]}">${lumaBand[1]}</span></td>
+        </tr>
+        <tr>
+          <td>How much of the photo looks like skin <span class="qmark" data-tip="${escapeHtml(GLOSSARY['skin fraction'])}">?</span></td>
+          <td class="value">${q.skin_fraction.toFixed(2)}</td>
+          <td><span class="band-pill ${skinBand[0]}">${skinBand[1]}</span></td>
+        </tr>`;
+
+      // Original + heatmap
+      $("original-img").src = previewImg.src;
+      $("heatmap-img").src = data.heatmap_url || "";
+
+      // Similarity readout
+      const sim = data.similarity || {};
+      const cases = data.similar_cases || [];
+      $("sim-meta").innerHTML = info.similarity
+        ? ` · ${info.similarity.n_indexed} reference images, top ${info.similarity.k} returned`
+        : "";
+      if (sim.most_consistent_with) {
+        const support = Object.entries(sim.support || {})
+          .map(([k, v]) => `<strong>${decorateMedicalTerms(k.replace("_", " "))}</strong> ${v}/${cases.length}`)
+          .join(" · ");
+        $("similarity-readout").innerHTML =
+          `Most similar past cases were ${support}. The match is closest to <strong>${decorateMedicalTerms(sim.most_consistent_with.replace("_", " "))}</strong>.`;
+      } else {
+        $("similarity-readout").innerHTML = "No close matches in the reference bank.";
+      }
+
+      const list = $("similar-list");
+      list.innerHTML = "";
+      cases.slice(0, 5).forEach(c => {
+        const agree = c.label === pred.label;
+        const card = document.createElement("div");
+        card.className = "similar-card";
+        card.innerHTML = `
+          <img src="/reference/${encodeURIComponent(c.id)}" alt="${escapeHtml(c.id)}" onerror="this.style.opacity=0.35;" />
+          <div class="meta">
+            <span class="lbl ${c.label === 'ulcer' ? 'ulcer' : 'no_ulcer'}">${escapeHtml(c.label.replace("_"," "))}</span>
+            <span class="agree-tag ${agree ? "agrees" : "disagrees"}">${agree ? "agrees" : "disagrees"}</span>
+            <span class="dist">similarity ${(1 - c.distance).toFixed(2)}</span>
+          </div>`;
+        list.appendChild(card);
+      });
+    }
+
+    // ---- Technical details (collapsed) ----
+    function renderTechDetails() {
+      const info = MODEL_INFO || {};
+
+      // Test-set performance
+      const ts = info.test_set_performance;
+      if (ts && ts.metrics) {
+        const m = ts.metrics;
+        $("test-set-note").innerHTML =
+          `On a held-out test set of <strong>${ts.test_size}</strong> labeled images ` +
+          `(${Object.entries(ts.class_distribution || {})
+            .map(([k, v]) => `${v} ${k.replace("_", " ")}`).join(", ")}):`;
+        const cells = [
+          ["Sensitivity (recall)", pct(m.sensitivity_recall), "Sensitivity"],
+          ["Specificity", pct(m.specificity), "Specificity"],
+          ["PPV (precision)", pct(m.ppv_precision), "PPV"],
+          ["NPV", pct(m.npv), "NPV"],
+          ["F1", m.f1?.toFixed(3) ?? "—", "F1"],
+          ["Accuracy", pct(m.accuracy), null],
+          ["AUROC", m.auroc?.toFixed(3) ?? "—", "AUROC"],
+          ["AUPRC", m.auprc?.toFixed(3) ?? "—", "AUPRC"],
+          ["ECE (calibration)", m.ece?.toFixed(3) ?? "—", "ECE"],
+          ["Confusion matrix", ts.confusion ? `TN ${ts.confusion[0][0]} · FP ${ts.confusion[0][1]} · FN ${ts.confusion[1][0]} · TP ${ts.confusion[1][1]}` : "—", "confusion matrix"],
+        ];
+        $("test-metric-grid").innerHTML = cells
+          .map(([k, v, tipKey]) => {
+            const tip = tipKey && GLOSSARY[tipKey] ? `<span class="qmark" data-tip="${escapeHtml(GLOSSARY[tipKey])}">?</span>` : "";
+            return `<div class="metric-card"><div class="k">${escapeHtml(k)} ${tip}</div><div class="v">${v}</div></div>`;
+          })
+          .join("");
+        $("test-set-caveat").innerHTML = (ts.notes || []).map(n => escapeHtml(n)).join("<br/>");
+      } else {
+        $("test-set-note").innerHTML = "No test-set metrics available.";
+        $("test-metric-grid").innerHTML = "";
+        $("test-set-caveat").innerHTML = "";
+      }
+
+      // Model card — translated into plain-English labels with engineering value
+      // shown alongside.
+      const m = info.model || {};
+      const ver = info.version || {};
+      const tr = info.training || {};
+      const sumNote = tr.summary
+        ? `Trained with ${tr.n_folds}-fold cross-validation. Across folds, the model caught ${(tr.summary.mean_val_recall*100).toFixed(1)}% ± ${(tr.summary.std_val_recall*100).toFixed(1)}% of ulcers on validation data.`
+        : "—";
+
+      $("model-card").innerHTML = `
+        <div class="k">Model version</div>
+          <div class="v">${escapeHtml(ver.model_version || "—")}</div>
+        <div class="k">Reference bank version <span class="qmark" data-tip="${escapeHtml(GLOSSARY['reference bank'])}">?</span></div>
+          <div class="v">${escapeHtml(ver.reference_bank_version || "—")} (${info.similarity ? info.similarity.n_indexed + " images" : "—"})</div>
+        <div class="k">Underlying neural network</div>
+          <div class="v">${escapeHtml(m.backbone || "—")} ${m.pretrained ? "(starts from a general-purpose vision model)" : "(trained from scratch)"}</div>
+        <div class="k">Labels it can predict</div>
+          <div class="v">${(m.classes || []).map(c => escapeHtml(c.replace("_", " "))).join(", ")}</div>
+        <div class="k">Photo size used</div>
+          <div class="v">${m.image_size}×${m.image_size} pixels</div>
+        <div class="k">How it measures similarity <span class="qmark" data-tip="${escapeHtml(GLOSSARY['cosine distance'])}">?</span></div>
+          <div class="v">Each photo turned into a list of ${m.embedding_dim} numbers; matches found by cosine similarity</div>
+        <div class="k">Training objective</div>
+          <div class="v">Classify correctly AND make similar photos cluster together</div>
+        <div class="v span">${escapeHtml(sumNote)}</div>`;
+
+      const limits = info.limitations || [];
+      $("limit-list").innerHTML = limits.map(l => `<li>${decorateMedicalTerms(l)}</li>`).join("");
+    }
+
+    function pct(v) {
+      if (v == null || isNaN(v)) return "—";
+      return (v * 100).toFixed(1) + "%";
+    }
+  </script>
+</body>
+</html>

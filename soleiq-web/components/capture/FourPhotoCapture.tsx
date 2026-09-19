@@ -124,7 +124,10 @@ export function FourPhotoCapture() {
       addImage({
         side: shot.side,
         view: shot.view,
+        // The photograph, for display and the record.
         dataUrl: prepared.dataUrl,
+        // The lighting-corrected copy, for the model only.
+        analysisDataUrl: prepared.analysisDataUrl,
         capturedAt: Date.now(),
         quality: prepared.quality,
       });

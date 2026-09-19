@@ -26,13 +26,16 @@ import {
 } from "@/lib/scan3d/sweep";
 import { laplacianVariance } from "@/lib/scan3d/frameScore";
 import {
-  ScanClientError,
   awaitScan,
-  debugUrl,
+  pingScanService,
+  requestScanAuth,
+  scanServiceStatus,
+  type ScanAuth,
   deleteBank,
   uploadScanVideo,
   type BankStatus,
 } from "@/lib/scan3d/scanClient";
+import { describeScanFailure } from "@/lib/scan3d/failureMessages";
 import type { FootSide } from "@/lib/types";
 
 /**
@@ -49,6 +52,27 @@ import type { FootSide } from "@/lib/types";
  * Usable frames are pooled server-side per foot (the "bank"), so a lap that
  * falls short adds to what is already saved instead of being discarded.
  */
+
+/**
+ * Container preferences, best first.
+ *
+ * The MP4 entries are not optional extras — they are the only ones Safari on
+ * iOS supports. The list was WebM-only, so on an iPhone every candidate
+ * returned false, `mime` came back undefined, and the recorder was built bare.
+ * Since patients check their own feet, iPhone is the primary platform and a
+ * WebM-only list means the primary platform records nothing reliably.
+ */
+const RECORDER_TYPES = [
+  // MP4 first, and deliberately so. Safari on iOS supports only this, and
+  // patients checking their own feet are overwhelmingly on iPhones — the
+  // platform the WebM-only list used to fail on. Where both are supported
+  // either decodes fine server-side (OpenCV is built with FFMPEG).
+  "video/mp4;codecs=avc1",
+  "video/mp4",
+  "video/webm;codecs=vp9",
+  "video/webm;codecs=vp8",
+  "video/webm",
+];
 
 const REJECT_LABEL: Record<RejectReason, string> = {
   blurry: "blurry",
@@ -130,6 +154,26 @@ export function OrbitSweepCapture({
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  /** What the recorder actually produced, read back from MediaRecorder. */
+  const recordedTypeRef = useRef<string>("");
+  /** Minted per capture; scoped to this foot's bank and short-lived. */
+  const authRef = useRef<ScanAuth | undefined>(undefined);
+  /** Keeps the screen awake for the lap; released in every exit path. */
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  /**
+   * Full-resolution stills, one per banked moment.
+   *
+   * The server otherwise re-extracts frames from a VP9/H.264 stream: lossy,
+   * inter-frame predicted, and typically whatever the encoder felt like. The
+   * sample loop already knows which instants are sharp, well exposed and
+   * newly-angled — grabbing an original at exactly those instants gives
+   * feature matching real pixels instead of motion-compensated ones.
+   */
+  const stillsRef = useRef<Blob[]>([]);
+  const imageCaptureRef = useRef<ImageCapture | null>(null);
+  const stillCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  /** Guards against a slow takePhoto() overlapping the next sample tick. */
+  const stillBusyRef = useRef(false);
   const startedAtRef = useRef(0);
   const bankedRef = useRef<Float32Array[]>([]);
   const samplesRef = useRef<Float32Array[]>([]);
@@ -138,6 +182,12 @@ export function OrbitSweepCapture({
   const trackingRef = useRef<TrackingState>(FRESH_TRACKING);
 
   const [state, setState] = useState<ScanState>("idle");
+  // Mirrored into a ref so the visibility listener can read the current state
+  // without being torn down and re-added on every transition.
+  const stateRef = useRef<ScanState>("idle");
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
   const [countdown, setCountdown] = useState(0);
   const [remainingMs, setRemainingMs] = useState(SWEEP_CONFIG.scanMs);
   const [banked, setBanked] = useState(0);
@@ -156,6 +206,12 @@ export function OrbitSweepCapture({
     typeof navigator !== "undefined" &&
     typeof navigator.mediaDevices?.getUserMedia === "function";
 
+  // Checked BEFORE the camera opens, not after the upload fails. A patient who
+  // has already spent 25 seconds filming their foot should never then be told
+  // the server was never reachable — that is a configuration error and it
+  // belongs on screen before the first frame.
+  const service = scanServiceStatus();
+
   const clearTimers = useCallback(() => {
     if (tickRef.current) clearInterval(tickRef.current);
     if (clockRef.current) clearInterval(clockRef.current);
@@ -163,13 +219,55 @@ export function OrbitSweepCapture({
     clockRef.current = null;
   }, []);
 
+  const releaseWakeLock = useCallback(() => {
+    // release() rejects if the lock is already gone (screen slept, tab hidden);
+    // that is not an error worth surfacing.
+    wakeLockRef.current?.release().catch(() => {});
+    wakeLockRef.current = null;
+  }, []);
+
   const stopStream = useCallback(() => {
     clearTimers();
+    // Stop the RECORDER too, not just the tracks. Stopping tracks alone left
+    // the MediaRecorder live, which kept the camera indicator lit after the
+    // component was gone — a privacy tell that says "still filming" when it
+    // is not.
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") {
+      try {
+        rec.stop();
+      } catch {
+        /* already stopping */
+      }
+    }
+    recorderRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
-  }, [clearTimers]);
+    releaseWakeLock();
+  }, [clearTimers, releaseWakeLock]);
 
   useEffect(() => () => stopStream(), [stopStream]);
+
+  /**
+   * A backgrounded tab has no camera. iOS suspends the stream the moment the
+   * user switches app or the screen locks, and the capture loop would keep
+   * sampling black frames until the timer ran out, leaving the state machine
+   * in `capturing` with a dead stream and no explanation.
+   */
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState !== "hidden") return;
+      if (stateRef.current !== "capturing" && stateRef.current !== "countdown") return;
+      stopStream();
+      setError(
+        "The scan stopped because the app moved to the background. " +
+          "Keep this screen open for the whole lap and try again."
+      );
+      setState("failed");
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => document.removeEventListener("visibilitychange", onHidden);
+  }, [stopStream]);
 
   const finishRecording = useCallback(async (): Promise<Blob | null> => {
     const rec = recorderRef.current;
@@ -179,8 +277,57 @@ export function OrbitSweepCapture({
       rec.onstop = () => resolve();
       rec.stop();
     });
-    const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" });
+    // rec.mimeType over the recorded-type ref: the recorder is authoritative
+    // and may have refined the type after start().
+    const blob = new Blob(chunksRef.current, {
+      type: rec.mimeType || recordedTypeRef.current || "video/webm",
+    });
     return blob.size > 0 ? blob : null;
+  }, []);
+
+  /**
+   * Grab one full-sensor still. Best effort: a scan without stills still
+   * reconstructs from the video, which is why the video is still uploaded.
+   *
+   * ImageCapture.takePhoto() gets the sensor's own full resolution, which is
+   * typically several times the video track's. Where it is unavailable
+   * (Safari has no ImageCapture at all), drawing the video element at its
+   * native videoWidth/videoHeight is still a real improvement over what the
+   * server extracts from the compressed stream.
+   */
+  const captureStill = useCallback(async () => {
+    if (stillBusyRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+    stillBusyRef.current = true;
+    try {
+      const capture = imageCaptureRef.current;
+      if (capture) {
+        stillsRef.current.push(await capture.takePhoto());
+        return;
+      }
+      if (!stillCanvasRef.current) {
+        stillCanvasRef.current = document.createElement("canvas");
+      }
+      const canvas = stillCanvasRef.current;
+      canvas.width = video.videoWidth || 1920;
+      canvas.height = video.videoHeight || 1440;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        // 0.95, not the 0.85 used for the analysis thumbnails: this one feeds
+        // feature matching, where JPEG ringing around an edge becomes a
+        // spurious keypoint.
+        canvas.toBlob(resolve, "image/jpeg", 0.95)
+      );
+      if (blob) stillsRef.current.push(blob);
+    } catch (err) {
+      // A failed still is not a failed scan.
+      console.warn("[soleiq] still capture failed:", err);
+    } finally {
+      stillBusyRef.current = false;
+    }
   }, []);
 
   // ---- one sample -------------------------------------------------------
@@ -243,7 +390,8 @@ export function OrbitSweepCapture({
     }
     bankedRef.current.push(desc);
     setBanked(bankedRef.current.length);
-  }, []);
+    void captureStill();
+  }, [captureStill]);
 
   // ---- upload -----------------------------------------------------------
   const upload = useCallback(async () => {
@@ -267,8 +415,30 @@ export function OrbitSweepCapture({
     }
 
     try {
-      const scanId = await uploadScanVideo({ video, side, bankId });
-      const done = await awaitScan(scanId, (s) => setStage(s.status));
+      // Re-read rather than reusing the preflight token: a Supabase access
+      // token is short-lived and the client refreshes it in the background,
+      // so the one taken before a 25-second capture can already be stale.
+      authRef.current = await requestScanAuth();
+      const scanId = await uploadScanVideo({
+        video,
+        // Uploaded alongside the video, not instead of it: the video remains
+        // the replayable original, which is what lets a failed scan be
+        // re-scored against different thresholds later.
+        stills: stillsRef.current,
+        side,
+        bankId,
+        auth: authRef.current,
+      });
+      console.info(
+        "[soleiq] uploaded",
+        stillsRef.current.length,
+        "full-resolution stills alongside the video"
+      );
+      const done = await awaitScan(
+        scanId,
+        (s) => setStage(s.status),
+        authRef.current
+      );
       setBank(done.bank ?? null);
       if (done.status === "banked") {
         setError(done.failure_reason ?? "More frames are needed.");
@@ -278,13 +448,8 @@ export function OrbitSweepCapture({
       onComplete?.(scanId);
       setState("complete");
     } catch (e) {
-      // eslint-disable-next-line no-console -- surfaced to the debug UI link below
-      console.error("[soleiq] scan failed:", e, debugUrl(""));
-      setError(
-        e instanceof ScanClientError
-          ? e.message
-          : "Could not build the 3D model. Please try again."
-      );
+      console.error("[soleiq] scan failed:", e);
+      setError(describeScanFailure(e));
       setState("failed");
     }
   }, [bankId, clearTimers, finishRecording, onComplete, side, stopStream]);
@@ -321,6 +486,7 @@ export function OrbitSweepCapture({
     setVerdict(null);
     bankedRef.current = [];
     samplesRef.current = [];
+    stillsRef.current = [];
     tallyRef.current = {};
     sampledRef.current = 0;
     trackingRef.current = FRESH_TRACKING;
@@ -329,12 +495,34 @@ export function OrbitSweepCapture({
     setRejected(0);
     setViewpoints(0);
 
+    // PREFLIGHT. Ask the service if it is alive before asking the patient to
+    // hold a phone around their foot for 25 seconds. Discovering the server is
+    // down afterwards is the single worst moment to discover it.
+    setState("processing");
+    authRef.current = await requestScanAuth();
+    const reachable = await pingScanService(authRef.current);
+    if (!reachable) {
+      setError(
+        "Could not reach the scan service, so the scan was not started. " +
+          "Check your connection and try again — nothing was recorded."
+      );
+      setState("failed");
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
+          // Reconstruction quality is bounded by what the sensor hands over.
+          // 1280x960 was leaving detail on the table on every phone made in
+          // the last decade; `ideal` degrades gracefully where it cannot be
+          // met. continuous focus matters more than it sounds: a fixed-focus
+          // frame at 30cm is soft everywhere, and soft frames are exactly what
+          // the sharpness gate throws away.
+          width: { ideal: 1920 },
+          height: { ideal: 1440 },
+          advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet],
         },
         audio: false,
       });
@@ -343,6 +531,19 @@ export function OrbitSweepCapture({
       if (!video) throw new Error("preview element missing");
       video.srcObject = stream;
       await video.play();
+
+      // ImageCapture reaches the sensor's full resolution rather than the
+      // video track's. Absent in Safari, so its absence is a normal path, not
+      // an error — captureStill() falls back to the canvas.
+      try {
+        const [track] = stream.getVideoTracks();
+        imageCaptureRef.current =
+          track && typeof ImageCapture !== "undefined"
+            ? new ImageCapture(track)
+            : null;
+      } catch {
+        imageCaptureRef.current = null;
+      }
 
       if (!smallRef.current) {
         const c = document.createElement("canvas");
@@ -359,17 +560,39 @@ export function OrbitSweepCapture({
 
       try {
         chunksRef.current = [];
-        const mime = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find(
-          (t) => MediaRecorder.isTypeSupported(t)
-        );
+        // `isTypeSupported` is itself absent on some older Safari builds, so
+        // its absence must not throw — a bare constructor lets the browser
+        // pick, which is exactly what we want as a last resort.
+        const supportsCheck =
+          typeof MediaRecorder.isTypeSupported === "function";
+        const mime = supportsCheck
+          ? RECORDER_TYPES.find((t) => MediaRecorder.isTypeSupported(t))
+          : undefined;
         const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+        // Read back rather than assume: when constructed bare the browser
+        // chooses, and `rec.mimeType` is the only place that choice is
+        // reported. The upload filename is derived from it.
+        recordedTypeRef.current = rec.mimeType || mime || "";
         rec.ondataavailable = (e) => {
           if (e.data.size > 0) chunksRef.current.push(e.data);
         };
         rec.start(1000);
         recorderRef.current = rec;
-      } catch {
+        console.info("[soleiq] recording as", recordedTypeRef.current || "(browser default)");
+      } catch (err) {
+        console.warn("[soleiq] MediaRecorder unavailable:", err);
         recorderRef.current = null;
+        recordedTypeRef.current = "";
+      }
+
+      // A 25-second lap on a phone with a 15-second screen timeout dies
+      // halfway through. Best-effort: an unsupported browser just keeps its
+      // normal timeout, which is no worse than before.
+      try {
+        wakeLockRef.current =
+          (await navigator.wakeLock?.request("screen")) ?? null;
+      } catch {
+        wakeLockRef.current = null;
       }
 
       setState("countdown");
@@ -394,7 +617,7 @@ export function OrbitSweepCapture({
   }, [beginCapture]);
 
   const resetScan = useCallback(() => {
-    void deleteBank(bankId).catch(() => {
+    void deleteBank(bankId, authRef.current).catch(() => {
       /* the bank may not exist yet; nothing to clear */
     });
     stopStream();
@@ -415,6 +638,22 @@ export function OrbitSweepCapture({
   }, [bankId, stopStream]);
 
   // ---- render -----------------------------------------------------------
+  if (!service.ok) {
+    return (
+      <div className="rounded-3xl border border-amber-200 bg-warn-soft p-6">
+        <p className="flex items-center gap-2 font-bold text-ink">
+          <AlertTriangle className="h-4 w-4 text-warn" /> 3D scanning unavailable
+        </p>
+        <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
+          {service.reason === "not_configured"
+            ? "This deployment isn't connected to the reconstruction service yet, so a scan can't be processed. Your other results are unaffected."
+            : "The reconstruction service is reachable only over an insecure connection, which this browser blocks. Your other results are unaffected."}
+        </p>
+        <p className="mt-2 text-xs leading-snug text-ink-faint">{service.detail}</p>
+      </div>
+    );
+  }
+
   if (!supported) {
     return (
       <div className="rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">

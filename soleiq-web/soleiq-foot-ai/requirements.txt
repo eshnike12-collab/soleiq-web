@@ -1,0 +1,75 @@
+# Pin versions so the project is reproducible. Tested against Python 3.11.
+# Install:  python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+
+# --- Core ML ---
+torch==2.5.1
+torchvision==0.20.1
+timm==1.0.11
+numpy==1.26.4
+pillow==10.4.0
+scikit-learn==1.5.2
+# scipy arrived transitively via scikit-learn; the perfusion package imports
+# it directly (butter/filtfilt/welch/periodogram, sparse solve for detrending)
+# so it is pinned explicitly. Verified against numpy 1.26.4 / Python 3.11.
+scipy==1.17.1
+
+# --- Augmentation ---
+albumentations==1.4.18
+opencv-python-headless==4.10.0.84
+
+# --- Similarity / indexing ---
+faiss-cpu==1.8.0.post1
+
+# --- Auth ---
+# The scan API is reachable from patients' browsers and serves protected health
+# information, so it verifies the caller's Supabase JWT rather than trusting a
+# client-supplied identity. [crypto] pulls `cryptography`, which PyJWT needs for
+# the RS256/ES256 keys Supabase publishes at its JWKS endpoint — decoding
+# without verifying would accept any forged token.
+pyjwt[crypto]==2.10.1
+
+# --- Serving ---
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+pydantic==2.9.2
+
+# --- 3D reconstruction (src/recon, src/serve) ---
+#
+# These four were installed by hand into .venv and never pinned, so
+# `make setup` on a clean machine — which is exactly what a container build
+# does — produced a venv that could not `import src.recon` at all. Versions
+# below are the ones the working local venv actually has, not guesses:
+#   pycolmap 3.11.1  open3d 0.19.0  trimesh 4.5.3  transformers 4.46.3
+#
+# pycolmap is the structure-from-motion pipeline (sfm.py) and also does the
+# Poisson meshing, after Open3D's own Poisson segfaulted at every octree depth
+# tried. open3d is still used for ICP registration and point-cloud handling.
+# trimesh writes the glTF the viewer loads. transformers runs the Depth
+# Anything V2 monocular-depth model in depth.py.
+pycolmap==3.11.1
+open3d==0.19.0
+trimesh==4.5.3
+transformers==4.46.3
+
+# --- Export ---
+onnx==1.17.0
+onnxruntime==1.19.2
+
+# --- Eval / reporting ---
+matplotlib==3.9.2
+jinja2==3.1.4
+
+# --- Configs / utilities ---
+pyyaml==6.0.2
+pandas==2.2.3
+tqdm==4.66.6
+typer==0.12.5
+
+# --- Foundation-model second opinion (Claude vision) ---
+anthropic==0.45.0
+python-dotenv==1.0.1
+
+# --- Testing ---
+pytest==8.3.3
+httpx==0.27.2

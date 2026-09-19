@@ -1,0 +1,32 @@
+# Local container testing. Mirrors the deployed shape closely enough to catch
+# the two things that only break in a container: the missing system libraries,
+# and an ephemeral filesystem silently discarding the frame bank.
+services:
+  foot-ai:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Verification material for the scan API. Without one of these the
+      # service refuses every non-loopback request — which is the point.
+      SOLEIQ_SUPABASE_URL: ${SOLEIQ_SUPABASE_URL:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      # /debug renders raw patient frames. Off unless deliberately enabled,
+      # and never in a deployed config.
+      SOLEIQ_DEBUG_UI: ${SOLEIQ_DEBUG_UI:-0}
+      SOLEIQ_DATA_DIR: /data
+      SOLEIQ_DB_PATH: /data/soleiq.db
+    volumes:
+      # scan videos, extracted frames, and the SQLite bank index. Without this
+      # the bank-pooling design is defeated: every deploy would start the
+      # patient back at zero saved frames.
+      - foot-ai-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
+
+volumes:
+  foot-ai-data:

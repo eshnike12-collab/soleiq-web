@@ -30,13 +30,16 @@ export function WebsiteLink({ className }: { className?: string }) {
          shadow. The app's own buttons are untouched — only this one has a
          twin on another domain to match. */
       className={cn(
-        "inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-brand-ink px-[0.9375rem]",
+        /* h-11 for the 44px minimum (measured 105x40 before), and the label
+           is hidden below sm so the bar fits at 375px. The accessible name
+           moves to aria-label in that state rather than disappearing. */
+        "inline-flex h-11 min-w-[2.75rem] shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-ink px-3 sm:px-[0.9375rem]",
         "text-sm font-medium leading-none text-white",
         "transition-colors duration-150 hover:bg-brand-ink/90",
         className
       )}
     >
-      {d.nav.website}
+      <span className="hidden sm:inline">{d.nav.website}</span>
       <ArrowUpRight size={15} aria-hidden="true" className="rtl-flip" />
     </a>
   );

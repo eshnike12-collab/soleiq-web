@@ -1,0 +1,11 @@
+.venv/
+local-data/
+__pycache__/
+*.pyc
+.git/
+.pytest_cache/
+tests/
+docs/
+*.md
+artifacts/
+runs/

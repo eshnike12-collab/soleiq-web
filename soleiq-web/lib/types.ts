@@ -250,7 +250,14 @@ export interface CaptureDetection {
 export interface CapturedImage {
   side: FootSide;
   view: CaptureView;
+  /** The photograph as taken. What clinicians and patients see. */
   dataUrl: string;
+  /**
+   * Lighting-corrected copy sent to the model. Absent on captures made before
+   * the two were separated, in which case `dataUrl` is the corrected image and
+   * the model simply receives that — the old behaviour.
+   */
+  analysisDataUrl?: string;
   capturedAt: number;
   source?: "live" | "upload";
   detection?: CaptureDetection;

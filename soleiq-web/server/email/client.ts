@@ -28,9 +28,17 @@ export interface EmailMessage {
   replyTo?: string;
 }
 
+export type EmailFailure =
+  /** No RESEND_API_KEY on this server. Expected in local development. */
+  | "not_configured"
+  /** Nobody to send to — e.g. the patient has never linked an account. */
+  | "no_recipient"
+  /** Resend refused it, or the request threw. */
+  | "send_failed";
+
 export type EmailResult =
   | { ok: true; id: string | null }
-  | { ok: false; reason: "not_configured" | "send_failed"; detail?: string };
+  | { ok: false; reason: EmailFailure; detail?: string };
 
 /** `EMAIL_FROM` should be a verified sender on the connected domain. */
 const DEFAULT_FROM = "SoleIQ Health <reports@soleiqhealth.com>";

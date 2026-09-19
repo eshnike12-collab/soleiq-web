@@ -1,5 +1,12 @@
 export interface PreparedPhoto {
+  /** The photograph as captured. Displayed and stored — never colour-corrected. */
   dataUrl: string;
+  /**
+   * Lighting-normalised copy for the model. Deliberately NOT shown to anyone:
+   * it is easier for a classifier to read and misleading for a clinician,
+   * because the correction changes exactly the colours they are judging.
+   */
+  analysisDataUrl: string;
   quality: {
     passed: boolean;
     brightness: number;
@@ -59,16 +66,30 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
   if (!context) throw new Error("The browser could not read this image.");
   context.drawImage(image, 0, 0, width, height);
 
-  // Lighting normalization BEFORE analysis: hard shadows and color casts are
-  // the main source of "dark spot" false positives downstream. Two passes —
-  // the second flattens whatever gradient survives the first's clamps — so
-  // lighting is corrected in software instead of bouncing the photo back to
-  // the patient. Best-effort: a failure must never block the capture flow.
+  // THE ORIGINAL IS CAPTURED FIRST, BEFORE ANY CORRECTION.
+  //
+  // Everything below alters colour: gray-world white balance shifts hue, and
+  // the CLAHE-style pass flattens local luminance. That is right for the
+  // model — hard shadows and colour casts are the main source of "dark spot"
+  // false positives — and wrong for a human.
+  //
+  // A clinician reading this report is judging erythema, callus colour and
+  // tissue type. Those ARE the colour. Handing them a white-balanced,
+  // contrast-flattened rendering means they are assessing an image the
+  // software invented, and a foot that looks lighter than it is can hide the
+  // very redness the check exists to catch.
+  //
+  // So the two are separated: `dataUrl` is the photograph, `analysisDataUrl`
+  // is the corrected copy the model receives.
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+  // Two passes — the second flattens whatever gradient survives the first's
+  // clamps. Best-effort: a failure must never block the capture flow.
   try {
     normalizeLighting(context, width, height);
     normalizeLighting(context, width, height);
   } catch {
-    /* keep the unnormalized image */
+    /* the model then sees the uncorrected image, which is still usable */
   }
 
   const sample = document.createElement("canvas");
@@ -140,7 +161,10 @@ export async function prepareFootPhoto(file: File): Promise<PreparedPhoto> {
   // reject a photo are the absolute too-dark / overexposed limits above.
 
   return {
-    dataUrl: canvas.toDataURL("image/jpeg", 0.84),
+    // The photograph, as taken. This is what is stored and displayed.
+    dataUrl,
+    // The lighting-corrected copy, for the model only. Never rendered.
+    analysisDataUrl: canvas.toDataURL("image/jpeg", 0.84),
     quality: {
       passed: issues.length === 0,
       brightness,

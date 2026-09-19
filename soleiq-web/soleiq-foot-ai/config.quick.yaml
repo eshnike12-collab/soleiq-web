@@ -1,0 +1,123 @@
+# Same as config.yaml but trimmed for a fast smoke-test loop.
+# Usage:  make train CONFIG=config.quick.yaml
+#         make eval  CONFIG=config.quick.yaml
+#         make serve CONFIG=config.quick.yaml
+# Switch back to config.yaml for real runs.
+
+project:
+  name: soleiq-foot-ai
+  model_version: v0.1.0-dfunet
+  reference_bank_version: rb_dfunet_v0.1
+  random_seed: 42
+
+capabilities:
+  classification: { enabled: true, task: binary }
+  similarity:     { enabled: true }
+  segmentation:   { enabled: false }
+  grading:        { enabled: false }
+  risk_indicators:{ enabled: false }
+  # Foundation-model second opinion. Requires ANTHROPIC_API_KEY in env;
+  # silently no-ops if the key isn't set. PHI: real patient photos hitting
+  # api.anthropic.com require a Business Associate Agreement with Anthropic.
+  llm_second_opinion:
+    enabled: true
+    model: claude-opus-4-8
+
+paths:
+  data_raw: data/raw
+  reference_bank: data/reference_bank
+  sample: data/sample
+  artifacts: artifacts
+
+data:
+  source: raw                  # was: sample. Real DFUNet patches now under data/raw/
+  layout: auto
+  labels_csv: labels.csv
+  classes: ["no_ulcer", "ulcer"]
+  image_size: 224
+  channels: 3
+  patient_id_column: patient_id
+  public_datasets: { enabled: false, use: [] }
+
+augmentation:
+  train:
+    horizontal_flip: 0.5
+    vertical_flip: 0.0
+    rotate_deg: 25
+    scale_min: 0.85
+    scale_max: 1.15
+    brightness: 0.20
+    contrast: 0.20
+    saturation: 0.10
+    hue: 0.02
+    blur_prob: 0.15
+    noise_prob: 0.15
+    coarse_dropout_prob: 0.20
+  eval:
+    center_crop: true
+
+model:
+  backbone: efficientnet_b0
+  pretrained: true
+  num_classes: 2
+  embedding_dim: 256
+  dropout: 0.2
+  loss:
+    type: ce_plus_supcon
+    ce_weight: 1.0
+    supcon_weight: 0.3
+    supcon_temperature: 0.10
+    class_weights: auto
+
+train:
+  strategy: kfold
+  kfold_n_splits: 3            # 3 folds on 845 pool images ≈ 280 val each
+  test_holdout_ratio: 0.15
+  epochs: 5                    # bumped from 3 — we have 10x more data now
+  warmup_epochs_frozen: 1      # one frozen-backbone epoch for stability
+  batch_size: 32
+  num_workers: 2
+  optimizer:
+    name: adamw
+    lr_head: 1.0e-3
+    lr_backbone: 1.0e-4
+    weight_decay: 1.0e-4
+  scheduler:
+    name: cosine
+    min_lr: 1.0e-6
+  mixed_precision: false       # CPU-only — AMP off
+  early_stopping:
+    monitor: val_recall
+    patience: 6
+    mode: max
+  checkpoint:
+    save_best_only: true
+    metric: val_recall
+
+threshold:
+  target_recall: 0.90
+  uncertainty_margin: 0.10
+
+similarity:
+  index_type: faiss_flat_ip
+  k: 5
+  distance_cutoff: 0.6
+  rebuild_command: "scripts/build_similarity_index.py"
+
+serve:
+  # Bind to all interfaces so the FastAPI service is reachable from:
+  #   - the same Mac on localhost:8000           (iOS Simulator, Expo web)
+  #   - other devices on the LAN on <mac-ip>:8000 (Expo Go on a phone)
+  # Use 127.0.0.1 instead if you want to lock it to the Mac only.
+  host: 0.0.0.0
+  port: 8000
+  cors_origins:
+    - "*"   # localhost dev — relax CORS so Expo web (any port) can hit it
+    - https://app.soleiqhealth.com
+  log_audit: true
+  log_phi: false
+
+export:
+  formats: [onnx]
+  onnx_opset: 17
+  parity_atol: 1.0e-4

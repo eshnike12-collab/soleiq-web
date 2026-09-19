@@ -38,17 +38,27 @@ export function AppTopBar({
           the same pixel on both properties, not on whatever column this
           particular screen happens to have. */}
       <div className="mx-auto flex h-[4.75rem] w-full max-w-[74rem] items-center gap-3 px-6 md:px-10">
-        <div className="flex min-w-0 shrink items-center gap-3 sm:gap-5">
+        {/* min-w-0 on the cluster AND gap that tightens on small screens.
+            The overlap was not a font-size problem: three shrink-0 children
+            in a row simply exceeded 375px, so they painted over each other
+            rather than wrapping. */}
+        <div className="flex min-w-0 shrink items-center gap-2 sm:gap-5">
           <Link
             href="/"
             aria-label={d.nav.home}
-            className="flex h-10 min-w-0 items-center rounded"
+            /* 44px, not 40: the measured tap target here was 53x40, under
+               the 44x44 minimum every other control in the app already meets
+               (PatientNav uses min-h-[44px] throughout). */
+            /* min-w-11 as well as h-11: 44x44 is a two-dimensional minimum,
+               and with the wordmark hidden below sm the mark alone measured
+               only 25px wide. */
+            className="flex h-11 min-w-[2.75rem] items-center rounded"
           >
             {/* Always the full lockup, including "Health", exactly as the site
                 shows it. It used to drop the wordmark whenever a title was
                 present, which meant the brand moved and changed shape from one
                 screen to the next — and never matched the site at all. */}
-            <BrandNavLockup size={38} />
+            <BrandNavLockup size={38} compactBelowSm />
           </Link>
 
           <WebsiteLink />

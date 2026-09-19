@@ -1,9 +1,8 @@
 /**
- * Frozen product recommendation, rendered below check results on BOTH report
- * views. The data is what the app generated at the time of the check (stored
- * in report_recommendations) — never re-computed. The `audience` prop only
- * switches which "why" signals show: plain language for patients, clinical
- * detail for clinicians. Server-renderable.
+ * Frozen product recommendation, rendered below check results on the patient's
+ * own report and on a report shared with their care circle. The data is what
+ * the app generated at the time of the check (stored in
+ * report_recommendations) — never re-computed. Server-renderable.
  *
  * The one thing that is not frozen is which Amazon storefront the links point
  * at: `StoreLink` sends an Indian-language reader to amazon.in, whatever was
@@ -29,25 +28,28 @@ export interface StoredRecommendation {
   created_at?: string;
 }
 
+/**
+ * PATIENT-FACING ONLY. There is deliberately no clinician variant.
+ *
+ * These are over-the-counter creams for a patient to go and buy. On a clinical
+ * record they are noise at best — a prescriber does not need a shopping list —
+ * and at worst they read as a clinical recommendation the screening never
+ * made. The audience prop and its "Products suggested to the patient" heading
+ * were removed rather than left switched off, so no future call site can turn
+ * it back on by passing the wrong string.
+ */
 export function RecommendationBlock({
   recommendation,
-  audience,
 }: {
   recommendation: StoredRecommendation | null;
-  audience: "patient" | "clinician";
 }) {
   if (!recommendation || recommendation.products.length === 0) return null;
-  const signals =
-    (audience === "clinician"
-      ? recommendation.signals?.clinician
-      : recommendation.signals?.patient) ?? [];
+  const signals = recommendation.signals?.patient ?? [];
 
   return (
     <section className="mt-6 rounded-3xl border border-slate-100 bg-surface-raised p-5 shadow-card">
       <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-        {audience === "clinician"
-          ? "Products suggested to the patient"
-          : "Products that may help"}
+        Products that may help
       </p>
       <p className="mt-1.5 text-sm leading-relaxed text-ink-faint">
         Recommended when this check was analyzed
@@ -100,12 +102,10 @@ export function RecommendationBlock({
           </ul>
         </div>
       )}
-      {audience === "patient" && (
-        <p className="mt-3 text-xs leading-relaxed text-ink-faint">
-          General options only — follow your care team&apos;s advice before
-          starting anything new.
-        </p>
-      )}
+      <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+        General options only — follow your care team&apos;s advice before
+        starting anything new.
+      </p>
     </section>
   );
 }

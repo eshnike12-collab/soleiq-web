@@ -73,17 +73,25 @@ export default async function DoctorWorklistPage({
       ) : (
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-left text-sm">
+            {/* min-width lowered from 1050px, and Facility hidden below xl.
+                The real fix is the sticky last column below: at 1050px the
+                "Exact report" link sat off the right edge, so reaching the
+                one action on the row meant scrolling the table sideways
+                first. */}
+            <table className="w-full min-w-[820px] text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Patient</th>
-                  <th className="px-4 py-3">Facility</th>
+                  <th className="hidden px-4 py-3 xl:table-cell">Facility</th>
                   <th className="px-4 py-3">Relationship</th>
                   <th className="px-4 py-3">Latest check</th>
                   <th className="px-4 py-3">Level</th>
                   <th className="px-4 py-3">Change</th>
                   <th className="px-4 py-3">Review</th>
-                  <th className="px-4 py-3" />
+                  {/* Pinned to the right edge so the row's action is reachable
+                      at any scroll position. The left border keeps it legible
+                      as content slides underneath it. */}
+                  <th className="sticky right-0 z-10 border-l border-slate-200 bg-slate-50 px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
@@ -99,7 +107,7 @@ export default async function DoctorWorklistPage({
                       </p>
                       <p className="font-mono text-xs text-slate-500">{row.mrn_display}</p>
                     </td>
-                    <td className="px-4 py-3">{row.facility_name || "—"}</td>
+                    <td className="hidden px-4 py-3 xl:table-cell">{row.facility_name || "—"}</td>
                     <td className="px-4 py-3 capitalize">{row.relationship}</td>
                     <td className="px-4 py-3 text-xs text-slate-600">
                       {row.latest_screening_at ? new Date(row.latest_screening_at).toLocaleDateString() : "No report"}
@@ -125,7 +133,7 @@ export default async function DoctorWorklistPage({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="sticky right-0 z-10 border-l border-slate-200 bg-white px-4 py-3 text-right">
                       {row.latest_report_id ? (
                         <Link
                           href={`/h/${data.hospital.slug}/patients/${row.organization_patient_id}/reports/${row.latest_report_id}`}

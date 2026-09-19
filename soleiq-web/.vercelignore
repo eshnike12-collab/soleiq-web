@@ -1,0 +1,8 @@
+# The Python reconstruction service lives here but deploys separately (Fly).
+# Vercel must not upload it: it is ~500MB, it contains patient scan data under
+# local-data/, and none of it is part of the Next.js build.
+#
+# Gitignore already keeps the heavy parts out of the repo, so a git-integration
+# deploy never sees them — this covers a `vercel` CLI deploy from a local
+# checkout, which uploads the working directory.
+soleiq-foot-ai/

@@ -587,3 +587,66 @@ git checkout -- server/screenings.ts app/api/care-circle/notify/route.ts \
 rm -rf server/email app/api/reports tests/email-report-summary.test.ts
 npm install
 ```
+
+---
+
+## Change: "Email me my report" button on the results page
+
+### Files
+
+| Path | Change |
+|---|---|
+| `components/patient/EmailReportButton.tsx` | New. Client component, four states. |
+| `app/records/[reportId]/page.tsx` | Renders it after the recommendation, before the disclaimer. |
+| `server/email/client.ts` | Added `no_recipient` to `EmailFailure`. |
+| `server/email/sendReportSummary.ts` | Returns `no_recipient` instead of `send_failed` for "no linked email" / "no released report". |
+
+### It triggers the existing flow, not a copy
+
+The button POSTs to `/api/reports/[reportId]/email`, which was already built and
+calls `sendReportSummaryForReport` — same template, same sender, same Resend
+client as the automatic send on release. The button decides only *when*.
+
+### Decisions
+
+- **The address cannot be chosen.** No input field; the route resolves the
+  signed-in patient's own account email server-side under RLS. Accepting a
+  destination would turn a results page into a way to forward someone else's
+  medical summary to an arbitrary inbox.
+- **Authorisation is unchanged and delegated.** The route calls
+  `getPatientReleasedReport`, which throws `notFound` for anything that is not
+  the caller's own released report.
+- **`no_recipient` was split out of `send_failed`.** Without it the UI would
+  tell a patient with no email on file to "try again", which can never
+  succeed. It now says to add an address to their profile.
+- Errors use `role="alert"`: the button label does not change on failure, so
+  nothing else would announce it to a screen reader.
+- 429 from the existing 5/min rate limit gets its own wording rather than the
+  generic retry message.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | PASS |
+| `npm test` | PASS, 90 tests |
+| `npm run lint` | 0 errors |
+| `/records/<uuid>` compiles | 200 |
+| `POST /api/reports/<uuid>/email` unauthenticated | 401 |
+| Dev server error lines | 0 |
+
+Earlier in this session a real send through this exact client succeeded:
+`{"ok":true,"id":"7f38299c-03a9-4cc4-90b4-4a7b06602d83"}` to
+`delivered@resend.dev`, from `reports@soleiqhealth.com` on the verified domain.
+
+**Not verified:** the button has not been clicked as a signed-in patient with a
+real report — that needs a session and a released report.
+
+### Rollback
+
+```
+git checkout -- "soleiq-web/app/records/[reportId]/page.tsx" \
+                soleiq-web/server/email/client.ts \
+                soleiq-web/server/email/sendReportSummary.ts
+rm soleiq-web/components/patient/EmailReportButton.tsx
+```

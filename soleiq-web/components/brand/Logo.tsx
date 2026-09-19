@@ -55,7 +55,21 @@ export function BrandLogo({
  * than two takes on it. The colours are the site's brand navy and its muted
  * grey, not the app's warm ink, for the same reason.
  */
-export function BrandNavLockup({ size = 38 }: { size?: number }) {
+export function BrandNavLockup({
+  size = 38,
+  /**
+   * Hide the wordmark below the `sm` breakpoint, leaving the mark alone.
+   *
+   * At 375px the full lockup plus the Website button plus the language
+   * switcher do not fit, and the button was being painted on top of the
+   * wordmark — it read "So". The mark alone is still unambiguously the brand,
+   * and the words return the moment there is room for them.
+   */
+  compactBelowSm = false,
+}: {
+  size?: number;
+  compactBelowSm?: boolean;
+}) {
   return (
     /* `text-rendering: auto`, against the app's global `optimizeLegibility`.
        That setting turns on kerning and optional ligatures, which changes
@@ -74,7 +88,13 @@ export function BrandNavLockup({ size = 38 }: { size?: number }) {
       style={{ textRendering: "auto" }}
     >
       <BrandLogo size={size} />
-      <span className="inline-flex items-baseline gap-[0.3em] whitespace-nowrap">
+      <span
+        className={
+          compactBelowSm
+            ? "hidden sm:inline-flex items-baseline gap-[0.3em] whitespace-nowrap"
+            : "inline-flex items-baseline gap-[0.3em] whitespace-nowrap"
+        }
+      >
         <span
           className="font-display font-semibold tracking-tightest text-brand-ink"
           style={{ fontSize: size * 0.66, lineHeight: 1 }}

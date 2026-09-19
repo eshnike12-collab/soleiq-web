@@ -139,7 +139,11 @@ body {
   top: 0;
   left: 0;
   width: 100vw;
+  /* 100vh excludes iOS Safari's collapsing URL bar, so the element overflows
+     the visible viewport. dvh tracks it; the vh line stays as the fallback for
+     browsers without dvh. */
   height: 100vh;
+  height: 100dvh;
   will-change: transform;
   background-image:
     linear-gradient(to right, rgb(var(--c-primary) / 0.2) 1px, transparent 1px),
@@ -255,16 +259,23 @@ html.has-custom-cursor label {
 }
 
 .lang-select {
+  /* 1rem, never below. Safari force-zooms the whole page when a focused form
+     control is under 16px, and at 0.9375rem this one did exactly that on every
+     language change. The .lang-row variant already got this right. */
   appearance: none;
   background: transparent;
   border: 0;
   color: inherit;
   font: inherit;
-  /* The site sets this at 0.9375rem and leaves the weight alone. */
-  font-size: 0.9375rem;
+  /* The marketing site uses 0.9375rem here; this deliberately does not match
+     it. Safari force-zooms the page whenever a focused control is under 16px,
+     and a zoom triggered by opening the language menu is a worse mismatch than
+     half a pixel of type size. */
+  font-size: 1rem;
   padding: 0.25rem 0.25rem 0.25rem 0;
   cursor: pointer;
   max-width: 9rem;
+  min-height: 44px;
 }
 
 .lang-select:focus-visible {
@@ -298,13 +309,16 @@ html.has-custom-cursor label {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Right to left — deliberately not implemented, matching soleiqhealth.com.
+   Right to left — nothing here, because nothing published needs it.
 
-   Arabic and Urdu use the same left-to-right layout as every other language:
-   same logo position, same chrome, only the words change. See
-   `lib/i18n/config.ts`. The script still reads right to left inside a line,
-   which is intrinsic to the characters and needs nothing here. The rules that
-   used to sit in this block only ever matched `dir="rtl"`, which the document
-   is never in.
+   Arabic and Urdu were the only right-to-left languages and have been
+   withdrawn from both this app and soleiqhealth.com; `lib/i18n/config.ts` says
+   why. Every remaining language reads left to right, so `[dir="rtl"]` would
+   match no document ever served.
+
+   `rtl-flip` survives as a class name on a few directional icons and has no
+   rule behind it. Left in place deliberately: it marks the arrows that would
+   need to mirror if a right-to-left language is ever added back, which is
+   cheaper to keep than to rediscover.
    ─────────────────────────────────────────────────────────────────────────── */
 

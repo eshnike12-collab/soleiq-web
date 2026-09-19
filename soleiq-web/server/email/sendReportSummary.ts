@@ -134,14 +134,14 @@ async function sendFor(
     return { ok: false, reason: "send_failed" };
   }
 
-  if (!row) return { ok: false, reason: "send_failed", detail: "no released report" };
+  if (!row) return { ok: false, reason: "no_recipient", detail: "no released report" };
 
   const patient = row.organization_patients?.patients ?? null;
   const email = patient?.profiles?.email?.trim();
   if (!email) {
     // Expected for patients who have never linked an account.
     console.info("[email] no linked address for report", row.id, "— not sending");
-    return { ok: false, reason: "send_failed", detail: "no linked email" };
+    return { ok: false, reason: "no_recipient", detail: "no linked email" };
   }
 
   const summary = row.patient_summary?.overall ?? {};

@@ -190,7 +190,6 @@ function SharedReportContent() {
 
           <RecommendationBlock
             recommendation={report.recommendation}
-            audience={isClinician ? "clinician" : "patient"}
           />
 
           <p className="mt-6 text-xs leading-relaxed text-ink-faint">

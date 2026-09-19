@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { withTimeout } from "@/lib/withTimeout";
 import {
   DEFAULT_LOCALE,
   QUERY_KEY,
@@ -18,6 +19,16 @@ import {
   type Direction,
   type Locale,
 } from "./config";
+
+/**
+ * Deadline for fetching a locale bundle.
+ *
+ * Long enough for a small chunk over slow 3G, short enough that nobody
+ * concludes the app is broken and force-quits it. On expiry the app renders in
+ * English with a visible notice — never a spinner that outlives the user's
+ * patience.
+ */
+const LOCALE_LOAD_TIMEOUT_MS = 8000;
 import en from "./locales/en";
 import type { Dictionary } from "./locales/en";
 
@@ -48,11 +59,9 @@ const LOADERS: Record<Locale, () => Promise<{ default: Dictionary }>> = {
   hi: () => import("./locales/hi"),
   "zh-Hans": () => import("./locales/zh-Hans"),
   "zh-Hant": () => import("./locales/zh-Hant"),
-  ar: () => import("./locales/ar"),
   bn: () => import("./locales/bn"),
   pt: () => import("./locales/pt"),
   ru: () => import("./locales/ru"),
-  ur: () => import("./locales/ur"),
   id: () => import("./locales/id"),
   ja: () => import("./locales/ja"),
   mr: () => import("./locales/mr"),
@@ -65,7 +74,7 @@ const LOADERS: Record<Locale, () => Promise<{ default: Dictionary }>> = {
 
 interface I18nValue {
   locale: Locale;
-  /** `rtl` for Arabic and Urdu, `ltr` for the rest. */
+  /** `ltr` for every published language. See `config.ts`. */
   dir: Direction;
   setLocale: (next: Locale) => void;
   /** The active dictionary. English until another language has loaded. */
@@ -79,6 +88,8 @@ interface I18nValue {
     opts?: Intl.DateTimeFormatOptions
   ) => string;
   formatList: (items: string[]) => string;
+  /** The locale that failed to load, if English is a fallback. */
+  localeLoadError: string | null;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -86,6 +97,8 @@ const I18nContext = createContext<I18nValue | null>(null);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   const [d, setD] = useState<Dictionary>(en);
+  /** The locale that failed, so the UI can name it. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   /* The user's language is only known on the client, so the first render is
@@ -106,15 +119,26 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       return;
     }
     setLoading(true);
-    LOADERS[locale]()
+    setLoadError(null);
+    /* The deadline is the fix for the hang, not the catch block.
+       A failed chunk request rejects and was always handled; a chunk request
+       that neither completes nor fails leaves this promise pending forever,
+       so `.catch` and `.finally` never run and the spinner never clears.
+       Eight seconds is long enough for a slow 3G fetch of a small bundle and
+       short enough that nobody concludes the app is broken. */
+    withTimeout(LOADERS[locale](), LOCALE_LOAD_TIMEOUT_MS, `locale ${locale}`)
       .then((mod) => {
         if (alive) setD(mod.default);
       })
-      .catch(() => {
+      .catch((err) => {
         /* A language that will not load falls back to English rather than to a
            blank screen. The switcher stays on the chosen language so it can be
-           tried again. */
-        if (alive) setD(en);
+           tried again, and the notice says what happened — a silent fallback
+           to English looks like the switcher simply not working. */
+        if (!alive) return;
+        console.warn("[i18n] falling back to English:", err);
+        setD(en);
+        setLoadError(locale);
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -132,10 +156,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const meta = localeMeta(locale);
     document.documentElement.lang = meta.html;
-    /* Arabic and Urdu are read right to left. `dir` on the root is what flips
-       the whole document — text alignment, the order of flex and grid tracks,
-       scrollbar side. Set here rather than in the markup because it changes
-       with the language. */
+    /* `dir` on the root is what would flip the whole document — text
+       alignment, the order of flex and grid tracks, scrollbar side. Every
+       published language is `ltr`, so this writes the same value each time; it
+       is still read from the locale rather than hard-coded, so adding a
+       right-to-left language is a change in one file. */
     document.documentElement.dir = meta.dir;
 
     const url = new URL(window.location.href);
@@ -161,6 +186,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLocale,
       d,
       loading,
+      /* Non-null when the chosen language could not be loaded and English is
+         being shown instead. Consumers render a dismissible notice: a silent
+         fallback looks like the switcher is simply broken. */
+      localeLoadError: loadError,
       formatNumber: (v, opts) => new Intl.NumberFormat(tag, opts).format(v),
       formatDate: (v, opts) =>
         new Intl.DateTimeFormat(
@@ -183,7 +212,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           : items.join(", ");
       },
     };
-  }, [locale, setLocale, d, loading]);
+  }, [locale, setLocale, d, loading, loadError]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

@@ -82,7 +82,9 @@ export async function analyzeFootPhotos(
         .map((image) => ({
           side: image.side,
           surface: image.view,
-          dataUrl: image.dataUrl,
+          // The corrected copy where one exists. Older captures stored only
+          // the corrected image under `dataUrl`, so that is the fallback.
+          dataUrl: image.analysisDataUrl ?? image.dataUrl,
         })),
       symptoms: {
         pain: profile.painPresent ?? false,

@@ -1,0 +1,265 @@
+# SoleIQ foot-AI config.
+# This is the single source of truth for hyperparameters, paths, and behavior.
+# Everything in this file is read at runtime; nothing is hardcoded in src/.
+
+project:
+  name: soleiq-foot-ai
+  # Bumped for the efficientnet_b0 -> mobilenetv2_100 swap. A silent backbone
+  # change under an unchanged version makes every past prediction
+  # unattributable — you could no longer tell which model produced a stored
+  # result.
+  model_version: v0.2.0-mnv2     # stamped on every API response
+  # Bumped with the backbone: the FAISS index holds embeddings, and cosine
+  # similarity between an EfficientNet embedding and a MobileNetV2 embedding is
+  # meaningless. Retrieval against a stale index would present noise as
+  # evidence.
+  reference_bank_version: rb_v0.2 # stamped on every API response
+  random_seed: 42
+
+# What the system can do. Disable any capability by flipping `enabled: false`;
+# the rest of the pipeline must keep working.
+capabilities:
+  classification: { enabled: true,  task: binary }   # ulcer / no-ulcer
+  similarity:     { enabled: true }
+  segmentation:   { enabled: false }                 # turn on later
+  grading:        { enabled: false }
+  risk_indicators:{ enabled: false }
+  # Remote-PPG perfusion from a video clip. PHASE 0 = classical-signal
+  # feasibility harness only (no learned model, not wired into /predict).
+  # Do not flip `enabled` until the Phase 0 exit criterion is met on real
+  # clips — see docs/perfusion_capture_protocol.md.
+  perfusion:      { enabled: false, stage: phase0_feasibility }
+  # Foundation-model second opinion. Requires ANTHROPIC_API_KEY; silently
+  # no-ops if missing. PHI: real patient photos hitting api.anthropic.com
+  # require a Business Associate Agreement with Anthropic.
+  llm_second_opinion:
+    enabled: true
+    model: claude-opus-4-8
+
+paths:
+  data_raw: data/raw
+  reference_bank: data/reference_bank
+  sample: data/sample
+  artifacts: artifacts
+
+# Default to the synthetic sample data so every command runs out of the box.
+# Switch this block to point at data_raw once real images are in place.
+data:
+  source: sample             # one of: sample | raw
+  layout: auto               # auto | class_folders | flat_with_csv
+  labels_csv: labels.csv     # only used when layout=flat_with_csv
+  classes: ["no_ulcer", "ulcer"]
+  image_size: 224
+  channels: 3
+  # If patient/ID metadata exists (column `patient_id` in labels.csv), splits
+  # are forced to be patient-disjoint. With sample data there are no patient
+  # IDs and the splitter falls back to image-level stratification.
+  patient_id_column: patient_id
+  # Public datasets — DFUC and friends. Disabled by default; we surface the
+  # exact dataset name + license check before pulling anything.
+  public_datasets:
+    enabled: false
+    use: []                   # e.g. ["dfuc2020_classification"]
+
+# Heavy augmentation profile picked because the user has <100 labeled images.
+# These are kept clinically realistic: no hue inversion, no extreme color
+# jitter that would distort skin tone.
+augmentation:
+  train:
+    horizontal_flip: 0.5
+    vertical_flip: 0.0
+    rotate_deg: 25
+    scale_min: 0.85
+    scale_max: 1.15
+    brightness: 0.20
+    contrast: 0.20
+    saturation: 0.10
+    hue: 0.02
+    blur_prob: 0.15
+    noise_prob: 0.15
+    coarse_dropout_prob: 0.20
+  eval:
+    center_crop: true
+
+model:
+  # Switched from efficientnet_b0 (2026-08-30) so the same architecture can run
+  # on-device in the patient's browser. Verified against the installed timm
+  # 1.0.11 before the swap:
+  #
+  #   efficientnet_b0   num_features=1280   params=4.01M
+  #   mobilenetv2_100   num_features=1280   params=2.22M
+  #
+  # Both pool to 1280 features, so classifier_head and embedding_head in
+  # src/models/model.py are unchanged and embedding_dim: 256 still holds. Just
+  # under half the parameters, which is what makes browser inference viable.
+  backbone: mobilenetv2_100   # any timm name works (resnet50, vit_small_patch16_224, ...)
+  pretrained: true
+  num_classes: 2              # binary head (no_ulcer / ulcer)
+  embedding_dim: 256          # projection used by the similarity engine
+  dropout: 0.2
+  # Joint training: cross-entropy on the class head + supervised contrastive on
+  # the embedding head. Embedding loss is added on top of CE, not in place of it.
+  loss:
+    type: ce_plus_supcon
+    ce_weight: 1.0
+    supcon_weight: 0.3
+    supcon_temperature: 0.10
+    # Class weights — auto-computed from training-fold class distribution.
+    # Set to "auto" or a list like [1.0, 3.0].
+    class_weights: auto
+
+train:
+  # User has <100 images: force k-fold cross-validation. Single train/val
+  # split with this little data would be too noisy to report.
+  strategy: kfold
+  kfold_n_splits: 5
+  test_holdout_ratio: 0.15      # carved out once, BEFORE k-fold (patient-disjoint)
+  epochs: 30
+  warmup_epochs_frozen: 3       # freeze backbone for the first 3 epochs
+  batch_size: 16
+  num_workers: 2
+  optimizer:
+    name: adamw
+    lr_head: 1.0e-3
+    lr_backbone: 1.0e-4
+    weight_decay: 1.0e-4
+  scheduler:
+    name: cosine
+    min_lr: 1.0e-6
+  mixed_precision: true
+  early_stopping:
+    monitor: val_recall         # sensitivity matters most clinically
+    patience: 6
+    mode: max
+  checkpoint:
+    save_best_only: true
+    metric: val_recall
+
+# Decision threshold tuned to hit a target sensitivity. With this little data
+# we'd rather over-refer for clinician review than miss a real ulcer.
+threshold:
+  target_recall: 0.90
+  # If the tuned operating threshold corresponds to a confidence band where
+  # the model is poorly calibrated, mark the prediction "uncertain" and route
+  # to clinician review instead of returning a confident-looking score.
+  uncertainty_margin: 0.10
+
+similarity:
+  index_type: faiss_flat_ip      # cosine via inner product on L2-normalized vecs
+  k: 5
+  distance_cutoff: 0.6           # cosine distance above this = "no confident match"
+  rebuild_command: "scripts/build_similarity_index.py"
+
+serve:
+  host: 0.0.0.0
+  port: 8000
+  cors_origins:
+    - https://app.soleiqhealth.com
+    - http://localhost:8081
+  log_audit: true
+  log_phi: false                 # never log raw images / PHI to disk
+
+export:
+  formats: [onnx]                # cloud deployment — ONNX for portable serving
+  onnx_opset: 17
+  parity_atol: 1.0e-4            # max allowed difference vs PyTorch on a fixed input
+
+# ---------------------------------------------------------------------------
+# Perfusion (remote-PPG) — PHASE 0 feasibility harness.
+#
+# Everything here drives src/perfusion/*. No thresholds are hardcoded in src/.
+# These numbers are STARTING POINTS carried over from the facial rPPG
+# literature; they have not been calibrated on foot video. Recalibrate the
+# `quality` block once clips with pulse-oximeter ground truth exist.
+# ---------------------------------------------------------------------------
+perfusion:
+  method_version: perf_v0.0.1-phase0
+  disclaimer: >-
+    Experimental research feature. Remote-PPG on extremities is unvalidated;
+    output is not a diagnosis and must never override clinical screening.
+
+  capture:
+    # Rejects the clip outright before any signal processing is attempted.
+    min_duration_s: 8.0        # <8 s gives too few pulse cycles for a stable PSD
+    target_duration_s: 20.0
+    min_fps: 20.0              # Nyquist for 2.5 Hz is 5 Hz; 20 fps is the
+                               # practical floor once motion/jitter are in play
+    # Frames are spatially averaged over ROI tiles, so full resolution buys
+    # nothing and costs ~10x RAM. 256 px wide keeps a 30 s clip near 400 MB.
+    max_analysis_width: 256
+    max_frames: 1800           # hard RAM guard (60 s @ 30 fps)
+    # iPhone records variable-frame-rate video. If the fps implied by frame
+    # timestamps disagrees with the container fps by more than this, the
+    # container value is not trustworthy and timestamps are used instead.
+    fps_disagreement_tolerance: 0.5
+
+  roi:
+    # Same relaxed YCrCb skin range as src/data/quality_gate.py — kept
+    # identical on purpose so ROI and the photo quality gate agree on
+    # "what is skin", including on darker skin tones.
+    ycrcb_cr: [130, 185]
+    ycrcb_cb: [75, 140]
+    hsv_v_min: 40              # drop near-black pixels (shadow under the arch)
+    hsv_s_max: 200             # drop hyper-saturated pixels (towels, socks)
+    morph_kernel: 7
+    fill_holes: true
+    largest_component_only: true
+    # The mask is a majority vote over this many frames sampled across the
+    # clip, not a per-frame mask — a per-frame mask flickers and injects
+    # its own periodicity into the RGB trace.
+    mask_vote_frames: 15
+    mask_vote_fraction: 0.6
+    min_coverage: 0.06         # foot must occupy >=6% of frame
+    tiles: { rows: 8, cols: 8, min_fill_fraction: 0.5, min_pixels: 24 }
+
+  signal:
+    pulse_band_hz: [0.75, 2.5]   # 45-150 bpm — the MetaPhys label band
+    # SNR is measured over a wider band so the 2nd harmonic of a fast pulse
+    # (2 x 1.8 Hz = 3.6 Hz) is inside the analysis window rather than folded
+    # out of it. Peak *search* still happens only inside pulse_band_hz.
+    snr_band_hz: [0.70, 4.0]
+    butter_order: 1              # matches MetaPhys's butter(1, ...) label filter
+    detrend: smoothness_priors   # smoothness_priors | linear | none
+    detrend_lambda: 100          # Tarvainen 2002; ~0.04 Hz cutoff at 30 fps
+    window_s: 1.6                # CHROM / POS moving window (De Haan, Wang)
+    welch_segment_s: 8.0
+    welch_overlap: 0.5
+    welch_nfft: 4096             # zero-padded for a smooth curve; TRUE
+                                 # resolution is fs/segment and is reported
+    harmonic_halfwidth_hz: 0.1   # De Haan's +/-0.1 Hz SNR template
+    methods: [chrom, pos, green]
+
+  quality:
+    # ---- The Phase 0 reject threshold ----
+    # SNR is the De Haan 2013 definition: power within +/-0.1 Hz of the
+    # pulse peak and its 2nd harmonic, over all remaining power in
+    # snr_band_hz, measured on the full-length periodogram. Facial rPPG on
+    # good clips typically lands +3 to +10 dB. 3.0 dB is deliberately
+    # conservative: below it we say "no reliable signal" rather than print
+    # a number. Measured reference points from the synthetic harness
+    # (scripts/make_synthetic_perfusion_clip.py): a pulse-free negative
+    # control scores -4 to -5 dB; a lossless clip with a 0.1% modulation
+    # scores about +18 dB.
+    snr_db_min: 3.0
+    snr_db_marginal: 0.0         # 0-3 dB -> reported as marginal, not reliable
+    # A real pulse holds the same rate across the clip. Estimating the rate
+    # in independent windows and requiring agreement kills most artifacts
+    # that produce a single tall but spurious PSD peak.
+    rate_stability_windows: 3
+    rate_stability_bpm_max: 6.0
+    # CHROM and POS use different colour projections. When they agree the
+    # peak is far more likely to be haemodynamic than illumination.
+    method_agreement_bpm_max: 5.0
+    # Motion, both as a fraction of the foot bounding-box diagonal.
+    #   jitter = consecutive-frame displacement (shake/tremor)
+    #   drift  = displacement from the clip's middle frame (postural slide)
+    # Drift matters independently because the ROI mask is fixed for the whole
+    # clip: a slow slide has almost no per-frame jitter but walks the foot
+    # out from under its own mask.
+    motion_jitter_frac_max: 0.004
+    motion_drift_frac_max: 0.02
+    # Auto-exposure hunting shows up as a slow swing in ROI luma. This is
+    # the number that justifies the Phase 1 exposure-lock work.
+    illumination_cv_max: 0.05
+    # How many of the above must pass for `reliable: true`.
+    require_all: true

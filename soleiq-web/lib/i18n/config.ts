@@ -1,5 +1,5 @@
 /**
- * The twenty languages the app is published in.
+ * The eighteen languages the app is published in.
  *
  * This list is the same one soleiqhealth.com uses, deliberately and to the
  * letter — same codes, same order, same script split for Chinese. The two
@@ -25,15 +25,18 @@
  */
 
 /**
- * Text direction is `ltr` for every language, including Arabic and Urdu.
+ * Text direction is `ltr` for every language here, because every language
+ * here reads left to right.
  *
- * Deliberate, and matched to soleiqhealth.com. The convention for those two is
- * to mirror the whole page; this product was asked for the opposite — one
- * layout everywhere, the brand and the chrome in the same place in all twenty
- * languages, only the words changing.
+ * Arabic and Urdu were published and have been withdrawn — see the website's
+ * `src/i18n/config.ts`, which this list mirrors. Both were asked to run in the
+ * same left-to-right layout as everything else, and right-to-left script in a
+ * left-to-right layout reads wrong to anyone who actually reads it. Rather
+ * than ship that, the two were removed. The dictionaries are in git history.
  *
- * Arabic and Urdu still read right to left within a line. That is intrinsic to
- * the characters; `dir` arranges boxes, it does not shape script.
+ * The field stays because `<html dir>` is worth stating rather than leaving to
+ * a default, and because adding a right-to-left language back should be a
+ * change in this file rather than a hunt through the components.
  */
 export const LOCALES = [
   { code: 'en', name: 'English', native: 'English', html: 'en', dir: 'ltr' },
@@ -41,12 +44,10 @@ export const LOCALES = [
   { code: 'zh-Hant', name: 'Chinese (Traditional)', native: '繁體中文', html: 'zh-Hant', dir: 'ltr' },
   { code: 'hi', name: 'Hindi', native: 'हिन्दी', html: 'hi', dir: 'ltr' },
   { code: 'es', name: 'Spanish', native: 'Español', html: 'es', dir: 'ltr' },
-  { code: 'ar', name: 'Arabic', native: 'العربية', html: 'ar', dir: 'ltr' },
   { code: 'fr', name: 'French', native: 'Français', html: 'fr', dir: 'ltr' },
   { code: 'bn', name: 'Bengali', native: 'বাংলা', html: 'bn', dir: 'ltr' },
   { code: 'pt', name: 'Portuguese', native: 'Português', html: 'pt-BR', dir: 'ltr' },
   { code: 'ru', name: 'Russian', native: 'Русский', html: 'ru', dir: 'ltr' },
-  { code: 'ur', name: 'Urdu', native: 'اردو', html: 'ur', dir: 'ltr' },
   { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia', html: 'id', dir: 'ltr' },
   { code: 'de', name: 'German', native: 'Deutsch', html: 'de', dir: 'ltr' },
   { code: 'ja', name: 'Japanese', native: '日本語', html: 'ja', dir: 'ltr' },

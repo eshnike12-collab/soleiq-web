@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getPatientReleasedReport } from "@/server/patients";
+import { EmailReportButton } from "@/components/patient/EmailReportButton";
+import { PatientPhotoGallery } from "@/components/patient/PatientPhotoGallery";
 import { pageAccess } from "@/server/page-access";
 import { RecommendationBlock } from "@/components/result/RecommendationBlock";
 
@@ -57,30 +59,7 @@ export default async function PatientReportPage({
           {((report as any).photos ?? []).length > 0 && (
             <section className="mt-6">
               <h2 className="font-bold text-ink">Your photos from this check</h2>
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {((report as any).photos ?? []).map((photo: any) => (
-                  <a
-                    key={photo.assetId}
-                    href={photo.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="relative block overflow-hidden rounded-2xl bg-surface-sunken"
-                  >
-                    <div className="aspect-square">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photo.url}
-                        alt={`${photo.side} foot ${photo.view}`}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <span className="absolute inset-x-0 bottom-0 bg-black/50 px-1.5 py-1 text-center text-[10px] font-semibold uppercase text-white">
-                      {photo.side} · {photo.view}
-                    </span>
-                  </a>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-ink-faint">Tap a photo to view it full-size.</p>
+              <PatientPhotoGallery photos={(report as any).photos ?? []} />
             </section>
           )}
           {(summary?.findings ?? []).map((finding: any, index: number) => (
@@ -98,8 +77,8 @@ export default async function PatientReportPage({
           </section>
           <RecommendationBlock
             recommendation={(report as any).recommendation ?? null}
-            audience="patient"
           />
+          <EmailReportButton reportId={reportId} />
           <p className="mt-6 text-xs leading-relaxed text-ink-faint">
             {summary?.limits || "Photos cannot show problems beneath the skin."} This is screening support, not a diagnosis.
           </p>

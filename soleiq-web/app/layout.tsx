@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { Cursor } from "@/components/ui/Cursor";
@@ -11,6 +11,22 @@ const nunitoSans = Nunito_Sans({
   variable: "--font-sans",
   display: "swap",
 });
+
+/**
+ * viewportFit: "cover" is load-bearing, not cosmetic.
+ *
+ * `env(safe-area-inset-*)` returns 0 unless the viewport opts into the full
+ * display. PatientNav has always written `pb-[env(safe-area-inset-bottom)]`
+ * and it has always evaluated to zero, so the bottom nav sat underneath the
+ * iPhone home indicator. Adding this makes every safe-area inset in the
+ * codebase start working at once.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1f4e79",
+};
 
 export const metadata: Metadata = {
   title: "SoleIQ",

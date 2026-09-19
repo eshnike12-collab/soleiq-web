@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/hospital/Ui";
 import { ReportActions } from "@/components/hospital/ReportActions";
 import { ReportChat } from "@/components/hospital/ReportChat";
 import { ReportTabs } from "@/components/hospital/ReportTabs";
-import { RecommendationBlock } from "@/components/result/RecommendationBlock";
 import { getExactReport } from "@/server/reports";
 import { pageAccess } from "@/server/page-access";
 
@@ -49,42 +48,49 @@ export default async function ExactReportPage({
           </a>
         }
       />
-      <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        {/* Overview opens by default; the full record (all findings with
-            regions, screening detail, capture quality, complete intake
-            sheet, identifiers, review history) lives behind the Enhanced
-            metrics tab. */}
-        <div>
-          <ReportTabs
-            clinical={clinical}
-            riskLevel={data.report.risk_level}
-            assets={(data as any).mediaAssets ?? []}
-            intake={(patient?.demographics as any) ?? null}
-            patient={patient ?? null}
-            mrn={(data.enrollment as any).mrn ?? null}
-            facilityName={facility?.name ?? null}
-            reviews={((data.report as any).report_reviews ?? []) as any}
-            hospitalSlug={data.hospital.slug}
-            analysisRunId={(data.report as any).analysis_run_id ?? null}
-            reportVersion={data.report.version}
-          />
-          <RecommendationBlock
-            recommendation={(data as any).recommendation ?? null}
-            audience="clinician"
-          />
-        </div>
-        <div className="space-y-5">
-          <ReportActions
-            hospitalSlug={data.hospital.slug}
-            reportId={data.report.id}
-            status={data.report.status}
-          />
-          <ReportChat
-            hospitalSlug={data.hospital.slug}
-            reportId={data.report.id}
-            patientName={patient?.full_name}
-          />
-        </div>
+      {/* Single column, in the order a clinician actually works through it:
+          see the photographs, ask the assistant about them, then record the
+          review. The photographs previously shared the width with a 320px
+          sidebar, which is the wrong trade — the images are the evidence and
+          they were the thing being squeezed. */}
+      <div className="flex min-w-0 flex-col gap-5">
+        {/* Overview opens by default; the full record (screening summary, all
+            findings with regions, capture quality, complete intake sheet,
+            identifiers, review history) lives behind the Enhanced metrics
+            tab. */}
+        <ReportTabs
+          clinical={clinical}
+          riskLevel={data.report.risk_level}
+          assets={(data as any).mediaAssets ?? []}
+          intake={(patient?.demographics as any) ?? null}
+          patient={patient ?? null}
+          mrn={(data.enrollment as any).mrn ?? null}
+          facilityName={facility?.name ?? null}
+          reviews={((data.report as any).report_reviews ?? []) as any}
+          hospitalSlug={data.hospital.slug}
+          analysisRunId={(data.report as any).analysis_run_id ?? null}
+          reportVersion={data.report.version}
+        />
+
+        <ReportChat
+          hospitalSlug={data.hospital.slug}
+          reportId={data.report.id}
+          patientName={patient?.full_name}
+        />
+
+        <ReportActions
+          hospitalSlug={data.hospital.slug}
+          reportId={data.report.id}
+          status={data.report.status}
+        />
+
+        {/* Product suggestions are deliberately NOT rendered here.
+            They are over-the-counter creams chosen for a patient to buy —
+            useful on the patient's own report, out of place on a clinical
+            record, where a prescriber does not need a shopping list and its
+            presence risks reading as a clinical recommendation the screening
+            did not make. RecommendationBlock still serves the patient views
+            (app/records and app/shared). */}
       </div>
     </HospitalShell>
   );
