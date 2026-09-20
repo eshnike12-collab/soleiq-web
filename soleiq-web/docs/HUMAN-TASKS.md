@@ -103,3 +103,65 @@ No emulator covers any of this.
 | MobileNetV2 migration, ONNX parity, provenance stamp | B1–B5 (real data) |
 | Locale load deadline + fallback (Ticket 8 fix) | D3 (confirm on device) |
 | Mobile defects 1–4, 6 | — verified at 320/375/414px |
+
+---
+
+## Stage R — weekly re-scan reminders + BASELINE/LATEST badges
+
+Added 2026-09-19. Independent of Stage A: none of this needs Docker, Fly, or
+the 3D scan service. The badges work the moment the code deploys; the
+reminders need R1.
+
+| # | Task | Check that it worked |
+|---|---|---|
+| R1 | Run `supabase/migrations/202609190011_rescan_reminders.sql` in the Supabase SQL editor | `select * from public.rescan_schedules;` returns an empty table, not an error |
+| R2 | Vercel → Settings → Environment Variables → add `CRON_SECRET` (any long random string) for Production | `curl https://app.soleiqhealth.com/api/cron/rescan-reminders` returns **401** |
+| R3 | Redeploy (Vercel reads `vercel.json` crons at deploy time) | Vercel → Settings → Cron Jobs lists `/api/cron/rescan-reminders` daily at 15:00 UTC |
+
+### What works without any of the above
+
+The **in-app reminder card** is the channel that actually guarantees delivery,
+and it needs only R1. It appears on `/home` when a check is due, whatever
+happens to email, cron, or push. If you do nothing else, do R1.
+
+### If you skip R1
+
+Nothing breaks. `/api/rescan` detects the missing table and answers
+`available: false`, the card renders nothing, and the rest of the home screen
+is unaffected. You just get no reminders.
+
+### Generating a CRON_SECRET
+
+```bash
+openssl rand -hex 32
+```
+
+Paste the output into Vercel. Do not commit it. Without it the cron endpoint
+refuses **every** request including Vercel's own — deliberately, because an
+open endpoint there would mass-mail every patient to anyone who found the URL.
+
+### What the reminder email contains
+
+Nothing clinical. No findings, no risk level, no photographs, no history — a
+reminder lands in an inbox the recipient has not authenticated to, and may sit
+unlocked on a shared phone. It says a check is due and links to the app. This
+is pinned by `tests/rescan-reminder-email.test.ts` so it cannot regress.
+
+### Reminder cadence
+
+- Due every **7 days** from the last completed check (per-patient
+  `interval_days`, so a care team can tighten it for someone high-risk).
+- Email only once due, at most one per **3 days**, at most **3 per cycle**,
+  then silence until the next check. Paused and snoozed patients never get one.
+- Streak continues if a check lands within the week **plus a week's grace**;
+  later than that it restarts at 1. The best streak is kept either way.
+
+All of these live in `lib/rescan.ts` and are unit-tested in
+`tests/rescan.test.ts`.
+
+### BASELINE / LATEST
+
+Derived, never stored — see the header comment in `lib/photoTimeline.ts` for
+why. Nothing to migrate and nothing to backfill: the badges are correct for
+photos taken long before this shipped. Tracked per foot **and** view, so
+skipping a view one week does not move that view's LATEST badge.

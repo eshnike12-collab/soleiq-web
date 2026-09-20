@@ -1,6 +1,7 @@
 "use client";
 
 import { getSupabase } from "./supabase";
+import { derivePhotoLabels, labelsFor, photoTimestamp } from "./photoTimeline";
 import type { PatientProfile, ScreeningLevel, Visit } from "./types";
 
 export interface CanonicalCheckPhoto {
@@ -8,6 +9,10 @@ export interface CanonicalCheckPhoto {
   side: "left" | "right";
   view: string;
   url: string;
+  /** First photo of this foot and view. See lib/photoTimeline.ts. */
+  baseline: boolean;
+  /** Most recent photo of this foot and view. */
+  latest: boolean;
 }
 
 export interface CanonicalCheck {
@@ -69,10 +74,30 @@ export async function listMyCanonicalChecks(): Promise<CanonicalCheck[]> {
   const { data: assets } = sessionIds.length
     ? await sb
         .from("media_assets")
-        .select("id, screening_session_id, side, view, storage_bucket, storage_path")
+        .select(
+          "id, screening_session_id, side, view, storage_bucket, storage_path, captured_at, created_at"
+        )
         .in("screening_session_id", sessionIds)
         .eq("asset_type", "photo")
     : { data: [] as any[] };
+
+  // Derived across every photo in this fetch, before the per-report split —
+  // a photo cannot tell it is the baseline from inside its own check.
+  //
+  // Scope caveat worth knowing: the report query above takes the newest 50,
+  // so for a patient past 50 checks the BASELINE badge marks the oldest photo
+  // IN VIEW rather than the oldest they ever took. The patient's home screen
+  // and their report page both derive labels server-side over the full
+  // history and are the authority; this is the history list, where the badge
+  // is orientation rather than a clinical reference.
+  const photoLabels = derivePhotoLabels(
+    (assets ?? []).map((asset: any) => ({
+      assetId: asset.id,
+      side: asset.side,
+      view: asset.view,
+      capturedAt: photoTimestamp(asset),
+    }))
+  );
 
   // Batch-sign per bucket (normally all clinical-media).
   const urlByPath = new Map<string, string>();
@@ -100,6 +125,7 @@ export async function listMyCanonicalChecks(): Promise<CanonicalCheck[]> {
         side: asset.side,
         view: asset.view,
         url: urlByPath.get(asset.storage_path) ?? "",
+        ...labelsFor(photoLabels, asset.id),
       }))
       .filter((photo: CanonicalCheckPhoto) => photo.url);
     const summary = (report.patient_summary as any) ?? {};

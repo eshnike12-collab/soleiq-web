@@ -9,6 +9,11 @@ import { getPatientDashboard } from "@/server/patients";
 import { pageAccess } from "@/server/page-access";
 import { PatientNav } from "@/components/patient/PatientNav";
 import { SharedWithMeCard } from "@/components/patient/SharedWithMeCard";
+import { RescanReminderCard } from "@/components/patient/RescanReminderCard";
+import {
+  PhotoStageBadge,
+  photoStageLabel,
+} from "@/components/patient/PhotoStageBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +47,7 @@ export default async function PatientHomePage() {
         }
       />
       <main className="mx-auto max-w-5xl space-y-6 px-5 py-8 pb-24">
+        <RescanReminderCard />
         <SharedWithMeCard />
         <section className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
           <div className="rounded-3xl bg-gradient-to-br from-primary to-primary-deep p-7 text-white shadow-lifted">
@@ -103,11 +109,17 @@ export default async function PatientHomePage() {
                       href={`/records/${latest.id}`}
                       className="relative block overflow-hidden rounded-2xl bg-surface-sunken"
                     >
+                      <PhotoStageBadge
+                        baseline={photo.baseline}
+                        latest={photo.latest}
+                      />
                       <div className="aspect-square">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={photo.url}
-                          alt={`${photo.side} foot ${photo.view}`}
+                          alt={`${photo.side} foot ${photo.view}${
+                            photoStageLabel(photo) ? ` — ${photoStageLabel(photo)}` : ""
+                          }`}
                           className="h-full w-full object-cover"
                         />
                       </div>
@@ -169,12 +181,16 @@ export default async function PatientHomePage() {
                       {(report.photos ?? []).slice(0, 4).map((photo: any) => (
                         <span
                           key={photo.assetId}
-                          className="block h-10 w-10 overflow-hidden rounded-xl border-2 border-white bg-surface-sunken"
+                          className={`block h-10 w-10 overflow-hidden rounded-xl border-2 border-white bg-surface-sunken ${
+                            photo.latest ? "ring-2 ring-primary" : ""
+                          }`}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={photo.url}
-                            alt={`${photo.side} ${photo.view}`}
+                            alt={`${photo.side} ${photo.view}${
+                              photoStageLabel(photo) ? ` — ${photoStageLabel(photo)}` : ""
+                            }`}
                             className="h-full w-full object-cover"
                           />
                         </span>

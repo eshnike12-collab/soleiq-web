@@ -29,6 +29,22 @@ import {
  * patience.
  */
 const LOCALE_LOAD_TIMEOUT_MS = 8000;
+
+/**
+ * One retry before giving up, after a short pause.
+ *
+ * The failures seen in practice are transient — a dropped connection mid
+ * chunk, a proxy hiccup, a radio handover — and for those a second attempt
+ * simply works. Webpack drops a failed chunk from its cache, so the retry is
+ * a real network request rather than a replay of the same rejected promise.
+ *
+ * One retry, not three: past the first, the cause is almost always a chunk
+ * that is genuinely not there any more (a deployment replaced the hashed
+ * filename while this tab was open), and no number of retries will conjure
+ * it back. That case needs a reload, which is what the switcher offers.
+ */
+const LOCALE_RETRY_DELAY_MS = 600;
+
 import en from "./locales/en";
 import type { Dictionary } from "./locales/en";
 
@@ -72,6 +88,28 @@ const LOADERS: Record<Locale, () => Promise<{ default: Dictionary }>> = {
   ko: () => import("./locales/ko"),
 };
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * True for the error a browser raises when a code-split chunk cannot be
+ * fetched. Distinguished from an ordinary failure because it usually means
+ * this tab is running against a deployment that no longer exists, and the fix
+ * is a reload rather than a retry.
+ */
+function isChunkLoadError(error: unknown): boolean {
+  if (!error) return false;
+  const name = (error as { name?: string }).name ?? "";
+  const message = (error as { message?: string }).message ?? "";
+  return (
+    name === "ChunkLoadError" ||
+    /loading chunk|failed to fetch dynamically imported module|importing a module script failed/i.test(
+      message
+    )
+  );
+}
+
 interface I18nValue {
   locale: Locale;
   /** `ltr` for every published language. See `config.ts`. */
@@ -90,6 +128,14 @@ interface I18nValue {
   formatList: (items: string[]) => string;
   /** The locale that failed to load, if English is a fallback. */
   localeLoadError: string | null;
+  /**
+   * True when the failure looks like a stale deployment — this tab is asking
+   * for a chunk filename that no longer exists on the server. Retrying cannot
+   * fix it; reloading can.
+   */
+  localeLoadNeedsReload: boolean;
+  /** Try the failed language again. */
+  retryLocale: () => void;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -99,7 +145,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [d, setD] = useState<Dictionary>(en);
   /** The locale that failed, so the UI can name it. */
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [needsReload, setNeedsReload] = useState(false);
   const [loading, setLoading] = useState(false);
+  /* Bumping this re-runs the fetch effect for the same locale. */
+  const [attempt, setAttempt] = useState(0);
 
   /* The user's language is only known on the client, so the first render is
      English and the real choice is applied immediately after it. Running this
@@ -120,13 +169,37 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     setLoadError(null);
+    setNeedsReload(false);
     /* The deadline is the fix for the hang, not the catch block.
        A failed chunk request rejects and was always handled; a chunk request
        that neither completes nor fails leaves this promise pending forever,
        so `.catch` and `.finally` never run and the spinner never clears.
        Eight seconds is long enough for a slow 3G fetch of a small bundle and
        short enough that nobody concludes the app is broken. */
-    withTimeout(LOADERS[locale](), LOCALE_LOAD_TIMEOUT_MS, `locale ${locale}`)
+    /* Two attempts, then English. The timeout is what makes this terminate
+       at all: a chunk request that neither completes nor fails leaves the
+       promise pending forever, so without a deadline `.catch` never runs and
+       the spinner outlives the user's patience. */
+    const load = async () => {
+      let lastError: unknown = null;
+      for (let tries = 0; tries < 2; tries += 1) {
+        if (tries > 0) await wait(LOCALE_RETRY_DELAY_MS);
+        try {
+          return await withTimeout(
+            LOADERS[locale](),
+            LOCALE_LOAD_TIMEOUT_MS,
+            `locale ${locale}`
+          );
+        } catch (err) {
+          lastError = err;
+          /* A chunk that is not on the server will not appear on a retry. */
+          if (isChunkLoadError(err)) break;
+        }
+      }
+      throw lastError;
+    };
+
+    load()
       .then((mod) => {
         if (alive) setD(mod.default);
       })
@@ -139,6 +212,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         console.warn("[i18n] falling back to English:", err);
         setD(en);
         setLoadError(locale);
+        setNeedsReload(isChunkLoadError(err));
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -146,7 +220,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [locale]);
+  }, [locale, attempt]);
 
   /* `lang` on the root element is what tells a screen reader which voice to
      use and a browser which hyphenation and font stack to apply. Keeping the
@@ -169,6 +243,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     window.history.replaceState(null, "", url.toString());
   }, [locale]);
 
+  const retryLocale = useCallback(() => {
+    setAttempt((n) => n + 1);
+  }, []);
+
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     try {
@@ -190,6 +268,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
          being shown instead. Consumers render a dismissible notice: a silent
          fallback looks like the switcher is simply broken. */
       localeLoadError: loadError,
+      localeLoadNeedsReload: needsReload,
+      retryLocale,
       formatNumber: (v, opts) => new Intl.NumberFormat(tag, opts).format(v),
       formatDate: (v, opts) =>
         new Intl.DateTimeFormat(
@@ -212,7 +292,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           : items.join(", ");
       },
     };
-  }, [locale, setLocale, d, loading, loadError]);
+  }, [locale, setLocale, d, loading, loadError, needsReload, retryLocale]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

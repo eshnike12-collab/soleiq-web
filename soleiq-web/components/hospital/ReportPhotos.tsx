@@ -8,11 +8,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { PhotoLightbox, type LightboxPhoto } from "@/components/ui/PhotoLightbox";
+import {
+  PhotoStageBadge,
+  photoStageLabel,
+} from "@/components/patient/PhotoStageBadge";
 
 interface ReportPhotoAsset {
   id: string;
   side: string | null;
   view: string | null;
+  /** First photo of this foot and view. See lib/photoTimeline.ts. */
+  baseline?: boolean;
+  /** Most recent photo of this foot and view. */
+  latest?: boolean;
 }
 
 type PhotoState =
@@ -58,8 +66,10 @@ function PhotoTile({
 
   const label = [asset.side, asset.view].filter(Boolean).join(" · ") || "photo";
   const ready = state.status === "ready";
+  const stage = photoStageLabel(asset);
   return (
-    <figure className="overflow-hidden rounded-xl border border-slate-100">
+    <figure className="relative overflow-hidden rounded-xl border border-slate-100">
+      <PhotoStageBadge baseline={asset.baseline} latest={asset.latest} />
       <button
         type="button"
         disabled={!ready}
@@ -72,7 +82,7 @@ function PhotoTile({
           // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL host
           <img
             src={state.url}
-            alt={`Foot photo — ${label}`}
+            alt={`Foot photo — ${label}${stage ? ` — ${stage}` : ""}`}
             className="h-full w-full object-cover"
           />
         ) : state.status === "loading" ? (
@@ -86,6 +96,15 @@ function PhotoTile({
       </button>
       <figcaption className="px-3 py-2 text-xs font-semibold capitalize text-slate-600">
         {label}
+        {stage && (
+          <span className="ml-1 font-bold uppercase tracking-wide text-brand">
+            · {asset.baseline && asset.latest
+              ? "baseline · latest"
+              : asset.baseline
+                ? "baseline"
+                : "latest"}
+          </span>
+        )}
       </figcaption>
     </figure>
   );

@@ -6,6 +6,7 @@ import { DomainError, conflict, notFound } from "./errors";
 import { requireAuth } from "./auth";
 import { infrastructureClient } from "./storage";
 import { sendReportSummaryForSession } from "./email/sendReportSummary";
+import { linkedUserForSession, recordScanCompleted } from "./rescan";
 import { anthropicAnalysisProvider } from "./providers/anthropic-analysis";
 import {
   MAX_ANALYSIS_ATTEMPTS,
@@ -126,6 +127,22 @@ async function releaseSessionReport(sessionId: string): Promise<void> {
     if (!result.ok && result.reason !== "not_configured") {
       console.warn("[email] report summary not sent:", result.reason, result.detail ?? "");
     }
+
+    // Roll the weekly reminder forward: next check due seven days from now,
+    // streak incremented, this cycle's reminder emails cleared.
+    //
+    // Gated on `released` — the same atomic transition the email is gated on
+    // — and not on merely reaching this function. A re-submitted idempotency
+    // key or a retried sweep reaches here repeatedly for a session that is
+    // already released; counting those would inflate a patient's streak
+    // without them taking a single photo. The update that sets `released`
+    // filters on `status = 'preliminary'`, so exactly one caller ever sees
+    // `released === true` for a given session.
+    //
+    // Best-effort: recordScanCompleted swallows its own failures. A reminder
+    // calendar must never be able to fail a released clinical report.
+    const userId = await linkedUserForSession(sessionId);
+    if (userId) await recordScanCompleted(userId);
   }
 }
 

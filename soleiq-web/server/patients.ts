@@ -4,12 +4,88 @@ import { notFound } from "./errors";
 import { requireAuth } from "./auth";
 import { resolveHospital } from "./tenancy";
 import { writeAudit } from "./audit";
+import {
+  derivePhotoLabels,
+  labelsFor,
+  photoTimestamp,
+  type PhotoLabels,
+} from "@/lib/photoTimeline";
 
 export interface ReportPhoto {
   assetId: string;
   side: string;
   view: string;
   url: string;
+  /** First photo ever taken of this foot and view. See lib/photoTimeline.ts. */
+  baseline: boolean;
+  /** Most recent photo of this foot and view. */
+  latest: boolean;
+}
+
+/**
+ * BASELINE / LATEST badges for one patient's whole photo history.
+ *
+ * Labels cannot be worked out from a single check — a photo has no way of
+ * knowing it is the first of its kind by looking only at its own session — so
+ * this reads the metadata (no signing, no image bytes) for every photo the
+ * patient has, and derives both ends from it.
+ *
+ * Bounded from BOTH ends deliberately. A single `limit` would have to choose:
+ * ordered oldest-first it truncates the newest photos and the LATEST badge
+ * vanishes from the check the patient just took; ordered newest-first it
+ * truncates the oldest and BASELINE lands on the wrong photo — a badge that is
+ * confidently wrong, which is worse than one that is missing. Taking a
+ * thousand from each end and merging keeps both ends exact; only the middle,
+ * where nothing is labelled anyway, can ever be dropped.
+ */
+export async function patientPhotoLabels(
+  supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
+  organizationPatientIds: string[]
+): Promise<Map<string, PhotoLabels>> {
+  const enrollmentIds = organizationPatientIds.filter(Boolean);
+  if (enrollmentIds.length === 0) return new Map();
+  try {
+    const { data: sessions } = await supabase
+      .from("screening_sessions")
+      .select("id")
+      .in("organization_patient_id", enrollmentIds);
+    const sessionIds = (sessions ?? []).map((row: any) => row.id).filter(Boolean);
+    if (sessionIds.length === 0) return new Map();
+
+    const columns = "id, side, view, captured_at, created_at";
+    const [oldest, newest] = await Promise.all([
+      supabase
+        .from("media_assets")
+        .select(columns)
+        .in("screening_session_id", sessionIds)
+        .eq("asset_type", "photo")
+        .order("captured_at", { ascending: true, nullsFirst: false })
+        .limit(1000),
+      supabase
+        .from("media_assets")
+        .select(columns)
+        .in("screening_session_id", sessionIds)
+        .eq("asset_type", "photo")
+        .order("captured_at", { ascending: false, nullsFirst: false })
+        .limit(1000),
+    ]);
+
+    const byId = new Map<string, any>();
+    for (const row of [...(oldest.data ?? []), ...(newest.data ?? [])]) {
+      byId.set(row.id, row);
+    }
+    return derivePhotoLabels(
+      Array.from(byId.values()).map((row) => ({
+        assetId: row.id,
+        side: row.side,
+        view: row.view,
+        capturedAt: photoTimestamp(row),
+      }))
+    );
+  } catch {
+    // Badges are an enhancement. A patient must still see their photos.
+    return new Map();
+  }
 }
 
 /**
@@ -20,7 +96,8 @@ export interface ReportPhoto {
 async function signSessionPhotos(
   supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
   sessionIds: string[],
-  ttlSeconds = 3600
+  ttlSeconds = 3600,
+  labels: Map<string, PhotoLabels> = new Map()
 ): Promise<Map<string, ReportPhoto[]>> {
   const bySession = new Map<string, ReportPhoto[]>();
   const ids = sessionIds.filter(Boolean);
@@ -51,7 +128,15 @@ async function signSessionPhotos(
     const url = urlByPath.get(asset.storage_path);
     if (!url) continue;
     const list = bySession.get(asset.screening_session_id) ?? [];
-    list.push({ assetId: asset.id, side: asset.side, view: asset.view, url });
+    const { baseline, latest } = labelsFor(labels, asset.id);
+    list.push({
+      assetId: asset.id,
+      side: asset.side,
+      view: asset.view,
+      url,
+      baseline,
+      latest,
+    });
     bySession.set(asset.screening_session_id, list);
   }
   return bySession;
@@ -131,7 +216,9 @@ export async function getPatientComparisonData(
 
   const photosBySession = await signSessionPhotos(
     supabase,
-    (reports ?? []).slice(-12).map((report: any) => report.screening_session_id)
+    (reports ?? []).slice(-12).map((report: any) => report.screening_session_id),
+    3600,
+    await patientPhotoLabels(supabase, [organizationPatientId])
   );
 
   await writeAudit(supabase, {
@@ -215,9 +302,21 @@ export async function getPatientReleasedReport(
     purpose: "patient_request",
     requestId,
   });
-  const photosBySession = await signSessionPhotos(supabase, [
-    (report as any).screening_session_id,
-  ]);
+  // Every enrollment this patient has: the baseline photo may well live in a
+  // different hospital's record than the report being opened.
+  const { data: allEnrollments } = await supabase
+    .from("organization_patients")
+    .select("id")
+    .eq("patient_id", patient.id);
+  const photosBySession = await signSessionPhotos(
+    supabase,
+    [(report as any).screening_session_id],
+    3600,
+    await patientPhotoLabels(
+      supabase,
+      (allEnrollments ?? []).map((row: any) => row.id)
+    )
+  );
   return {
     ...report,
     photos: photosBySession.get((report as any).screening_session_id) ?? [],
@@ -318,7 +417,9 @@ export async function getPatientDashboard() {
     supabase,
     (reports ?? [])
       .slice(0, 12)
-      .map((report: any) => report.screening_session_id)
+      .map((report: any) => report.screening_session_id),
+    3600,
+    await patientPhotoLabels(supabase, enrollmentIds)
   );
   const reportsWithPhotos = (reports ?? []).map((report: any) => ({
     ...report,

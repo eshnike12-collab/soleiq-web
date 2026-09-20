@@ -112,7 +112,14 @@ export function ReportTabs({
 }: {
   clinical: any;
   riskLevel: string;
-  assets: { id: string; side: string | null; view: string | null; captured_at: string | null }[];
+  assets: {
+    id: string;
+    side: string | null;
+    view: string | null;
+    captured_at: string | null;
+    baseline?: boolean;
+    latest?: boolean;
+  }[];
   intake: any;
   patient: { full_name?: string | null; date_of_birth?: string | null; sex?: string | null } | null;
   mrn: string | null;

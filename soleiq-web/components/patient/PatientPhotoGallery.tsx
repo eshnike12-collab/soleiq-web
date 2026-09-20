@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { PhotoLightbox, type LightboxPhoto } from "@/components/ui/PhotoLightbox";
+import {
+  PhotoStageBadge,
+  photoStageLabel,
+} from "@/components/patient/PhotoStageBadge";
 
 /**
  * The patient's own photos from a check, with a full-screen viewer.
@@ -15,14 +19,24 @@ import { PhotoLightbox, type LightboxPhoto } from "@/components/ui/PhotoLightbox
 export function PatientPhotoGallery({
   photos,
 }: {
-  photos: { url: string; side?: string | null; view?: string | null }[];
+  photos: {
+    url: string;
+    side?: string | null;
+    view?: string | null;
+    baseline?: boolean;
+    latest?: boolean;
+  }[];
 }) {
   const [index, setIndex] = useState<number | null>(null);
 
-  const items: LightboxPhoto[] = photos.map((p) => ({
-    url: p.url,
-    label: [p.side, p.view].filter(Boolean).join(" · ") || "Foot photo",
-  }));
+  // The stage rides along in the lightbox caption too — a patient who has
+  // opened a photo full screen is exactly the one who needs to know whether
+  // they are looking at their reference shot or their newest one.
+  const items: LightboxPhoto[] = photos.map((p) => {
+    const stage = photoStageLabel(p);
+    const base = [p.side, p.view].filter(Boolean).join(" · ") || "Foot photo";
+    return { url: p.url, label: stage ? `${base} · ${stage}` : base };
+  });
 
   return (
     <>
@@ -35,6 +49,10 @@ export function PatientPhotoGallery({
             aria-label={`View ${photo.label} full screen`}
             className="relative block cursor-zoom-in overflow-hidden rounded-2xl bg-surface-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
+            <PhotoStageBadge
+              baseline={photos[i]?.baseline}
+              latest={photos[i]?.latest}
+            />
             <div className="aspect-square">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

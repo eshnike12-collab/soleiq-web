@@ -162,7 +162,22 @@ function HistoryContent() {
                     {check.photos.slice(0, 4).map((photo) => (
                       <span
                         key={photo.assetId}
-                        className="block h-10 w-10 overflow-hidden rounded-xl border-2 border-white bg-surface-sunken"
+                        title={
+                          photo.baseline && photo.latest
+                            ? "Baseline and latest"
+                            : photo.baseline
+                              ? "Baseline"
+                              : photo.latest
+                                ? "Latest"
+                                : undefined
+                        }
+                        className={`block h-10 w-10 overflow-hidden rounded-xl border-2 border-white bg-surface-sunken ${
+                          photo.latest
+                            ? "ring-2 ring-primary"
+                            : photo.baseline
+                              ? "ring-2 ring-teal-500"
+                              : ""
+                        }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img

@@ -1,7 +1,7 @@
 "use client";
 
-import { Globe } from "lucide-react";
-import { LOCALES, isLocale } from "@/lib/i18n/config";
+import { AlertTriangle, Globe, RotateCw } from "lucide-react";
+import { LOCALES, isLocale, localeMeta } from "@/lib/i18n/config";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 
 /**
@@ -22,7 +22,34 @@ export function LanguageSwitcher({
   /** `bar` sits in the top bar; `row` is a full-width line in a menu. */
   variant?: "bar" | "row";
 }) {
-  const { locale, setLocale, d, loading } = useI18n();
+  const {
+    locale,
+    setLocale,
+    d,
+    loading,
+    localeLoadError,
+    localeLoadNeedsReload,
+    retryLocale,
+  } = useI18n();
+
+  /**
+   * What the reader sees when their language did not load.
+   *
+   * Until now this state was computed and then thrown away: the provider fell
+   * back to English and logged a warning to a console nobody has open. From
+   * the outside that is indistinguishable from a switcher that does not work
+   * — you pick Bengali, the page stays in English, and there is nothing to
+   * act on. Saying so, and offering the one action that helps, is the whole
+   * fix.
+   *
+   * Two different actions, because there are two different failures. A
+   * transient fetch failure is worth retrying in place. A chunk that is gone
+   * because a deployment replaced it cannot be retried into existence — that
+   * tab has to reload to pick up the new filenames.
+   */
+  const failed = localeLoadError
+    ? localeMeta(localeLoadError as never).native
+    : null;
 
   const select = (
     <select
@@ -47,6 +74,28 @@ export function LanguageSwitcher({
     </select>
   );
 
+  const notice = failed ? (
+    <span
+      role="status"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-warn-soft px-2 py-1 text-[11px] font-semibold text-amber-800"
+    >
+      <AlertTriangle size={12} aria-hidden="true" className="shrink-0" />
+      <span>
+        {failed} didn&apos;t load — showing English
+      </span>
+      <button
+        type="button"
+        onClick={() =>
+          localeLoadNeedsReload ? window.location.reload() : retryLocale()
+        }
+        className="inline-flex items-center gap-1 rounded px-1 py-0.5 font-bold underline decoration-dotted underline-offset-2 hover:text-amber-900"
+      >
+        <RotateCw size={11} aria-hidden="true" />
+        {localeLoadNeedsReload ? "Reload" : "Retry"}
+      </button>
+    </span>
+  ) : null;
+
   if (variant === "row") {
     return (
       <div className="lang-row">
@@ -55,6 +104,7 @@ export function LanguageSwitcher({
           {d.language.label}
         </span>
         {select}
+        {notice}
       </div>
     );
   }
@@ -63,6 +113,7 @@ export function LanguageSwitcher({
     <span className="lang-wrap" data-loading={loading ? "true" : "false"}>
       <Globe size={16} aria-hidden="true" className="lang-icon" />
       {select}
+      {notice}
     </span>
   );
 }

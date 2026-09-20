@@ -5,7 +5,8 @@ import { DomainError, notFound } from "./errors";
 import { requireAuth } from "./auth";
 import { resolveHospital } from "./tenancy";
 import { writeAudit } from "./audit";
-import { getStoredRecommendation } from "./patients";
+import { getStoredRecommendation, patientPhotoLabels } from "./patients";
+import { labelsFor } from "@/lib/photoTimeline";
 
 export const WorklistQuerySchema = z.object({
   search: z.string().trim().max(80).optional(),
@@ -84,6 +85,16 @@ export async function getExactReport(
     .order("side")
     .order("view");
 
+  // BASELINE / LATEST, derived across this patient's record at THIS hospital.
+  // Scoped that way on purpose: a clinician is authorized for their own
+  // organization's enrollment, so widening it to the patient's other
+  // hospitals would leak the existence of care elsewhere.
+  const photoLabels = await patientPhotoLabels(supabase, [organizationPatientId]);
+  const labelledAssets = (mediaAssets ?? []).map((asset: any) => ({
+    ...asset,
+    ...labelsFor(photoLabels, asset.id),
+  }));
+
   await writeAudit(supabase, {
     organizationId: hospital.id,
     action: "report.viewed",
@@ -97,7 +108,7 @@ export async function getExactReport(
     hospital,
     report,
     enrollment,
-    mediaAssets: mediaAssets ?? [],
+    mediaAssets: labelledAssets,
     recommendation: await getStoredRecommendation(supabase, report.id),
   };
 }
