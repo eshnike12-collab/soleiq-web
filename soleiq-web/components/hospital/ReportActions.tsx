@@ -41,7 +41,7 @@ export function ReportActions({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+    <section className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5">
       <h3 className="font-semibold text-slate-950">Clinical review</h3>
       <textarea
         value={note}

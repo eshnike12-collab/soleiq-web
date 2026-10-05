@@ -2,6 +2,7 @@ import { HospitalShell } from "@/components/hospital/HospitalShell";
 import { EmptyState, PageHeader } from "@/components/hospital/Ui";
 import { getAdminOverview } from "@/server/admin";
 import { pageAccess } from "@/server/page-access";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function AuditPage({
         title="Audit events"
         description="Append-only access and security events. Request IDs support incident investigation without logging clinical payloads."
       />
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-surface-raised shadow-card">
         {data.audit.length === 0 ? (
           <EmptyState>No audit events are visible yet.</EmptyState>
         ) : (
@@ -37,7 +38,7 @@ export default async function AuditPage({
               <tbody>
                 {data.audit.map((row: any) => (
                   <tr key={row.id} className="border-t border-slate-100">
-                    <td className="px-5 py-3 text-xs">{new Date(row.occurred_at).toLocaleString()}</td>
+                    <td className="px-5 py-3 text-xs"><LocalTime value={row.occurred_at} /></td>
                     <td className="px-5 py-3 font-medium">{row.action}</td>
                     <td className="px-5 py-3">{row.resource_type}</td>
                     <td className="px-5 py-3">{row.purpose || "—"}</td>

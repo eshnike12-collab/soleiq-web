@@ -33,6 +33,7 @@ const REPORT_SELECT = `
   organization_patients!inner(
     patients!inner(
       full_name,
+      linked_user_id,
       profiles:linked_user_id ( full_name, email )
     )
   )
@@ -49,6 +50,7 @@ interface ReportRow {
   organization_patients: {
     patients: {
       full_name: string | null;
+      linked_user_id: string | null;
       profiles: { full_name: string | null; email: string | null } | null;
     } | null;
   } | null;
@@ -145,6 +147,14 @@ async function sendFor(
   }
 
   const summary = row.patient_summary?.overall ?? {};
+
+  // Looked up separately, not joined into REPORT_SELECT above, and allowed to
+  // fail. `time_zone` is a new column: naming it in the main select would make
+  // a PostgREST 42703 fail the WHOLE query on any environment that has not run
+  // the migration yet — and the consequence of that is not a date in the wrong
+  // zone, it is the results email never being sent at all.
+  const timeZone = await patientTimeZone(patient?.linked_user_id ?? null);
+
   return sendReportSummaryEmail({
     patientName: patient?.profiles?.full_name || patient?.full_name || "there",
     patientEmail: email,
@@ -157,5 +167,24 @@ async function sendFor(
       "Open SoleIQ to see what the check found and what to do next.",
     metrics: metricsFor(row),
     reportUrl: reportUrl(row.id),
+    timeZone,
   });
+}
+
+/** The patient's stored zone, or null when unknown or not yet migrated. */
+async function patientTimeZone(userId: string | null): Promise<string | null> {
+  if (!userId) return null;
+  try {
+    const infra = infrastructureClient();
+    const { data, error } = await infra
+      .from("profiles")
+      .select("time_zone")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error) return null;
+    const zone = (data as { time_zone?: string | null } | null)?.time_zone;
+    return typeof zone === "string" && zone.trim() ? zone.trim() : null;
+  } catch {
+    return null;
+  }
 }

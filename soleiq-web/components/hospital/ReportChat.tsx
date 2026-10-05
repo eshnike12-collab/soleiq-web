@@ -146,7 +146,7 @@ export function ReportChat({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white">
+    <section className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card">
       <header className="flex items-center gap-2 border-b border-slate-100 px-5 py-3">
         <Sparkles className="h-4 w-4 text-brand" />
         <div>
@@ -211,13 +211,13 @@ export function ReportChat({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about this report…"
-          className="h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand"
+          className="h-11 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand"
         />
         <button
           type="submit"
           disabled={busy || input.trim().length === 0}
           aria-label="Send"
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-white disabled:opacity-50"
+          className="flex h-11 w-10 items-center justify-center rounded-xl bg-brand text-white disabled:opacity-50"
         >
           <Send className="h-4 w-4" />
         </button>

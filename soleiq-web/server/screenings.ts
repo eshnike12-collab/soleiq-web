@@ -7,6 +7,7 @@ import { requireAuth } from "./auth";
 import { infrastructureClient } from "./storage";
 import { sendReportSummaryForSession } from "./email/sendReportSummary";
 import { linkedUserForSession, recordScanCompleted } from "./rescan";
+import { isValidTimeZone } from "@/lib/localTime";
 import { anthropicAnalysisProvider } from "./providers/anthropic-analysis";
 import {
   MAX_ANALYSIS_ATTEMPTS,
@@ -240,7 +241,22 @@ const ScreeningImageSchema = z.object({
   view: z.enum(["top", "sole"]),
   dataUrl: DataUrlSchema,
   capturedAt: z.number().int().positive(),
+  /**
+   * IANA zone of the capturing device. Validated against Intl below rather
+   * than by regex — this string reaches Postgres and later an
+   * Intl.DateTimeFormat, and a plausible-looking name that is not a real zone
+   * would throw at render time on a page the patient is trying to read.
+   */
+  timeZone: z.string().trim().min(1).max(64).optional(),
   quality: z.record(z.unknown()).nullable().optional(),
+});
+
+/** A view the patient could not photograph, and the reason they gave. */
+const SkippedSlotSchema = z.object({
+  side: z.enum(["left", "right"]),
+  view: z.enum(["top", "sole"]),
+  /** The patient's own words. Optional — "no reason given" is a real answer. */
+  reason: z.string().trim().max(400).optional(),
 });
 
 export const CompleteScreeningSchema = z.object({
@@ -248,8 +264,18 @@ export const CompleteScreeningSchema = z.object({
   facilityId: z.string().uuid().nullable().optional(),
   idempotencyKey: z.string().min(8).max(128),
   startedAt: z.number().int().positive(),
-  images: z.array(ScreeningImageSchema).length(4),
+  // One to four, not exactly four.
+  //
+  // The capture flow has always allowed a view to be skipped — amputation, a
+  // dressing, limited reach — and `length(4)` rejected every one of those
+  // submissions with a validation error the patient could do nothing about.
+  // The skipped views arrive alongside, so a short set is still a complete
+  // record of what was and was not captured.
+  images: z.array(ScreeningImageSchema).min(1).max(4),
+  skippedSlots: z.array(SkippedSlotSchema).max(4).optional(),
   patientContext: z.record(z.unknown()).optional(),
+  /** The device's zone at save time, kept on the profile for email. */
+  timeZone: z.string().trim().min(1).max(64).optional(),
 });
 
 function parseDataUrl(dataUrl: string) {
@@ -313,6 +339,24 @@ export async function createCanonicalScreening(
       .eq("id", enrollment.patient_id)
       .eq("linked_user_id", user.id);
     if (error) throw new Error(error.message);
+  }
+
+  // Remember the patient's timezone for anything rendered where no browser
+  // exists to ask — email, principally, where a date formatted in UTC can
+  // show the wrong DAY for a check taken late in the evening.
+  //
+  // Refreshed from the device on every completed check rather than collected
+  // in a settings screen, because a timezone nobody maintains goes stale the
+  // first time someone moves. Best-effort: failing to record it must not fail
+  // a set of clinical photographs, so the error is logged and dropped.
+  if (isValidTimeZone(body.timeZone)) {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ time_zone: body.timeZone })
+      .eq("id", user.id);
+    if (error) {
+      console.warn("[screenings] could not record timezone:", error.message);
+    }
   }
 
   // Resolve the session by idempotency key BEFORE writing anything.
@@ -402,6 +446,23 @@ export async function createCanonicalScreening(
     .single();
   if (sessionError) throw new Error(sessionError.message);
 
+  // Record which views were skipped, and why.
+  //
+  // Written separately and allowed to fail: `skipped_slots` is a new column,
+  // and naming it in the insert above would make a PostgREST 42703 reject the
+  // WHOLE save on any environment that has not run migration 0013 yet. The
+  // consequence of that is not a missing annotation, it is the patient's
+  // photographs not being saved — so this degrades instead.
+  if (body.skippedSlots && body.skippedSlots.length > 0) {
+    const { error: skipError } = await supabase
+      .from("screening_sessions")
+      .update({ skipped_slots: body.skippedSlots })
+      .eq("id", session.id);
+    if (skipError && skipError.code !== "42703" && skipError.code !== "PGRST204") {
+      console.warn("[screenings] skipped slots not recorded:", skipError.message);
+    }
+  }
+
   // Uploads run under the CALLER'S session (storage RLS policy
   // clinical_media_patient_insert, migration 0007), not the service-role
   // client — so a missing/rotated SUPABASE_SERVICE_ROLE_KEY can no longer
@@ -474,6 +535,13 @@ export async function createCanonicalScreening(
         checksum,
         idempotency_key: assetKey,
         captured_at: new Date(image.capturedAt).toISOString(),
+        // Null rather than a rejected save when the client sends something
+        // Intl does not recognise: a bad timezone string is not a reason to
+        // refuse a set of clinical photographs. The UI then falls back to the
+        // reader's own zone, which is what it did before this column existed.
+        captured_time_zone: isValidTimeZone(image.timeZone)
+          ? image.timeZone
+          : null,
       });
       if (assetError) {
         // Nothing references this object, so drop it rather than leak it.

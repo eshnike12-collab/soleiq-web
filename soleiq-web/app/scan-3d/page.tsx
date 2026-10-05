@@ -7,6 +7,7 @@ import { getPatientDashboard } from "@/server/patients";
 import { pageAccess } from "@/server/page-access";
 import { PatientNav } from "@/components/patient/PatientNav";
 import { Scan3DPanel } from "@/components/scan3d/Scan3DPanel";
+import { PatientAssistant } from "@/components/patient/PatientAssistant";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function Scan3DPage() {
   const patientId = (data.patient as { id?: string } | null)?.id ?? null;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen lg:pl-64">
       <AppTopBar
         title={<h1 className="truncate text-lg font-bold text-ink">3D scan</h1>}
         actions={
@@ -66,6 +67,7 @@ export default async function Scan3DPage() {
         )}
       </main>
       <PatientNav active="scan" />
+      <PatientAssistant />
     </div>
   );
 }

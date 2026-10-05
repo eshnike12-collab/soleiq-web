@@ -5,6 +5,7 @@ import { ReportChat } from "@/components/hospital/ReportChat";
 import { ReportTabs } from "@/components/hospital/ReportTabs";
 import { getExactReport } from "@/server/reports";
 import { pageAccess } from "@/server/page-access";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,13 @@ export default async function ExactReportPage({
       <PageHeader
         eyebrow={`Exact report · version ${data.report.version}`}
         title={patient?.full_name || "Patient report"}
-        description={`${data.report.hospital_name_snapshot} · ${new Date(data.report.created_at).toLocaleString()} · ${data.report.status.replaceAll("_", " ")}`}
+        description={
+          <>
+            {data.report.hospital_name_snapshot} ·{" "}
+            <LocalTime value={data.report.created_at} /> ·{" "}
+            {data.report.status.replaceAll("_", " ")}
+          </>
+        }
         action={
           <a
             href={`/api/h/${data.hospital.slug}/reports/${data.report.id}/export?organizationPatientId=${data.enrollment.id}`}
@@ -62,6 +69,7 @@ export default async function ExactReportPage({
           clinical={clinical}
           riskLevel={data.report.risk_level}
           assets={(data as any).mediaAssets ?? []}
+          skippedSlots={(data as any).skippedSlots ?? []}
           intake={(patient?.demographics as any) ?? null}
           patient={patient ?? null}
           mrn={(data.enrollment as any).mrn ?? null}

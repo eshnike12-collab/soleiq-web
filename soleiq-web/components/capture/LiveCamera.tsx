@@ -17,32 +17,59 @@ import { Monitor, RefreshCcw, Smartphone, Sun, X } from "lucide-react";
 import { measureLightingUnevenness } from "@/lib/photoQuality";
 import { FootGhostOverlay } from "./PhotoGuideAnimation";
 import type { FootSide } from "@/lib/types";
+import {
+  ORIENTATION_KEY,
+  detectHandheld,
+  resolveOrientation,
+  type CameraOrientation,
+} from "@/lib/cameraOrientation";
 
-type CameraOrientation = "portrait" | "landscape";
-
-const ORIENTATION_KEY = "soleiq-camera-orientation";
-
-/** Default: portrait on a vertically-held phone, landscape on a laptop; an
- *  explicit user choice (localStorage) always wins. */
+/** Reads the three inputs the rule needs from the live browser. */
 function detectOrientation(): CameraOrientation {
   if (typeof window === "undefined") return "portrait";
-  const stored = window.localStorage.getItem(ORIENTATION_KEY);
-  if (stored === "portrait" || stored === "landscape") return stored;
-  return window.matchMedia("(orientation: portrait)").matches
-    ? "portrait"
-    : "landscape";
+  let stored: string | null = null;
+  try {
+    stored = window.localStorage.getItem(ORIENTATION_KEY);
+  } catch {
+    /* private mode — no saved choice to honour */
+  }
+  return resolveOrientation({
+    handheld: detectHandheld(window),
+    stored,
+    viewportPortrait: window.matchMedia("(orientation: portrait)").matches,
+  });
 }
 
+function isHandheld(): boolean {
+  return detectHandheld();
+}
+
+/**
+ * The orientation rule lives in lib/cameraOrientation.ts so it can be unit
+ * tested — including a test that pins the old, broken precedence so the
+ * regression cannot come back quietly.
+ */
 export function LiveCamera({
   onCapture,
   onClose,
   onUnavailable,
   guideSide,
   guideView,
+  fullScreen = false,
 }: {
   onCapture: (file: File) => void;
   onClose: () => void;
   onUnavailable: (message: string) => void;
+  /**
+   * True when this fills the whole viewport rather than sitting in a card.
+   *
+   * Only changes where the CONTROLS sit: the video stays edge to edge, and
+   * the buttons move inside the safe area so the close button is not under an
+   * iPhone's Dynamic Island and the shutter is not under the home indicator.
+   * `viewport-fit=cover` is already set in app/layout.tsx, so env() resolves
+   * to real numbers here.
+   */
+  fullScreen?: boolean;
   /** When provided, a ghost outline of the requested shot is drawn over the
    *  preview so the patient can line the foot up with it. */
   guideSide?: FootSide;
@@ -57,6 +84,22 @@ export function LiveCamera({
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [unevenLight, setUnevenLight] = useState(false);
   const [orientation, setOrientation] = useState<CameraOrientation>(detectOrientation);
+  /* Resolved after mount: the media queries it reads do not exist on the
+     server, and guessing would mismatch the first client render. */
+  const [handheld, setHandheld] = useState(false);
+
+  useEffect(() => {
+    setHandheld(isHandheld());
+  }, []);
+
+  /* Control insets. In a card these are plain offsets; full screen they clear
+     the notch and the home indicator. */
+  const topInset = fullScreen
+    ? "top-[calc(env(safe-area-inset-top)+0.75rem)]"
+    : "top-3";
+  const bottomInset = fullScreen
+    ? "bottom-[calc(env(safe-area-inset-bottom)+1.25rem)]"
+    : "bottom-4";
 
   const chooseOrientation = (value: CameraOrientation) => {
     try {
@@ -67,10 +110,17 @@ export function LiveCamera({
     setOrientation(value);
   };
 
-  // Follow device rotation while the camera is open — but only when the user
-  // hasn't made an explicit Phone/Laptop choice.
+  // Follow device rotation while the camera is open — but only on a device
+  // where landscape is a sensible shape at all, and only when the user has
+  // not made an explicit Phone/Laptop choice.
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // A handheld stays portrait however it is turned. Rotating the phone to
+    // reach something should not reshape the frame the foot is lined up in.
+    if (isHandheld()) {
+      setOrientation("portrait");
+      return;
+    }
     const media = window.matchMedia("(orientation: portrait)");
     const onChange = () => {
       const stored = window.localStorage.getItem(ORIENTATION_KEY);
@@ -304,7 +354,7 @@ export function LiveCamera({
       )}
 
       {ready && unevenLight && !captureError && (
-        <div className="absolute inset-x-3 top-14 flex items-center justify-center gap-1.5 rounded-2xl bg-amber-600/90 px-3 py-2 text-center">
+        <div className={`absolute inset-x-3 ${fullScreen ? "top-[calc(env(safe-area-inset-top)+4.25rem)]" : "top-14"} flex items-center justify-center gap-1.5 rounded-2xl bg-amber-600/90 px-3 py-2 text-center`}>
           <Sun className="h-4 w-4 shrink-0 text-white" />
           <p className="text-xs font-semibold text-white">
             Very harsh light — a bit more even lighting will help, but you can
@@ -314,7 +364,7 @@ export function LiveCamera({
       )}
 
       {captureError && (
-        <div className="absolute inset-x-3 top-14 rounded-2xl bg-ink/80 p-3 text-center">
+        <div className={`absolute inset-x-3 ${fullScreen ? "top-[calc(env(safe-area-inset-top)+4.25rem)]" : "top-14"} rounded-2xl bg-ink/80 p-3 text-center`}>
           <p className="text-xs font-semibold text-white">{captureError}</p>
           <button
             type="button"
@@ -333,7 +383,7 @@ export function LiveCamera({
           onClose();
         }}
         aria-label="Close camera"
-        className="absolute left-3 top-3 rounded-full bg-ink/70 p-3 text-white"
+        className={`absolute left-3 ${topInset} rounded-full bg-ink/70 p-3 text-white`}
       >
         <X className="h-5 w-5" />
       </button>
@@ -343,14 +393,19 @@ export function LiveCamera({
           type="button"
           onClick={() => setFacing((value) => (value === "environment" ? "user" : "environment"))}
           aria-label="Switch camera"
-          className="absolute right-3 top-3 rounded-full bg-ink/70 p-3 text-white"
+          className={`absolute right-3 ${topInset} rounded-full bg-ink/70 p-3 text-white`}
         >
           <RefreshCcw className="h-5 w-5" />
         </button>
       )}
 
-      {/* Phone (portrait) / Laptop (landscape) mode toggle */}
-      <div className="absolute left-1/2 top-3 flex -translate-x-1/2 overflow-hidden rounded-full bg-ink/70 text-[11px] font-semibold text-white">
+      {/* Phone (portrait) / Laptop (landscape) toggle — desktops only.
+          Hidden on a handheld because there is nothing to choose there: a
+          phone camera is portrait, and offering the choice at the top centre
+          of the viewfinder is how people ended up stuck in a letterboxed
+          16:9 strip they could not find their way out of. */}
+      {!handheld && (
+      <div className={`absolute left-1/2 ${topInset} flex -translate-x-1/2 overflow-hidden rounded-full bg-ink/70 text-[11px] font-semibold text-white`}>
         <button
           type="button"
           onClick={() => chooseOrientation("portrait")}
@@ -376,8 +431,9 @@ export function LiveCamera({
           <Monitor className="h-3.5 w-3.5" /> Laptop
         </button>
       </div>
+      )}
 
-      <div className="absolute inset-x-0 bottom-4 flex justify-center">
+      <div className={`absolute inset-x-0 ${bottomInset} flex justify-center`}>
         <button
           type="button"
           onClick={shutter}

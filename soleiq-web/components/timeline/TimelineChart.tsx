@@ -22,16 +22,16 @@ export function TimelineChart({
       </p>
       <ResponsiveContainer width="100%" height="85%">
         <LineChart data={data}>
-          <CartesianGrid stroke="#F1EFE8" />
+          <CartesianGrid stroke="#E5EBF0" />
           <XAxis dataKey="label" tick={{ fontSize: 10 }} />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip />
           <Line
             type="monotone"
             dataKey="volume"
-            stroke="#1F4E79"
+            stroke="#1B64CC"
             strokeWidth={2.5}
-            dot={{ r: 4, fill: "#1F4E79" }}
+            dot={{ r: 4, fill: "#1B64CC" }}
           />
         </LineChart>
       </ResponsiveContainer>

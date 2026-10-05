@@ -14,6 +14,7 @@ import {
   listMyCanonicalChecks,
   type CanonicalCheck,
 } from "@/lib/canonicalScreenings";
+import { PatientAssistant } from "@/components/patient/PatientAssistant";
 
 const riskHero: Record<string, string> = {
   clear: "bg-teal-50 border-teal-200",
@@ -49,7 +50,7 @@ function SummaryContent() {
   const latest = checks && checks.length > 0 ? checks[checks.length - 1] : null;
 
   return (
-    <div className="min-h-screen px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24 lg:pb-12 lg:pl-[17.25rem] lg:pr-8">
       <main className="mx-auto max-w-3xl">
         <Link
           href="/features"
@@ -176,6 +177,7 @@ function SummaryContent() {
         )}
       </main>
       <PatientNav active="features" />
+      <PatientAssistant />
     </div>
   );
 }

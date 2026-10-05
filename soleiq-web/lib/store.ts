@@ -41,6 +41,12 @@ interface SoleiqStore {
   currentVisit: Visit | null;
   startVisit: () => void;
   addImage: (img: CapturedImage) => void;
+  /** Attaches a wound measurement to an already-captured photo. */
+  setImageMeasurement: (
+    side: FootSide,
+    view: CaptureView,
+    measurement: CapturedImage["measurement"]
+  ) => void;
   skipSlot: (side: FootSide, view: CaptureView, reason?: string) => void;
   unskipSlot: (side: FootSide, view: CaptureView) => void;
   setImageAiResult: (
@@ -218,6 +224,20 @@ export const useSoleiqStore = create<SoleiqStore>()(
               ...s.currentVisit,
               skippedSlots: (s.currentVisit.skippedSlots ?? []).filter(
                 (slot) => slot.side !== side || slot.view !== view
+              ),
+            },
+          };
+        }),
+      setImageMeasurement: (side, view, measurement) =>
+        set((s) => {
+          if (!s.currentVisit) return {};
+          return {
+            currentVisit: {
+              ...s.currentVisit,
+              images: s.currentVisit.images.map((image) =>
+                image.side === side && image.view === view
+                  ? { ...image, measurement }
+                  : image
               ),
             },
           };

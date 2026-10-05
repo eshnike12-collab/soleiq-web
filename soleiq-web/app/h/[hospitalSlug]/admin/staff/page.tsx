@@ -21,7 +21,7 @@ export default async function StaffPage({
         description="Staff cannot self-select a role. Doctor memberships stay inactive until an administrator verifies them."
       />
       <InviteStaffForm hospitalSlug={data.hospital.slug} />
-      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-surface-raised shadow-card">
         <div className="border-b border-slate-200 px-5 py-4">
           <h3 className="font-semibold">Hospital memberships</h3>
         </div>

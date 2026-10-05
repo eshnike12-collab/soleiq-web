@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Check, ImagePlus, Loader2, RotateCcw, SkipForward, X } from "lucide-react";
 import { useSoleiqStore } from "@/lib/store";
@@ -9,6 +9,9 @@ import type { CaptureView, FootSide } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { LiveCamera } from "./LiveCamera";
 import { PhotoGuideAnimation } from "./PhotoGuideAnimation";
+import { deviceTimeZone } from "@/lib/localTime";
+import { segmentPhoto } from "@/lib/woundMeasurement";
+import { detectHandheld } from "@/lib/cameraOrientation";
 
 const SHOTS: {
   side: FootSide;
@@ -64,6 +67,7 @@ const slotLabel = (side: FootSide, view: "top" | "sole") =>
 export function FourPhotoCapture() {
   const visit = useSoleiqStore((state) => state.currentVisit);
   const addImage = useSoleiqStore((state) => state.addImage);
+  const setImageMeasurement = useSoleiqStore((state) => state.setImageMeasurement);
   const skipSlot = useSoleiqStore((state) => state.skipSlot);
   const unskipSlot = useSoleiqStore((state) => state.unskipSlot);
   const goNext = useSoleiqStore((state) => state.goNext);
@@ -71,6 +75,26 @@ export function FourPhotoCapture() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  /**
+   * Resolved after mount — the media queries it reads do not exist on the
+   * server, and a guess would mismatch the first client render.
+   */
+  const [handheld, setHandheld] = useState(false);
+  useEffect(() => {
+    setHandheld(detectHandheld());
+  }, []);
+
+  /* Lock the page behind the full-screen viewfinder. Without this, a drag
+     anywhere on the preview scrolls the check underneath it, and closing the
+     camera leaves you somewhere else on the page. */
+  useEffect(() => {
+    if (!cameraOpen || !handheld) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [cameraOpen, handheld]);
   const [skipOpen, setSkipOpen] = useState(false);
   // Advisories from the quality check. Never block submission.
   const [notes, setNotes] = useState<string[]>([]);
@@ -87,6 +111,15 @@ export function FourPhotoCapture() {
     skipped.some((slot) => slot.side === side && slot.view === view);
   const skipReason = (side: FootSide, view: "top" | "sole") =>
     skipped.find((slot) => slot.side === side && slot.view === view)?.reason;
+  /* Slots that no longer need the patient: photographed, or deliberately
+     skipped. Feeds the header's progress bar only — the flow's own completion
+     rule is `complete` below and is unchanged. */
+  const resolvedCount = SHOTS.filter(
+    (item) =>
+      images.some(
+        (image) => image.side === item.side && image.view === item.view
+      ) || isSkipped(item.side, item.view)
+  ).length;
   const captured = SHOTS.filter(({ side, view }) =>
     images.some(
       (image) =>
@@ -129,8 +162,30 @@ export function FourPhotoCapture() {
         // The lighting-corrected copy, for the model only.
         analysisDataUrl: prepared.analysisDataUrl,
         capturedAt: Date.now(),
+        // Read here, at the shutter, and never re-derived later: this is the
+        // clock the patient was actually looking at.
+        timeZone: deviceTimeZone() ?? undefined,
         quality: prepared.quality,
       });
+
+      /* Measure the photo just banked.
+         Deliberately NOT awaited: the measurement is an enhancement on top of
+         the screening, and a slow or absent service must not hold up the
+         patient's next shot. It resolves to null when the service is
+         unconfigured or unreachable, and the check proceeds exactly as it did
+         before measurement existed. */
+      void (async () => {
+        try {
+          const response = await fetch(prepared.dataUrl);
+          const blob = await response.blob();
+          const measurement = await segmentPhoto(blob);
+          if (measurement) {
+            setImageMeasurement(shot.side, shot.view, measurement);
+          }
+        } catch {
+          /* Not measured. Never surfaced as a failure, and never as healthy. */
+        }
+      })();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not read this photo.");
     } finally {
@@ -268,17 +323,59 @@ export function FourPhotoCapture() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="mb-2.5 flex shrink-0 items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
-            Foot photo
-          </p>
-          <h1 className="text-xl font-bold text-ink">{shot.title}</h1>
-          <p className="mt-1 text-[15px] leading-snug text-ink-soft">{shot.hint}</p>
+      {/*
+        On a phone the camera takes the WHOLE screen, the way a camera app
+        does, instead of living in the card below.
+
+        The card is a `min-h-[200px] flex-1` stage sitting under a header, a
+        four-slot picker and two buttons. Whatever aspect ratio the preview
+        asks for inside it, on a phone that stage is a short landscape strip —
+        so the viewfinder was a letterbox through the middle of the page and
+        the foot occupied a few hundred pixels of it. No amount of fixing the
+        preview's own shape helps while its container is that shape.
+
+        `fixed` rather than `absolute` so it escapes the flow entirely and is
+        measured against the viewport, and z-50 to clear the bottom nav.
+      */}
+      {cameraOpen && handheld && (
+        <div className="fixed inset-0 z-50 bg-black">
+          <LiveCamera
+            fullScreen
+            onCapture={handleCameraCapture}
+            onClose={() => setCameraOpen(false)}
+            onUnavailable={handleCameraUnavailable}
+            guideSide={shot.side}
+            guideView={shot.view}
+          />
         </div>
-        <span className="shrink-0 rounded-full bg-surface-sunken px-2.5 py-1 text-xs font-semibold text-ink-soft">
-          {index + 1} / {SHOTS.length}
-        </span>
+      )}
+      <header className="mb-3 shrink-0">
+        {/* "Photo 1 of 4" rather than "1 / 4": the same two numbers said in
+            words, which is what reads at arm's length while holding a phone
+            over a foot. */}
+        <p className="mc-section-title text-primary">
+          Photo {index + 1} of {SHOTS.length}
+        </p>
+        <h1 className="mt-1 text-[22px] font-bold leading-tight text-ink">
+          {shot.title}
+        </h1>
+        <p className="mt-1.5 text-[16px] leading-snug text-ink-soft">{shot.hint}</p>
+
+        {/* How far through the four the patient is. Derived from slot state
+            the flow already tracks — no new state, nothing stored. */}
+        <div
+          className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={SHOTS.length}
+          aria-valuenow={resolvedCount}
+          aria-label={`${resolvedCount} of ${SHOTS.length} photos done`}
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+            style={{ width: `${(resolvedCount / SHOTS.length) * 100}%` }}
+          />
+        </div>
       </header>
 
       {/* Per-slot progress strip — purely presentational, derived from the
@@ -327,8 +424,8 @@ export function FourPhotoCapture() {
               <p
                 className={
                   isActive
-                    ? "mt-1 text-center text-[10px] font-bold leading-tight text-primary"
-                    : "mt-1 text-center text-[10px] font-semibold leading-tight text-ink-faint"
+                    ? "mt-1 text-center text-[11px] font-bold leading-tight text-primary"
+                    : "mt-1 text-center text-[11px] font-semibold leading-tight text-ink-faint"
                 }
               >
                 {slotLabel(item.side, item.view)}
@@ -341,8 +438,8 @@ export function FourPhotoCapture() {
       {/* min-h keeps the camera/guide stage usable on short screens instead of
           letting flex squeeze it to a sliver; the flow body scrolls if the
           screen then runs past the fold. */}
-      <div className="relative min-h-[200px] flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-surface-sunken">
-        {cameraOpen ? (
+      <div className="relative min-h-[200px] flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-surface-sunken">
+        {cameraOpen && !handheld ? (
           <LiveCamera
             onCapture={handleCameraCapture}
             onClose={() => setCameraOpen(false)}
@@ -446,6 +543,43 @@ export function FourPhotoCapture() {
           <Camera className="mr-1.5 h-4 w-4" /> Take photo
         </button>
       </div>
+      {/* Measurement readout.
+          Shown only when the segmenter actually found and measured a region.
+          Nothing is shown when it did not — because "not measured" and
+          "nothing there" are different statements, and this model (one class,
+          wound, never shown a healthy foot) can only make the first. */}
+      {current?.measurement && (
+        <div className="shrink-0 rounded-xl border border-blue-200 bg-primary-soft px-3.5 py-2.5">
+          <p className="text-[13px] font-bold uppercase tracking-[0.06em] text-primary">
+            Area measured in this photo
+          </p>
+          <p className="mt-1 text-[15px] font-semibold text-ink">
+            {current.measurement.areaMm2 !== null ? (
+              <>
+                {current.measurement.areaMm2.toFixed(0)} mm²
+                {current.measurement.lengthMm !== null && (
+                  <> · {current.measurement.lengthMm.toFixed(0)} mm across</>
+                )}
+              </>
+            ) : (
+              <>
+                {current.measurement.areaPx.toLocaleString()} px (
+                {(current.measurement.areaFrac * 100).toFixed(2)}% of the photo)
+              </>
+            )}
+          </p>
+          {!current.measurement.scaleAvailable && (
+            /* Never show a millimetre figure the calibration cannot support.
+               Without a scale reference in frame, pixels are the honest unit. */
+            <p className="mt-1 text-[12px] leading-snug text-ink-soft">
+              Millimetres need a scale reference in the photo — a bank card
+              beside the foot is enough. Your care team reviews the picture
+              either way.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="shrink-0 pt-2">
         <Button
           fullWidth

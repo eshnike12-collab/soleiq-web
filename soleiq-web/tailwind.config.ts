@@ -6,18 +6,23 @@ import tailwindcssAnimate from "tailwindcss-animate";
 /**
  * SoleIQ design tokens.
  *
- * The visual system is warm cream + deep navy (brand), with a sage-teal
- * secondary for health/positive states, honey amber for "watch", and a
- * muted coral for urgent — never harsh red. Components must use these
- * token names (or the semantic aliases), not raw hex.
+ * The visual system is a medical light blue: white and very light blue
+ * surfaces, cool grey-blue neutrals, and restrained pastel accents. Green
+ * reads reassuring, amber asks for attention, coral is reserved for genuine
+ * urgency — never a neon red.
  *
  * Semantic tokens (primary/secondary/surface/ink/success/warn/urgent) read
  * from CSS variables declared in globals.css, so a future dark theme is a
  * variable swap — no component changes.
  *
  * The stock Tailwind scales below (slate, blue, teal, amber, red, …) are
- * REMAPPED to warm equivalents on purpose: the whole app already speaks
- * those names, so re-pointing them restyles every screen consistently.
+ * REMAPPED on purpose: the whole app already speaks those names, so
+ * re-pointing them restyles every screen at once and keeps one palette
+ * instead of two. Changing a scale here changes every screen that uses it —
+ * which is the point, and the reason not to add one-off hex anywhere else.
+ *
+ * Each scale's dark end is chosen to pass WCAG AA as text on white; the light
+ * end is chosen to sit under dark text. See the contrast table in globals.css.
  */
 
 const v = (name: string) => `rgb(var(${name}) / <alpha-value>)`;
@@ -76,130 +81,148 @@ const config: Config = {
           high: "#BE5F4E",
         },
 
-        // ---- Warm neutral family (replaces cool slate + warmGray) -------
+        // ---- Cool neutral family (page chrome, borders, muted text) ----
+        // Blue-tinted greys so neutrals sit in the same family as the brand
+        // rather than reading as a separate warm palette beside it.
         slate: {
-          50: "#FAF8F2",
-          100: "#F1EDE3",
-          200: "#E5E0D2",
-          300: "#D2CBBA",
-          400: "#A89F8F",
-          500: "#837B6C",
-          600: "#635D51",
-          700: "#4C463C",
-          800: "#37332B",
-          900: "#262420",
-          950: "#181713",
+          50: "#F7FBFE",
+          100: "#F0F5FA",
+          200: "#E5EBF0", // the app's hairline
+          300: "#CBD6E2",
+          400: "#9AA8B8",
+          500: "#7A8899",
+          600: "#64748B",
+          700: "#546478",
+          800: "#3A4857",
+          900: "#1F2D3D",
+          950: "#141E29",
         },
         warmGray: {
-          50: "#F5F2EA",
-          100: "#E5E0D2",
-          600: "#635D51",
-          800: "#37332B",
+          50: "#F7FBFE",
+          100: "#F0F5FA",
+          600: "#64748B",
+          800: "#3A4857",
         },
 
-        // ---- Navy family (primary tints) --------------------------------
+        // ---- Medical blue (primary) -------------------------------------
+        // 400/500 are the identity hues #4A90E2 and #2F80ED. They are fills
+        // and tints only: both fail AA as text, so anything carrying words
+        // uses 600 or darker.
         blue: {
-          50: "#EDF3F9",
-          100: "#D9E6F2",
-          200: "#BCD3E8",
-          300: "#93B7D8",
-          600: "#24578A",
-          800: "#173C5D",
-          900: "#122F49",
+          50: "#F5FAFF",
+          100: "#EAF5FF",
+          200: "#CFE4F9",
+          300: "#9CC5F0",
+          400: "#4A90E2",
+          500: "#2F80ED",
+          600: "#1B64CC",
+          700: "#14539E",
+          800: "#10427D",
+          900: "#0C3362",
         },
         sky: {
-          100: "#D9E6F2",
-          600: "#2E6899",
+          100: "#EAF5FF",
+          600: "#1B64CC",
         },
 
-        // ---- Sage-teal family (secondary / health-positive) -------------
+        // ---- Medical green (health-positive) ----------------------------
         teal: {
-          50: "#ECF5F0",
-          100: "#D3E9DE",
-          200: "#B0D8C7",
-          400: "#62A98E",
-          600: "#337A62",
-          700: "#2A6551",
-          800: "#204E3F",
-          900: "#173A2F",
-          950: "#0E241D",
+          50: "#EAF8F1",
+          100: "#DDF5E7",
+          200: "#BCE7D0",
+          400: "#4FAF78",
+          600: "#27694A",
+          700: "#20573D",
+          800: "#1A4731",
+          900: "#143726",
+          950: "#0C2218",
         },
         emerald: {
-          50: "#ECF5EE",
-          100: "#D5E9DA",
-          600: "#3A7D53",
-          700: "#2F6644",
-          800: "#254F36",
-          900: "#1B3B28",
+          50: "#EAF8F1",
+          100: "#DDF5E7",
+          600: "#2F7D52",
+          700: "#27694A",
+          800: "#20573D",
+          900: "#1A4731",
         },
         green: {
-          50: "#ECF5EE",
-          700: "#2F6644",
+          50: "#EAF8F1",
+          700: "#27694A",
         },
 
-        // ---- Honey amber (watch states) ---------------------------------
+        // ---- Amber (attention / watch) ----------------------------------
         amber: {
-          50: "#FBF4E3",
-          100: "#F5E7C5",
-          200: "#ECD49A",
-          400: "#D3A648",
-          500: "#BC8F26",
-          600: "#96701A",
-          700: "#785913",
-          800: "#59430E",
-          900: "#45340B",
-          950: "#2A1F06",
+          50: "#FFF8DF",
+          100: "#FBEFC4",
+          200: "#F2DD9B",
+          400: "#D9A520",
+          500: "#B8860B",
+          600: "#8A6209",
+          700: "#6F4E07",
+          800: "#573E06",
+          900: "#443004",
+          950: "#2A1E03",
         },
         orange: {
-          50: "#FAF0E6",
-          100: "#F4DEC7",
-          300: "#E2B183",
-          600: "#B06B2A",
-          700: "#8F5622",
-          900: "#57350F",
+          50: "#FFF1E8",
+          100: "#FDE2CF",
+          300: "#F3B98C",
+          600: "#A85A2A",
+          700: "#8A4921",
+          900: "#542C13",
         },
 
-        // ---- Muted coral (urgent — never harsh red) ---------------------
+        // ---- Coral (urgent — clinical, never neon) ----------------------
         red: {
-          50: "#FAEEEA",
-          100: "#F4DAD3",
-          200: "#EAC0B5",
-          500: "#BE5F4E",
-          600: "#A94F3F",
-          700: "#8B4134",
-          800: "#6E332A",
-          900: "#522721",
-          950: "#331714",
+          50: "#FFF1E8",
+          100: "#FBDED6",
+          200: "#F3C2B6",
+          500: "#D4604C",
+          600: "#B8402F",
+          700: "#9A3627",
+          800: "#7B2B1F",
+          900: "#5E2118",
+          950: "#3A1410",
         },
         rose: {
-          100: "#F6DBD8",
-          600: "#B25358",
+          100: "#FBDED6",
+          600: "#B8402F",
         },
 
-        // ---- Softened supporting hues (tiles, clinical accents) ---------
+        // ---- Soft lavender / blush (supporting tiles) -------------------
         indigo: {
-          50: "#EFF1F8",
-          100: "#DDE2F0",
-          600: "#4A5899",
-          700: "#3C4880",
+          50: "#F7F4FD",
+          100: "#F1EDFA",
+          600: "#5B52A3",
+          700: "#4A4287",
         },
         violet: {
-          100: "#E4DEEE",
-          600: "#6D5A96",
+          100: "#F1EDFA",
+          600: "#6B5CA5",
         },
         pink: {
-          100: "#F4DEE3",
+          100: "#FBE7EC",
         },
       },
+
       boxShadow: {
-        // Layered, warm-tinted, and soft — the app's only shadow voices.
-        card: "0 1px 2px rgba(38, 36, 32, 0.05), 0 6px 20px -6px rgba(38, 36, 32, 0.08)",
+        // Cool-tinted and deliberately quiet — the page ground already
+        // separates a white card, so the shadow only has to confirm it. Three
+        // voices, no more: resting, raised, and the primary action.
+        card: "0 1px 2px rgba(31, 45, 61, 0.04), 0 4px 16px -6px rgba(31, 45, 61, 0.07)",
         lifted:
-          "0 2px 4px rgba(38, 36, 32, 0.05), 0 14px 32px -10px rgba(38, 36, 32, 0.16)",
-        button: "0 6px 16px -6px rgba(31, 78, 121, 0.45)",
+          "0 2px 4px rgba(31, 45, 61, 0.05), 0 12px 28px -10px rgba(31, 45, 61, 0.13)",
+        button: "0 6px 16px -8px rgba(27, 100, 204, 0.5)",
       },
       borderRadius: {
         phone: "40px",
+      },
+      // Type scale anchors used by the shared presentation components. Kept
+      // here so the hierarchy is stated once rather than re-derived per screen.
+      fontSize: {
+        "page-title": ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.015em" }],
+        "section-title": ["1.3125rem", { lineHeight: "1.3", letterSpacing: "-0.01em" }],
+        "card-title": ["1.0625rem", { lineHeight: "1.35" }],
       },
       transitionTimingFunction: {
         screen: "cubic-bezier(0.4, 0, 0.2, 1)",

@@ -3,6 +3,7 @@ import { HospitalShell } from "@/components/hospital/HospitalShell";
 import { EmptyState, PageHeader } from "@/components/hospital/Ui";
 import { getAdminOverview } from "@/server/admin";
 import { pageAccess } from "@/server/page-access";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function AssignmentsPage({
         description="Assignments are hospital-scoped, time-bounded clinical relationships. Ending an assignment removes future access immediately."
       />
       <AssignmentForm hospitalSlug={data.hospital.slug} doctors={doctors} patients={patients} />
-      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-surface-raised shadow-card">
         {data.assignments.length === 0 ? (
           <EmptyState>No assignment history yet.</EmptyState>
         ) : (
@@ -53,7 +54,7 @@ export default async function AssignmentsPage({
                   <td className="px-5 py-3 font-mono text-xs">{row.clinician_membership_id.slice(0, 8)}…</td>
                   <td className="px-5 py-3 capitalize">{row.status}</td>
                   <td className="px-5 py-3 text-xs text-slate-500">
-                    {new Date(row.starts_at).toLocaleDateString()} – {row.ends_at ? new Date(row.ends_at).toLocaleDateString() : "ongoing"}
+                    <LocalTime value={row.starts_at} mode="date" /> – {row.ends_at ? <LocalTime value={row.ends_at} mode="date" /> : "ongoing"}
                   </td>
                 </tr>
               ))}

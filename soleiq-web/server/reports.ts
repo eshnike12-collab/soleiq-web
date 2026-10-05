@@ -5,7 +5,11 @@ import { DomainError, notFound } from "./errors";
 import { requireAuth } from "./auth";
 import { resolveHospital } from "./tenancy";
 import { writeAudit } from "./audit";
-import { getStoredRecommendation, patientPhotoLabels } from "./patients";
+import {
+  getStoredRecommendation,
+  patientPhotoLabels,
+  sessionSkippedSlots,
+} from "./patients";
 import { labelsFor } from "@/lib/photoTimeline";
 
 export const WorklistQuerySchema = z.object({
@@ -77,13 +81,36 @@ export async function getExactReport(
 
   // RLS grants media reads through the same report-access rules, so an
   // authorized report view can always show its captured photos.
-  const { data: mediaAssets } = await supabase
-    .from("media_assets")
-    .select("id, side, view, captured_at")
-    .eq("screening_session_id", report.screening_session_id)
-    .eq("asset_type", "photo")
-    .order("side")
-    .order("view");
+  //
+  // The timezone column is requested optimistically and the query is retried
+  // without it on 42703 (undefined_column). Deploying the code before running
+  // the migration is an ordinary thing to do, and a PostgREST select naming a
+  // column that does not exist fails the WHOLE query — which would take out
+  // the clinician's report view entirely rather than just omitting a
+  // timestamp's zone.
+  const assetColumns = "id, side, view, captured_at";
+  let mediaAssets: any[] | null = null;
+  {
+    const withZone = await supabase
+      .from("media_assets")
+      .select(`${assetColumns}, captured_time_zone`)
+      .eq("screening_session_id", report.screening_session_id)
+      .eq("asset_type", "photo")
+      .order("side")
+      .order("view");
+    if (withZone.error?.code === "42703") {
+      const fallback = await supabase
+        .from("media_assets")
+        .select(assetColumns)
+        .eq("screening_session_id", report.screening_session_id)
+        .eq("asset_type", "photo")
+        .order("side")
+        .order("view");
+      mediaAssets = fallback.data ?? null;
+    } else {
+      mediaAssets = withZone.data ?? null;
+    }
+  }
 
   // BASELINE / LATEST, derived across this patient's record at THIS hospital.
   // Scoped that way on purpose: a clinician is authorized for their own
@@ -109,6 +136,7 @@ export async function getExactReport(
     report,
     enrollment,
     mediaAssets: labelledAssets,
+    skippedSlots: await sessionSkippedSlots(supabase, report.screening_session_id),
     recommendation: await getStoredRecommendation(supabase, report.id),
   };
 }

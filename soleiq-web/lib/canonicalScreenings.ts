@@ -2,6 +2,7 @@
 
 import { getSupabase } from "./supabase";
 import { derivePhotoLabels, labelsFor, photoTimestamp } from "./photoTimeline";
+import { deviceTimeZone } from "./localTime";
 import type { PatientProfile, ScreeningLevel, Visit } from "./types";
 
 export interface CanonicalCheckPhoto {
@@ -277,9 +278,22 @@ export async function saveCanonicalScreening(
           view: image.view,
           dataUrl: image.dataUrl,
           capturedAt: image.capturedAt,
+          timeZone: image.timeZone,
           quality: image.quality ?? null,
         })),
+      // Views the patient could not photograph. Sent so a short set of images
+      // reads as "this view is missing, and here is why" rather than as a
+      // malformed submission.
+      skippedSlots: (visit.skippedSlots ?? []).map((slot) => ({
+        side: slot.side,
+        view: slot.view,
+        ...(slot.reason ? { reason: slot.reason } : {}),
+      })),
       patientContext: profile,
+      // The device's zone at save time, kept on the profile so anything
+      // rendered without a browser — email, chiefly — can use the patient's
+      // own clock rather than the server's.
+      timeZone: deviceTimeZone() ?? undefined,
     }),
   } satisfies RequestInit;
 

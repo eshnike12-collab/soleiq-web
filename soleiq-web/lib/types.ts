@@ -259,6 +259,20 @@ export interface CapturedImage {
    */
   analysisDataUrl?: string;
   capturedAt: number;
+  /**
+   * IANA timezone of the device at the moment of capture, e.g.
+   * "America/New_York". Stored with the instant because the instant alone
+   * cannot say what time the patient saw on their own clock. Optional:
+   * captures made before this was recorded fall back to the reader's device.
+   */
+  timeZone?: string;
+  /**
+   * Wound segmentation result for this photo, when the measurement service
+   * answered. Absent means NOT MEASURED — service unavailable, or no region
+   * above threshold. It never means "healthy": the model knows one class and
+   * has never been shown a healthy foot. See lib/woundMeasurement.ts.
+   */
+  measurement?: import("./woundMeasurement").WoundMeasurementResult;
   source?: "live" | "upload";
   detection?: CaptureDetection;
   aiResult?: {

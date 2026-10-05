@@ -1,16 +1,21 @@
 import { OrganizationOnboardingForm } from "@/components/hospital/SettingsForms";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import {
+  getPlatformMonthlyStats,
   listPlatformFeedback,
   listPlatformOrganizations,
 } from "@/server/platform";
+import { PlatformMonthlyPanel } from "@/components/hospital/PlatformMonthlyPanel";
+import { platformReportRecipient } from "@/server/monthlyReport";
 import { pageAccess } from "@/server/page-access";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlatformPage() {
   const organizations = await pageAccess(listPlatformOrganizations);
   const feedback = await listPlatformFeedback().catch(() => []);
+  const monthly = await getPlatformMonthlyStats().catch(() => null);
   return (
     <div className="min-h-screen ">
       <header className="border-b border-slate-200 bg-white">
@@ -23,8 +28,17 @@ export default async function PlatformPage() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl space-y-6 px-5 py-8">
+        {monthly !== null && (
+          <PlatformMonthlyPanel
+            current={monthly.current}
+            currentStats={monthly.currentStats}
+            previous={monthly.previous}
+            previousStats={monthly.previousStats}
+            reportRecipient={platformReportRecipient()}
+          />
+        )}
         <OrganizationOnboardingForm />
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-surface-raised shadow-card">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr><th className="px-5 py-3">Hospital</th><th className="px-5 py-3">Slug</th><th className="px-5 py-3">Timezone</th><th className="px-5 py-3">Status</th></tr>
@@ -42,7 +56,7 @@ export default async function PlatformPage() {
           </table>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <section className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5">
           <h2 className="font-semibold text-slate-950">Care-team feedback ({feedback.length})</h2>
           <p className="mt-0.5 text-xs text-slate-500">
             Sent by patients and doctors from their dashboards; also emailed
@@ -62,7 +76,7 @@ export default async function PlatformPage() {
                       {item.role}
                     </span>
                     <span className="text-slate-500">
-                      {new Date(item.created_at).toLocaleString()}
+                      <LocalTime value={item.created_at} />
                       {item.contact_email ? ` · ${item.contact_email}` : ""}
                     </span>
                   </div>

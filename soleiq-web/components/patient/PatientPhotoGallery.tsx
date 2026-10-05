@@ -61,7 +61,7 @@ export function PatientPhotoGallery({
                 className="h-full w-full object-cover"
               />
             </div>
-            <span className="absolute inset-x-0 bottom-0 bg-black/50 px-1.5 py-1 text-center text-[10px] font-semibold uppercase text-white">
+            <span className="absolute inset-x-0 bottom-0 bg-black/55 px-1.5 py-1.5 text-center text-[12px] font-semibold uppercase tracking-wide text-white">
               {photo.label}
             </span>
           </button>

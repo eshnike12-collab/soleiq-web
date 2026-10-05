@@ -71,8 +71,8 @@ function FootSilhouette({ mirror }: { mirror: boolean }) {
            C 64 188, 36 188, 30 160
            C 20 120, 24 90, 24 60
            C 22 30, 30 12, 50 12 Z"
-        fill="#F1EFE8"
-        stroke="#D3D1C7"
+        fill="#F0F5FA"
+        stroke="#CBD6E2"
         strokeWidth="1"
       />
     </g>

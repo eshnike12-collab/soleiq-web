@@ -96,6 +96,13 @@ from src.store.db import init_db as _init_store_db  # noqa: E402
 _init_store_db()
 app.include_router(_scan_router)
 
+# Wound segmentation + measurement over a single photograph. Its own router so
+# a missing checkpoint degrades that endpoint alone — the model is loaded
+# lazily on first request, not at import. See src/serve/seg_routes.py.
+from src.serve.seg_routes import router as _seg_router  # noqa: E402
+
+app.include_router(_seg_router)
+
 
 def _install_cors(app: FastAPI, origins: list[str]) -> None:
     app.add_middleware(

@@ -3,6 +3,7 @@ import { HospitalShell } from "@/components/hospital/HospitalShell";
 import { EmptyState, PageHeader } from "@/components/hospital/Ui";
 import { getPatientClinicalRecord } from "@/server/patients";
 import { pageAccess } from "@/server/page-access";
+import { LocalTime } from "@/components/ui/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function PatientClinicalPage({
         title={patient?.full_name || "Patient"}
         description={`${facility?.name || "No facility"} · Hospital ID ${data.enrollment.mrn || "not recorded"}. Timeline links preserve the exact report version.`}
       />
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-semibold">Longitudinal report timeline</h3>
           {data.reports.length >= 2 && (
@@ -62,8 +63,8 @@ export default async function PatientClinicalPage({
                   <div>
                     <p className="font-medium">
                       {session?.started_at
-                        ? new Date(session.started_at).toLocaleDateString()
-                        : new Date(report.created_at).toLocaleDateString()}
+                        ? <LocalTime value={session.started_at} mode="date" />
+                        : <LocalTime value={report.created_at} mode="date" />}
                     </p>
                     <p className="text-xs text-slate-500">
                       Version {report.version} · {report.status.replaceAll("_", " ")}

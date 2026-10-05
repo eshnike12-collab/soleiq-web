@@ -16,6 +16,7 @@ import {
   type MyRecommendation,
 } from "@/lib/canonicalScreenings";
 import { StoreLink } from "@/components/result/StoreLink";
+import { PatientAssistant } from "@/components/patient/PatientAssistant";
 
 const riskChip: Record<string, string> = {
   clear: "bg-teal-100 text-teal-900",
@@ -44,7 +45,7 @@ function RecommendationsContent() {
   }, []);
 
   return (
-    <div className="min-h-screen px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24 lg:pb-12 lg:pl-[17.25rem] lg:pr-8">
       <main className="mx-auto max-w-3xl">
         <Link
           href="/features"
@@ -161,6 +162,7 @@ function RecommendationsContent() {
         </p>
       </main>
       <PatientNav active="features" />
+      <PatientAssistant />
     </div>
   );
 }

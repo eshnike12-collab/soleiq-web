@@ -31,7 +31,7 @@ export default async function AdminPatientsPage({
               name="search"
               defaultValue={resolvedSearchParams.search}
               placeholder="Search authorized roster"
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
             />
           </form>
         }
@@ -41,7 +41,7 @@ export default async function AdminPatientsPage({
         facilities={data.facilities.map((facility: any) => ({ id: facility.id, name: facility.name }))}
         phiAccess={phiAccess}
       />
-      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-surface-raised shadow-card">
         {data.patients.length === 0 ? (
           <EmptyState>No matching patient enrollments.</EmptyState>
         ) : (

@@ -2,34 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Semantic color variables (R G B triplets consumed by tailwind.config.ts).
-   A future dark theme overrides these on [data-theme="dark"] — components
-   never hardcode hex. */
+/* ───────────────────────────────────────────────────────────────────────────
+   SoleIQ design tokens — medical light blue.
+
+   R G B triplets consumed by tailwind.config.ts. Components never hardcode
+   hex; a future dark theme overrides these on [data-theme="dark"].
+
+   ACCESSIBILITY DRIVES THE EXACT VALUES. The palette's identity hues are a
+   light medical blue (#4A90E2) and a medical blue (#2F80ED), and those are
+   used for fills, tints and decoration — but neither can carry text: against
+   white they measure 3.29:1 and 3.87:1, under the 4.5:1 WCAG AA needs for the
+   15-17px type this app uses. `--c-primary` is therefore a deeper blue of the
+   same family at 5.61:1, which is what `text-primary` and white-on-blue
+   buttons actually render in. Same reasoning for the status colours: each is
+   the darkest member of its family, checked against BOTH white and its own
+   soft tint, because that is the pairing the UI puts them in.
+
+   Measured contrast against white:
+     primary   #1B64CC  5.61   primary-deep #14539E  7.61
+     success   #27694A  6.55   warn         #8A6209  5.48
+     urgent    #B8402F  5.51   ink          #1F2D3D 13.99
+     ink-soft  #546478  6.05   ink-faint    #64748B  4.76
+   ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  --c-primary: 31 78 121; /* deep navy — the brand */
-  --c-primary-soft: 237 243 249;
-  --c-primary-deep: 23 60 93;
-  --c-secondary: 51 122 98; /* sage teal — health/positive */
-  --c-secondary-soft: 236 245 240;
-  --c-surface: 247 244 236; /* warm cream page */
+  --c-primary: 27 100 204; /* #1B64CC — medical blue, AA as text and as a fill */
+  --c-primary-soft: 234 245 255; /* #EAF5FF — light blue */
+  --c-primary-deep: 20 83 158; /* #14539E — hover / pressed */
+  --c-secondary: 39 105 74; /* #27694A — health-positive, readable on mint */
+  --c-secondary-soft: 221 245 231; /* #DDF5E7 — soft medical green */
+  --c-surface: 247 251 254; /* #F7FBFE — soft blue page ground */
   --c-surface-raised: 255 255 255; /* cards */
-  --c-surface-sunken: 241 237 227;
-  --c-ink: 38 36 32; /* warm near-black */
-  --c-ink-soft: 99 93 81;
-  --c-ink-faint: 131 123 108;
+  --c-surface-sunken: 240 245 250; /* #F0F5FA — wells, image placeholders */
+  --c-ink: 31 45 61; /* #1F2D3D — primary text */
+  --c-ink-soft: 84 100 120; /* #546478 — secondary text */
+  --c-ink-faint: 100 116 139; /* #64748B — still AA on white and on tints */
 
   /* soleiqhealth.com's own brand values. Used only by the top bar, so the
      lockup, the cross-property button and the language control are the same
-     objects on both properties. The app's warmer palette above is unchanged. */
+     objects on both properties. */
   --c-brand-ink: 11 42 60; /* #0b2a3c — the site's deep navy */
   --c-brand-muted: 92 107 117; /* #5c6b75 — the site's muted grey */
   --c-brand-bar: 255 255 255;
-  --c-success: 51 122 98;
-  --c-success-soft: 236 245 240;
-  --c-warn: 150 112 26; /* honey amber */
-  --c-warn-soft: 251 244 227;
-  --c-urgent: 169 79 63; /* muted coral — never harsh red */
-  --c-urgent-soft: 250 238 234;
+  --c-success: 39 105 74; /* #27694A */
+  --c-success-soft: 221 245 231; /* #DDF5E7 */
+  --c-warn: 138 98 9; /* #8A6209 — amber, readable on its own tint */
+  --c-warn-soft: 255 248 223; /* #FFF8DF — soft yellow */
+  --c-urgent: 184 64 47; /* #B8402F — clinical coral, never neon red */
+  --c-urgent-soft: 255 241 232; /* #FFF1E8 — soft peach */
+
+  /* Hairlines. One value, so every card, divider and input agrees. */
+  --c-border: 229 235 240; /* #E5EBF0 */
 
   --phone-w: 390px;
   --phone-h: 844px;
@@ -47,7 +69,10 @@ body {
    behind the content at z-index -1, and a body painting its own background
    would cover it. */
 html {
-  background: linear-gradient(180deg, #f9f6ee 0%, #f3efe4 100%);
+  /* A very light blue ground rather than flat white: it separates the white
+     cards from the page without needing a heavier shadow on each one. */
+  background: linear-gradient(180deg, #ffffff 0%, #f2f8fd 100%);
+  background-attachment: fixed;
 }
 
 body {
@@ -76,14 +101,28 @@ body {
 }
 
 @layer components {
+  /* Type scale. Sizes step up at `sm` because a 28px page title is right on a
+     laptop and crowds a 360px phone. Field labels moved from 13px to 14px:
+     this app is read by people with diabetic eye disease, and 13px is below
+     where that is comfortable. */
   .screen-h1 {
-    @apply text-[26px] font-bold leading-[1.15] tracking-[-0.01em] text-ink;
+    @apply text-[25px] font-bold leading-[1.18] tracking-[-0.015em] text-ink sm:text-[29px];
   }
   .screen-sub {
-    @apply mt-1.5 text-[15px] leading-relaxed text-ink-soft;
+    @apply mt-2 text-[16px] leading-relaxed text-ink-soft;
   }
   .field-label {
-    @apply mb-1.5 block text-[13px] font-semibold text-ink-soft;
+    @apply mb-1.5 block text-[14px] font-semibold text-ink-soft;
+  }
+
+  /* ---- Shared surfaces ------------------------------------------------
+     Named so screens stop restating the same six utilities, and so the card
+     treatment can be retuned in one place. Purely presentational. */
+  .mc-card {
+    @apply rounded-2xl border border-slate-200 bg-surface-raised shadow-card;
+  }
+  .mc-section-title {
+    @apply text-[13px] font-bold uppercase tracking-[0.07em] text-ink-faint;
   }
 }
 

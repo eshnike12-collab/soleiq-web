@@ -10,16 +10,34 @@ import Link from "next/link";
 import { ArrowLeft, CalendarSearch, History } from "lucide-react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { PatientNav } from "@/components/patient/PatientNav";
+import { LocalTime } from "@/components/ui/LocalTime";
+import {
+  EmptyState,
+  LoadingState,
+  MedicalCard,
+  PageHeader,
+  TimelineItem,
+  type MedicalTone,
+} from "@/components/ui/medical";
 import {
   listMyCanonicalChecks,
   type CanonicalCheck,
 } from "@/lib/canonicalScreenings";
+import { PatientAssistant } from "@/components/patient/PatientAssistant";
 
 const riskChip: Record<string, string> = {
-  clear: "bg-teal-100 text-teal-900",
-  watch: "bg-amber-100 text-amber-900",
-  see_someone_soon: "bg-orange-100 text-orange-900",
-  urgent: "bg-red-200 text-red-950",
+  clear: "bg-secondary-soft text-secondary",
+  watch: "bg-warn-soft text-warn",
+  see_someone_soon: "bg-orange-100 text-orange-700",
+  urgent: "bg-urgent-soft text-urgent",
+};
+
+/** Rail colour per risk level, so the timeline reads at a glance. */
+const riskTone: Record<string, MedicalTone> = {
+  clear: "positive",
+  watch: "attention",
+  see_someone_soon: "attention",
+  urgent: "urgent",
 };
 
 function HistoryContent() {
@@ -55,154 +73,163 @@ function HistoryContent() {
   }, [checks, from, to]);
 
   return (
-    <div className="min-h-screen px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-28 lg:pb-12 lg:pl-[17.25rem] lg:pr-8">
       <main className="mx-auto max-w-3xl">
         <Link
           href="/features"
-          className="inline-flex min-h-[44px] items-center gap-1 py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep"
+          className="inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-semibold text-primary transition-colors hover:text-primary-deep"
         >
-          <ArrowLeft className="h-4 w-4" /> Features
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Features
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-ink">History</h1>
 
-        <div className="mt-4 rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-            Filter by date
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="text-xs font-semibold text-ink-soft">
-              From
+        <PageHeader
+          className="mt-2"
+          eyebrow="Foot checks"
+          title="Progress"
+          description="Every completed check, newest first."
+        />
+
+        {/* Filter — same two inputs, same state, same date maths. */}
+        <MedicalCard className="mt-5">
+          <p className="mc-section-title">Filter by date</p>
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="history-from" className="field-label">
+                From
+              </label>
               <input
+                id="history-from"
                 type="date"
                 value={from}
                 onChange={(event) => setFrom(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
+                className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-surface-raised px-3 text-[15px] text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
               />
-            </label>
-            <label className="text-xs font-semibold text-ink-soft">
-              To
+            </div>
+            <div>
+              <label htmlFor="history-to" className="field-label">
+                To
+              </label>
               <input
+                id="history-to"
                 type="date"
                 value={to}
                 onChange={(event) => setTo(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 py-2.5 text-sm font-normal text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
+                className="min-h-[44px] w-full rounded-xl border border-slate-200 bg-surface-raised px-3 text-[15px] text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary-soft"
               />
-            </label>
+            </div>
           </div>
           {checks !== null && (
-            <p className="mt-3 text-xs text-ink-faint">
+            <p className="mt-3 text-[13px] text-ink-faint" aria-live="polite">
               Showing {filtered.length} of {checks.length} checks
             </p>
           )}
-        </div>
+        </MedicalCard>
 
         {checks === null ? (
-          <div className="mt-4 space-y-3">
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
-            <div className="h-28 animate-pulse rounded-3xl border border-slate-200 bg-surface-raised" />
-          </div>
+          <LoadingState className="mt-5" label="Loading your saved checks…" />
         ) : checks.length === 0 ? (
-          <div className="mt-4 flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft">
-              <History className="h-6 w-6 text-primary" />
-            </span>
-            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
-              No checks yet — your completed foot checks will appear here.
-            </p>
-          </div>
+          <MedicalCard className="mt-5">
+            <EmptyState icon={History} title="No checks yet">
+              Your completed foot checks will appear here.
+            </EmptyState>
+          </MedicalCard>
         ) : filtered.length === 0 ? (
-          <div className="mt-4 flex flex-col items-center rounded-3xl border border-slate-200 bg-surface-raised p-6 text-center shadow-card">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-warn-soft">
-              <CalendarSearch className="h-6 w-6 text-warn" />
-            </span>
-            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+          <MedicalCard className="mt-5">
+            <EmptyState icon={CalendarSearch} tone="attention" title="Nothing in this range">
               No checks in this date range. Try widening the filter.
-            </p>
-          </div>
+            </EmptyState>
+          </MedicalCard>
         ) : (
-          <div className="mt-4 space-y-3">
-            {filtered.map((check) => (
-              <Link
+          /* A timeline rather than a stack of cards: these entries are one
+             series over time, and the rail is what says so. */
+          <ol className="mt-6 list-none">
+            {filtered.map((check, index) => (
+              <TimelineItem
                 key={check.reportId}
-                href={`/records/${check.reportId}`}
-                className="block rounded-3xl border border-slate-200 bg-surface-raised p-6 shadow-card transition duration-150 hover:shadow-lifted active:scale-[0.99]"
+                tone={riskTone[check.riskLevel] ?? "info"}
+                last={index === filtered.length - 1}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs text-ink-faint">
-                      {new Date(check.startedAt).toLocaleString()}
-                    </p>
-                    <p className="mt-1 font-bold text-ink">
-                      {check.headline ?? "Screening summary"}
-                    </p>
-                    {check.hospitalName && (
-                      <p className="mt-0.5 truncate text-xs text-ink-faint">
-                        {check.hospitalName}
+                <Link
+                  href={`/records/${check.reportId}`}
+                  className="block rounded-2xl border border-slate-200 bg-surface-raised p-5 shadow-card transition duration-150 hover:border-blue-200 hover:shadow-lifted active:scale-[0.995]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[13px] text-ink-faint">
+                        <LocalTime value={check.startedAt} />
                       </p>
-                    )}
-                  </div>
-                  <span className="flex shrink-0 items-center gap-1.5">
-                    {check.status !== "released" && (
-                      <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[11px] font-semibold text-warn">
-                        Pending review
-                      </span>
-                    )}
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${
-                        riskChip[check.riskLevel] ?? "bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {check.riskLevel.replaceAll("_", " ")}
-                    </span>
-                  </span>
-                </div>
-                {check.photos.length > 0 && (
-                  <div className="mt-3 flex -space-x-2">
-                    {check.photos.slice(0, 4).map((photo) => (
+                      <p className="mt-1 text-[17px] font-bold leading-snug text-ink">
+                        {check.headline ?? "Screening summary"}
+                      </p>
+                      {check.hospitalName && (
+                        <p className="mt-1 truncate text-[13px] text-ink-faint">
+                          {check.hospitalName}
+                        </p>
+                      )}
+                    </div>
+                    <span className="flex shrink-0 flex-col items-end gap-1.5">
                       <span
-                        key={photo.assetId}
-                        title={
-                          photo.baseline && photo.latest
-                            ? "Baseline and latest"
-                            : photo.baseline
-                              ? "Baseline"
-                              : photo.latest
-                                ? "Latest"
-                                : undefined
-                        }
-                        className={`block h-10 w-10 overflow-hidden rounded-xl border-2 border-white bg-surface-sunken ${
-                          photo.latest
-                            ? "ring-2 ring-primary"
-                            : photo.baseline
-                              ? "ring-2 ring-teal-500"
-                              : ""
+                        className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[12px] font-semibold capitalize ${
+                          riskChip[check.riskLevel] ?? "bg-slate-100 text-ink-soft"
                         }`}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.url}
-                          alt={`${photo.side} foot ${photo.view}`}
-                          className="h-full w-full object-cover"
-                          // A signed URL is minted from the stored path without
-                          // checking the object exists, so a row whose file was
-                          // deleted yields a URL that 404s. Drop the thumbnail
-                          // rather than render a broken-image icon over an
-                          // otherwise perfectly good report.
-                          onError={(event) => {
-                            event.currentTarget.parentElement?.remove();
-                          }}
-                        />
+                        {check.riskLevel.replaceAll("_", " ")}
                       </span>
-                    ))}
+                      {check.status !== "released" && (
+                        <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[11px] font-semibold text-warn">
+                          Pending review
+                        </span>
+                      )}
+                    </span>
                   </div>
-                )}
-              </Link>
+                  {check.photos.length > 0 && (
+                    <div className="mt-4 flex gap-2">
+                      {check.photos.slice(0, 4).map((photo) => (
+                        <span
+                          key={photo.assetId}
+                          title={
+                            photo.baseline && photo.latest
+                              ? "Baseline and latest"
+                              : photo.baseline
+                                ? "Baseline"
+                                : photo.latest
+                                  ? "Latest"
+                                  : undefined
+                          }
+                          className={`block h-14 w-14 overflow-hidden rounded-lg border border-slate-200 bg-surface-sunken ${
+                            photo.latest
+                              ? "ring-2 ring-primary"
+                              : photo.baseline
+                                ? "ring-2 ring-teal-400"
+                                : ""
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photo.url}
+                            alt={`${photo.side} foot ${photo.view}`}
+                            className="h-full w-full object-cover"
+                            // A signed URL is minted from the stored path without
+                            // checking the object exists, so a row whose file was
+                            // deleted yields a URL that 404s. Drop the thumbnail
+                            // rather than render a broken-image icon over an
+                            // otherwise perfectly good report.
+                            onError={(event) => {
+                              event.currentTarget.parentElement?.remove();
+                            }}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+              </TimelineItem>
             ))}
-          </div>
+          </ol>
         )}
       </main>
       <PatientNav active="features" />
+      <PatientAssistant />
     </div>
   );
 }

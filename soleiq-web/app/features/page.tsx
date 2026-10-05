@@ -8,108 +8,46 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  Activity,
-  BadgeCheck,
-  BookOpen,
-  CalendarDays,
-  GitCompare,
-  History,
-  MessageSquare,
-  Search,
-  ShoppingBag,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Search } from "lucide-react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { BrandLogo } from "@/components/brand/Logo";
 import { PatientNav } from "@/components/patient/PatientNav";
 import { claimCareCircleInvites } from "@/lib/careCircle";
+import {
+  PATIENT_FEATURES,
+  type PatientFeature,
+} from "@/components/patient/patientFeatures";
+import { PatientAssistant } from "@/components/patient/PatientAssistant";
 
 /**
- * Tile colors rotate through this palette IN ORDER, one hue per tile — so
- * every feature gets its own color, and a newly added tile automatically
- * takes the next unused hue (just append the tile to TILES; don't pick a
- * color by hand). Exactly one green (sage) by design.
+ * Tile tints rotate through this palette IN ORDER, one per tile — so every
+ * feature gets its own colour, and a newly added tile automatically takes the
+ * next unused hue (append to TILES; don't pick a colour by hand).
+ *
+ * Flat tints, not gradients. Twelve gradients stacked in a grid is the single
+ * loudest thing a screen can do, and this is a medical index — the colour is
+ * here to help someone find the tile they used last time, not to decorate.
  */
-const TILE_TINTS: { gradient: string; iconColor: string }[] = [
-  { gradient: "bg-gradient-to-br from-blue-50 to-blue-100", iconColor: "text-blue-600" }, // navy
-  { gradient: "bg-gradient-to-br from-indigo-100 to-slate-50", iconColor: "text-indigo-600" }, // indigo
-  { gradient: "bg-gradient-to-br from-amber-50 to-amber-100", iconColor: "text-amber-600" }, // honey
-  { gradient: "bg-gradient-to-br from-teal-100 to-teal-50", iconColor: "text-teal-600" }, // sage — the one green
-  { gradient: "bg-gradient-to-br from-red-100 to-orange-50", iconColor: "text-red-500" }, // coral
-  { gradient: "bg-gradient-to-br from-violet-100 to-pink-100", iconColor: "text-violet-600" }, // plum
-  { gradient: "bg-gradient-to-br from-orange-100 to-orange-50", iconColor: "text-orange-600" }, // terracotta
-  { gradient: "bg-gradient-to-br from-pink-100 to-rose-100", iconColor: "text-rose-600" }, // blush
-  { gradient: "bg-gradient-to-br from-sky-100 to-slate-50", iconColor: "text-sky-600" }, // sky
-  { gradient: "bg-gradient-to-br from-blue-100 to-indigo-100", iconColor: "text-blue-800" }, // deep navy
-  { gradient: "bg-gradient-to-br from-emerald-50 to-slate-50", iconColor: "text-emerald-600" }, // moss
-  { gradient: "bg-gradient-to-br from-slate-100 to-slate-50", iconColor: "text-slate-600" }, // stone
+const TILE_TINTS: { surface: string; iconColor: string }[] = [
+  { surface: "bg-blue-100", iconColor: "text-blue-700" },
+  { surface: "bg-indigo-100", iconColor: "text-indigo-600" },
+  { surface: "bg-amber-50", iconColor: "text-amber-600" },
+  { surface: "bg-teal-100", iconColor: "text-teal-600" }, // the one green
+  { surface: "bg-red-100", iconColor: "text-red-600" },
+  { surface: "bg-violet-100", iconColor: "text-violet-600" },
+  { surface: "bg-orange-50", iconColor: "text-orange-600" },
+  { surface: "bg-pink-100", iconColor: "text-rose-600" },
+  { surface: "bg-sky-100", iconColor: "text-sky-600" },
+  { surface: "bg-blue-50", iconColor: "text-blue-800" },
+  { surface: "bg-emerald-50", iconColor: "text-emerald-700" },
+  { surface: "bg-slate-100", iconColor: "text-slate-600" },
 ];
 
-interface FeatureTile {
-  name: string;
-  href: string;
-  icon: LucideIcon;
-  caption: string;
-}
-
-const TILES: FeatureTile[] = [
-  {
-    name: "Summary",
-    href: "/features/summary",
-    icon: Activity,
-    caption: "Your risk status at a glance",
-  },
-  {
-    name: "History",
-    href: "/features/history",
-    icon: History,
-    caption: "Every past check",
-  },
-  {
-    name: "Comparison",
-    href: "/compare",
-    icon: GitCompare,
-    caption: "Two checks side by side",
-  },
-  {
-    name: "Care Team",
-    href: "/features/care-team",
-    icon: Users,
-    caption: "Who can see your results",
-  },
-  {
-    name: "Visits",
-    href: "/features/visits",
-    icon: CalendarDays,
-    caption: "Clinical visits and notes",
-  },
-  {
-    name: "Product Recommendations",
-    href: "/features/recommendations",
-    icon: ShoppingBag,
-    caption: "What was suggested and why",
-  },
-  {
-    name: "Research",
-    href: "/features/research",
-    icon: BookOpen,
-    caption: "Read about your condition",
-  },
-  {
-    name: "Membership",
-    href: "/features/membership",
-    icon: BadgeCheck,
-    caption: "Your plan and limits",
-  },
-  {
-    name: "Feedback",
-    href: "/features/feedback",
-    icon: MessageSquare,
-    caption: "Tell us what to improve",
-  },
-];
+/* The list itself lives in components/patient/patientFeatures.ts so this grid
+   and the sidebar's dropdown cannot drift apart — they had already, with 3D
+   Scan and Privacy present in one and missing from the other. */
+type FeatureTile = PatientFeature;
+const TILES: FeatureTile[] = PATIENT_FEATURES;
 
 function FeaturesContent() {
   const [query, setQuery] = useState("");
@@ -130,7 +68,7 @@ function FeaturesContent() {
   }, [query]);
 
   return (
-    <div className="min-h-screen px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24 lg:pb-12 lg:pl-[17.25rem] lg:pr-8">
       <main className="mx-auto max-w-3xl">
         <div className="flex items-center gap-3">
           <BrandLogo size={44} />
@@ -163,11 +101,25 @@ function FeaturesContent() {
                 <Link
                   key={tile.href}
                   href={tile.href}
-                  className={`flex aspect-square flex-col items-center justify-between rounded-2xl border border-slate-200/60 p-4 text-center shadow-card transition duration-150 hover:shadow-lifted active:scale-[0.98] sm:aspect-auto sm:min-h-[10.5rem] ${tile.tint.gradient}`}
+                  /* White card, tinted icon. The colour identifies the tile
+                     without turning the whole grid into a swatch book, and
+                     dark text on white is the readable pairing. */
+                  className="flex min-h-[9.5rem] flex-col items-start gap-3 rounded-2xl border border-slate-200 bg-surface-raised p-4 text-left shadow-card transition duration-150 hover:border-blue-200 hover:shadow-lifted active:scale-[0.98] sm:min-h-[10.5rem] sm:p-5"
                 >
-                  <span className="font-bold text-ink">{tile.name}</span>
-                  <Icon className={`h-10 w-10 ${tile.tint.iconColor}`} />
-                  <span className="text-xs text-ink-soft">{tile.caption}</span>
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tile.tint.surface}`}
+                  >
+                    <Icon
+                      className={`h-[22px] w-[22px] ${tile.tint.iconColor}`}
+                      aria-hidden="true"
+                    />
+                  </span>
+                  <span className="mt-auto block text-[16px] font-bold leading-snug text-ink">
+                    {tile.name}
+                  </span>
+                  <span className="block text-[13px] leading-snug text-ink-soft">
+                    {tile.caption}
+                  </span>
                 </Link>
               );
             })}
@@ -175,6 +127,7 @@ function FeaturesContent() {
         )}
       </main>
       <PatientNav active="features" />
+      <PatientAssistant />
     </div>
   );
 }

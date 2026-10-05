@@ -42,6 +42,8 @@ export interface ReportSummaryEmailData {
   metrics: ReportMetric[];
   /** Absolute link to the full report. Built by the caller from APP_BASE_URL. */
   reportUrl: string;
+  /** Patient's IANA timezone, so the date is the one on their own calendar. */
+  timeZone?: string | null;
 }
 
 const PRIMARY = "#1F4E79";
@@ -73,15 +75,35 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-export function formatAssessmentDate(value: string | number | Date): string {
+/**
+ * The check's date, in the PATIENT's timezone where we know it.
+ *
+ * There is no browser here to ask, so a zone has to be carried in. It used to
+ * be hardcoded to UTC, which is the wrong DAY for any check taken in the
+ * evening west of Greenwich: a photo taken at 8pm on the 19th in New York is
+ * 00:00 on the 20th in UTC, and the email told the patient their check was
+ * from a day they did not take it.
+ *
+ * Falls back to UTC when the zone is unknown or unrecognised — stable and
+ * explainable, rather than silently using whichever zone the server runs in.
+ */
+export function formatAssessmentDate(
+  value: string | number | Date,
+  timeZone?: string | null
+): string {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "Recently";
-  return date.toLocaleDateString("en-GB", {
+  const options: Intl.DateTimeFormatOptions = {
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: "UTC",
-  });
+    timeZone: timeZone || "UTC",
+  };
+  try {
+    return date.toLocaleDateString("en-GB", options);
+  } catch {
+    return date.toLocaleDateString("en-GB", { ...options, timeZone: "UTC" });
+  }
 }
 
 export function riskTone(level: string) {
@@ -95,14 +117,14 @@ export function riskTone(level: string) {
 }
 
 export function reportSummarySubject(data: ReportSummaryEmailData): string {
-  return `Your SoleIQ foot check from ${formatAssessmentDate(data.assessmentDate)} is ready`;
+  return `Your SoleIQ foot check from ${formatAssessmentDate(data.assessmentDate, data.timeZone)} is ready`;
 }
 
 export function renderReportSummaryText(data: ReportSummaryEmailData): string {
   const lines = [
     `Hello ${data.patientName},`,
     "",
-    `Your SoleIQ foot check from ${formatAssessmentDate(data.assessmentDate)} has finished.`,
+    `Your SoleIQ foot check from ${formatAssessmentDate(data.assessmentDate, data.timeZone)} has finished.`,
     "",
     `Status: ${data.overallStatus}`,
     `Risk level: ${riskTone(data.riskLevel).label}`,
@@ -128,7 +150,7 @@ export function renderReportSummaryText(data: ReportSummaryEmailData): string {
 
 export function renderReportSummaryHtml(data: ReportSummaryEmailData): string {
   const tone = riskTone(data.riskLevel);
-  const date = formatAssessmentDate(data.assessmentDate);
+  const date = formatAssessmentDate(data.assessmentDate, data.timeZone);
 
   const metricRows = data.metrics
     .map(

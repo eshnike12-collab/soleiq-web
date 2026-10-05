@@ -264,6 +264,34 @@ export async function getPatientComparisonData(
   return { hospital, enrollment, checks };
 }
 
+/**
+ * Views the patient skipped during a screening session.
+ *
+ * Its own query, and allowed to fail: `skipped_slots` arrives with migration
+ * 0013, and naming it in the report's main select would make a PostgREST
+ * 42703 take out the whole report on an environment that has not run it yet.
+ * An un-migrated database shows no skip annotations; it still shows the
+ * report.
+ */
+export async function sessionSkippedSlots(
+  supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
+  sessionId: string | null | undefined
+): Promise<{ side: "left" | "right"; view: "top" | "sole"; reason?: string }[]> {
+  if (!sessionId) return [];
+  try {
+    const { data, error } = await supabase
+      .from("screening_sessions")
+      .select("skipped_slots")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (error || !data) return [];
+    const raw = (data as { skipped_slots?: unknown }).skipped_slots;
+    return Array.isArray(raw) ? (raw as never) : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getPatientReleasedReport(
   reportId: string,
   requestId: string
@@ -320,6 +348,10 @@ export async function getPatientReleasedReport(
   return {
     ...report,
     photos: photosBySession.get((report as any).screening_session_id) ?? [],
+    skippedSlots: await sessionSkippedSlots(
+      supabase,
+      (report as any).screening_session_id
+    ),
     recommendation: await getStoredRecommendation(supabase, report.id),
   };
 }

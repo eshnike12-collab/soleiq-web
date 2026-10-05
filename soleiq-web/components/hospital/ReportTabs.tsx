@@ -12,6 +12,11 @@
 
 import { Tabs } from "@/components/ui/tabs";
 import { ReportPhotos } from "@/components/hospital/ReportPhotos";
+import { LocalTime } from "@/components/ui/LocalTime";
+import {
+  SkippedViews,
+  type SkippedSlotRecord,
+} from "@/components/patient/SkippedViewCard";
 
 const NOT_PROVIDED = "Not provided";
 
@@ -55,17 +60,21 @@ function Section({
   children,
   defaultOpen = false,
   count,
+  badge,
 }: {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
   /** Shown in the header so a section's weight is visible while closed. */
   count?: number;
+  /** Rendered beside the chevron — for a status that must stay readable
+   *  while the section is shut. */
+  badge?: React.ReactNode;
 }) {
   return (
     <details
       open={defaultOpen}
-      className="group rounded-2xl border border-slate-200 bg-white [&[open]]:pb-5"
+      className="group rounded-2xl border border-slate-200 bg-surface-raised shadow-card [&[open]]:pb-5"
     >
       <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3.5 font-semibold text-slate-950 marker:content-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand">
         <span className="flex items-center gap-2">
@@ -76,6 +85,8 @@ function Section({
             </span>
           )}
         </span>
+        <span className="flex shrink-0 items-center gap-2">
+        {badge}
         <svg
           className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180 motion-reduce:transition-none"
           viewBox="0 0 20 20"
@@ -86,6 +97,7 @@ function Section({
         >
           <path d="M5 7.5 10 12.5 15 7.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
+        </span>
       </summary>
       <div className="px-5">{children}</div>
     </details>
@@ -101,6 +113,7 @@ export function ReportTabs({
   clinical,
   riskLevel,
   assets,
+  skippedSlots = [],
   intake,
   patient,
   mrn,
@@ -117,9 +130,13 @@ export function ReportTabs({
     side: string | null;
     view: string | null;
     captured_at: string | null;
+    /** IANA zone the photo was taken in. Null for pre-2026-09-20 captures. */
+    captured_time_zone?: string | null;
     baseline?: boolean;
     latest?: boolean;
   }[];
+  /** Views the patient could not photograph, with their stated reason. */
+  skippedSlots?: SkippedSlotRecord[];
   intake: any;
   patient: { full_name?: string | null; date_of_birth?: string | null; sex?: string | null } | null;
   mrn: string | null;
@@ -161,7 +178,7 @@ export function ReportTabs({
    * column past the viewport and the whole page scrolls sideways.
    */
   const overview = (
-    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5">
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="font-semibold">Captured photos ({assets.length})</h3>
         <span className="text-xs text-slate-500">
@@ -170,6 +187,9 @@ export function ReportTabs({
       </div>
       <div className="mt-4">
         <ReportPhotos assets={assets} />
+        {/* Explicit gaps, not blanks: on a clinical record "not captured" and
+            "nothing seen" must not look the same. */}
+        <SkippedViews slots={skippedSlots} />
       </div>
       <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
         {findings.length === 0
@@ -184,23 +204,26 @@ export function ReportTabs({
 
   const enhanced = (
     <div className="space-y-5">
-      {/* Full width here, rather than squeezed into a column beside the
-          photographs where it wrapped to a few words a line. */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-semibold">Clinical screening summary</h3>
-          <span className="shrink-0 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold capitalize text-brand">
+      {/* Collapsed by default, like every other block here. It was the one
+          section rendered open, which pushed Findings below the fold on a
+          laptop. The risk level stays visible on the closed header, so
+          collapsing it hides the prose, not the result. */}
+      <Section
+        title="Clinical screening summary"
+        badge={
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold capitalize text-primary">
             {riskLevel.replaceAll("_", " ")}
           </span>
-        </div>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+        }
+      >
+        <p className="text-sm leading-relaxed text-slate-700">
           {clinical?.overall?.headline || clinical?.summary || "Structured clinical result recorded."}
         </p>
         <p className="mt-3 text-xs text-slate-500">
           Photo-based screening support only. It does not establish a diagnosis
           or replace an in-person examination.
         </p>
-      </section>
+      </Section>
       <Section title="Findings" count={findings.length}>
         <div className="space-y-3">
           {findings.length === 0 ? (
@@ -275,7 +298,17 @@ export function ReportTabs({
           {assets.map((asset) => (
             <p key={asset.id} className="text-xs text-slate-500">
               {titleCase(asset.side)} {titleCase(asset.view)} · captured{" "}
-              {asset.captured_at ? new Date(asset.captured_at).toLocaleString() : "time unknown"}
+              {asset.captured_at ? (
+                // Shown on the PATIENT's clock, not the clinician's. A
+                // reviewer in another country reading "8am" should be seeing
+                // the 8am the patient saw, not their own.
+                <LocalTime
+                  value={asset.captured_at}
+                  zone={asset.captured_time_zone}
+                />
+              ) : (
+                "time unknown"
+              )}
             </p>
           ))}
         </div>

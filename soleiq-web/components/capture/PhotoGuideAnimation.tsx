@@ -37,7 +37,7 @@ export function PhotoGuideAnimation({
       >
         <defs>
           <filter id={`${id}-shadow`} x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="#1F4E79" floodOpacity="0.16" />
+            <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="#1B64CC" floodOpacity="0.16" />
           </filter>
           {/* Keeps the photo inside the same rounded guide frame the dashed
               outline draws, so the reference occupies exactly the box the
@@ -85,7 +85,7 @@ export function PhotoGuideAnimation({
           height="315"
           rx="28"
           fill="none"
-          stroke="#1F4E79"
+          stroke="#1B64CC"
           strokeWidth="3"
           strokeDasharray="12 9"
           animate={reduceMotion ? undefined : { strokeDashoffset: [0, -42] }}
@@ -101,7 +101,7 @@ export function PhotoGuideAnimation({
           x2="217"
           y1="94"
           y2="94"
-          stroke="#337A62"
+          stroke="#27694A"
           strokeWidth="3"
           strokeLinecap="round"
           opacity="0.55"
@@ -110,7 +110,7 @@ export function PhotoGuideAnimation({
         />
 
         <g transform="translate(18 16)">
-          <rect width="104" height="27" rx="13.5" fill="#1F4E79" />
+          <rect width="104" height="27" rx="13.5" fill="#1B64CC" />
           <text x="52" y="18" textAnchor="middle" fill="white" fontSize="11" fontWeight="700" letterSpacing="1.1">
             {sideLabel} · {view === "top" ? "TOP" : "SOLE"}
           </text>
@@ -121,9 +121,9 @@ export function PhotoGuideAnimation({
             animate={reduceMotion ? undefined : { y: [0, -5, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <rect x="0" y="0" width="54" height="40" rx="9" fill="#FFFFFF" stroke="#1F4E79" strokeWidth="2" />
-            <circle cx="27" cy="20" r="9" fill="#EDF3F9" stroke="#1F4E79" strokeWidth="2" />
-            <circle cx="45" cy="9" r="2.5" fill="#337A62" />
+            <rect x="0" y="0" width="54" height="40" rx="9" fill="#FFFFFF" stroke="#1B64CC" strokeWidth="2" />
+            <circle cx="27" cy="20" r="9" fill="#EAF5FF" stroke="#1B64CC" strokeWidth="2" />
+            <circle cx="45" cy="9" r="2.5" fill="#27694A" />
           </motion.g>
         </g>
       </svg>

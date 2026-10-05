@@ -26,6 +26,7 @@ import {
   type CareVisit,
   type VisitStatus,
 } from "@/lib/careVisits";
+import { PatientAssistant } from "@/components/patient/PatientAssistant";
 
 const statusChip: Record<VisitStatus, string> = {
   scheduled: "bg-primary-soft text-primary",
@@ -192,7 +193,7 @@ function VisitsContent() {
   }
 
   return (
-    <div className="min-h-screen px-5 py-8 pb-24">
+    <div className="min-h-screen px-5 py-8 pb-24 lg:pb-12 lg:pl-[17.25rem] lg:pr-8">
       <main className="mx-auto max-w-3xl">
         <Link
           href="/features"
@@ -337,6 +338,7 @@ function VisitsContent() {
         )}
       </main>
       <PatientNav active="features" />
+      <PatientAssistant />
     </div>
   );
 }

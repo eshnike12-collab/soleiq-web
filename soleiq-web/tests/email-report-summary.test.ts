@@ -114,3 +114,43 @@ describe("report summary email", () => {
     expect(escapeHtml(`<>&"'`)).toBe("&lt;&gt;&amp;&quot;&#39;");
   });
 });
+
+describe("assessment date timezone", () => {
+  // 8pm on 19 September in New York is already 00:00 on the 20th in UTC.
+  // Formatted in UTC the email told the patient their check was from a day
+  // they had not taken it.
+  const EVENING_IN_NEW_YORK = "2026-09-20T00:00:00.000Z";
+
+  it("uses the patient's own calendar day", () => {
+    expect(
+      formatAssessmentDate(EVENING_IN_NEW_YORK, "America/New_York")
+    ).toBe("19 September 2026");
+  });
+
+  it("reproduces the wrong day when no zone is known", () => {
+    expect(formatAssessmentDate(EVENING_IN_NEW_YORK)).toBe(
+      "20 September 2026"
+    );
+  });
+
+  it("falls back to UTC rather than throwing on a bad zone", () => {
+    expect(formatAssessmentDate(EVENING_IN_NEW_YORK, "Not/AZone")).toBe(
+      "20 September 2026"
+    );
+  });
+
+  it("treats null and empty string as unknown", () => {
+    expect(formatAssessmentDate(EVENING_IN_NEW_YORK, null)).toBe(
+      "20 September 2026"
+    );
+    expect(formatAssessmentDate(EVENING_IN_NEW_YORK, "")).toBe(
+      "20 September 2026"
+    );
+  });
+
+  it("still reports Recently for an unparseable date whatever the zone", () => {
+    expect(formatAssessmentDate("not-a-date", "America/New_York")).toBe(
+      "Recently"
+    );
+  });
+});

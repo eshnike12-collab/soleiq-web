@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const field =
-  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand";
+  "h-11 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-primary focus:ring-4 focus:ring-primary-soft";
 
 async function mutate(url: string, method: string, body: unknown) {
   const response = await fetch(url, {
@@ -32,7 +32,7 @@ export function HospitalSettingsForms({
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <form
-        className="rounded-2xl border border-slate-200 bg-white p-5"
+        className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5"
         onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
@@ -65,7 +65,7 @@ export function HospitalSettingsForms({
         <button className="mt-4 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white">Save settings</button>
       </form>
       <form
-        className="rounded-2xl border border-slate-200 bg-white p-5"
+        className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5"
         onSubmit={async (event) => {
           event.preventDefault();
           // React nulls event.currentTarget after the await; keep the element.
@@ -108,7 +108,7 @@ export function OrganizationOnboardingForm() {
   const [message, setMessage] = useState<string | null>(null);
   return (
     <form
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5"
       onSubmit={async (event) => {
         event.preventDefault();
         // React nulls event.currentTarget after the await; keep the element.

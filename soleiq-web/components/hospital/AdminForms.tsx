@@ -17,7 +17,7 @@ async function apiMutation(url: string, method: string, body: unknown) {
 }
 
 const inputClass =
-  "h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand";
+  "h-11 w-full rounded-xl border border-slate-200 bg-surface-raised px-3 text-[15px] text-ink outline-none transition-shadow placeholder:text-ink-faint focus:border-primary focus:ring-4 focus:ring-primary-soft";
 
 export function InviteStaffForm({ hospitalSlug }: { hospitalSlug: string }) {
   const router = useRouter();
@@ -30,7 +30,7 @@ export function InviteStaffForm({ hospitalSlug }: { hospitalSlug: string }) {
 
   return (
     <form
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5"
       onSubmit={async (event) => {
         event.preventDefault();
         setBusy(true);
@@ -89,7 +89,7 @@ export function InviteStaffForm({ hospitalSlug }: { hospitalSlug: string }) {
           <option value="patient">Patient</option>
         </select>
         <button
-          className="h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50"
+          className="h-11 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50"
           disabled={busy}
         >
           {busy ? "Creating…" : "Create invite"}
@@ -174,7 +174,7 @@ export function EnrollPatientForm({
   }
   return (
     <form
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5"
       onSubmit={async (event) => {
         event.preventDefault();
         setBusy(true);
@@ -217,7 +217,7 @@ export function EnrollPatientForm({
       </div>
       <button
         disabled={busy}
-        className="mt-3 h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50"
+        className="mt-3 h-11 rounded-xl bg-brand px-4 text-sm font-semibold text-white disabled:opacity-50"
       >
         {busy ? "Enrolling…" : "Enroll patient"}
       </button>
@@ -239,7 +239,7 @@ export function AssignmentForm({
   const [message, setMessage] = useState<string | null>(null);
   return (
     <form
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5"
       onSubmit={async (event) => {
         event.preventDefault();
         // React nulls event.currentTarget after the await; keep the element.
@@ -282,7 +282,7 @@ export function AssignmentForm({
         </select>
         <input className={inputClass} name="reason" placeholder="Reason" />
       </div>
-      <button className="mt-3 h-10 rounded-xl bg-brand px-4 text-sm font-semibold text-white">
+      <button className="mt-3 h-11 rounded-xl bg-brand px-4 text-sm font-semibold text-white">
         Assign doctor
       </button>
       {message && <p className="mt-2 text-xs text-slate-600">{message}</p>}

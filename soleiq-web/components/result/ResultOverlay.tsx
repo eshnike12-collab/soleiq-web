@@ -2,13 +2,18 @@
 
 import type { DetectionRegion } from "@/lib/types";
 
-// Muted, token-aligned detection colors: coral (urgent), honey amber (warn),
-// warm orange, warm neutral — never harsh saturated red.
+// Detection outline colours, aligned to the app's palette tokens: coral
+// (urgent), amber (attention), terracotta, cool neutral — never a harsh
+// saturated red. These are drawn over a photograph, so each is the darker end
+// of its family to stay visible against skin tones.
+//
+// The KEYS are the detection types the model emits and are not presentation —
+// do not rename them here.
 const STROKE: Record<DetectionRegion["type"], string> = {
-  wound: "#A94F3F",
-  redness: "#BC8F26",
-  dryness: "#B06B2A",
-  callus: "#837B6C",
+  wound: "#B8402F",
+  redness: "#8A6209",
+  dryness: "#A85A2A",
+  callus: "#64748B",
 };
 
 export function ResultOverlay({
