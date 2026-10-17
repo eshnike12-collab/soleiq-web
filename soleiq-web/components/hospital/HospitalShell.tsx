@@ -1,4 +1,5 @@
 import { HospitalNav } from "./HospitalNav";
+import { ActivityPing } from "@/components/chrome/ActivityPing";
 import { AppTopBar } from "@/components/chrome/AppTopBar";
 import { T } from "@/components/chrome/T";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
@@ -17,6 +18,7 @@ export function HospitalShell({
 }) {
   return (
     <div className="min-h-screen text-ink">
+      <ActivityPing />
       <AppTopBar
         title={
           <div className="min-w-0">

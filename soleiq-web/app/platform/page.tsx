@@ -1,12 +1,13 @@
 import { OrganizationOnboardingForm } from "@/components/hospital/SettingsForms";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import {
-  getPlatformMonthlyStats,
+  getPlatformStats,
   listPlatformFeedback,
   listPlatformOrganizations,
 } from "@/server/platform";
-import { PlatformMonthlyPanel } from "@/components/hospital/PlatformMonthlyPanel";
-import { platformReportRecipient } from "@/server/monthlyReport";
+import { PlatformStatsPanel } from "@/components/hospital/PlatformStatsPanel";
+import { PlatformActivityChart } from "@/components/hospital/PlatformActivityChart";
+import { platformReportRecipient } from "@/server/platformReport";
 import { pageAccess } from "@/server/page-access";
 import { LocalTime } from "@/components/ui/LocalTime";
 
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function PlatformPage() {
   const organizations = await pageAccess(listPlatformOrganizations);
   const feedback = await listPlatformFeedback().catch(() => []);
-  const monthly = await getPlatformMonthlyStats().catch(() => null);
+  const monthly = await getPlatformStats().catch(() => null);
   return (
     <div className="min-h-screen ">
       <header className="border-b border-slate-200 bg-white">
@@ -29,13 +30,16 @@ export default async function PlatformPage() {
       </header>
       <main className="mx-auto max-w-6xl space-y-6 px-5 py-8">
         {monthly !== null && (
-          <PlatformMonthlyPanel
-            current={monthly.current}
-            currentStats={monthly.currentStats}
-            previous={monthly.previous}
-            previousStats={monthly.previousStats}
-            reportRecipient={platformReportRecipient()}
-          />
+          <>
+            <PlatformStatsPanel
+              current={monthly.current}
+              currentStats={monthly.currentStats}
+              previous={monthly.previous}
+              previousStats={monthly.previousStats}
+              reportRecipient={platformReportRecipient()}
+            />
+            <PlatformActivityChart />
+          </>
         )}
         <OrganizationOnboardingForm />
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-surface-raised shadow-card">

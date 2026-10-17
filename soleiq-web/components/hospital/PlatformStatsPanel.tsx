@@ -1,6 +1,6 @@
 import { ArrowRight, Mail } from "lucide-react";
 import Link from "next/link";
-import { RISK_ORDER, type MonthlyReportStats, type ReportWindow } from "@/lib/monthlyReport";
+import { RISK_ORDER, type PlatformReportStats, type ReportWindow } from "@/lib/platformReport";
 import { Metric } from "./Ui";
 
 /**
@@ -10,7 +10,7 @@ import { Metric } from "./Ui";
  * can be reconciled rather than quietly disagreeing. Presentation only — the
  * caller has already proved the reader is a platform administrator.
  *
- * Aggregate counts only, for the reason given in lib/monthlyReport.ts.
+ * Aggregate counts only, for the reason given in li./platformReport.ts.
  */
 
 const RISK_LABEL: Record<string, string> = {
@@ -27,7 +27,7 @@ const RISK_TINT: Record<string, string> = {
   urgent: "bg-urgent-soft text-urgent",
 };
 
-export function PlatformMonthlyPanel({
+export function PlatformStatsPanel({
   current,
   currentStats,
   previous,
@@ -35,9 +35,9 @@ export function PlatformMonthlyPanel({
   reportRecipient,
 }: {
   current: ReportWindow;
-  currentStats: MonthlyReportStats;
+  currentStats: PlatformReportStats;
   previous: ReportWindow;
-  previousStats: MonthlyReportStats;
+  previousStats: PlatformReportStats;
   /** Shown so the operator can see where the email goes without guessing. */
   reportRecipient: string;
 }) {
@@ -56,7 +56,7 @@ export function PlatformMonthlyPanel({
             Platform report
           </p>
           <h3 className="mt-1 text-[19px] font-bold text-ink">
-            {current.label} so far
+            Today so far
           </h3>
           <p className="mt-1 text-[14px] text-ink-soft">
             Compared with {previous.label}. Aggregate counts only — no
@@ -65,7 +65,7 @@ export function PlatformMonthlyPanel({
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-[13px] font-semibold text-primary">
           <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-          Emailed monthly
+          Emailed daily
         </span>
       </div>
 
@@ -81,7 +81,7 @@ export function PlatformMonthlyPanel({
       </div>
 
       <h4 className="mt-6 text-[13px] font-bold uppercase tracking-[0.07em] text-ink-faint">
-        Reports by screening level · {current.label}
+        Reports by screening level · today
       </h4>
       <div className="mt-2 flex flex-wrap gap-2">
         {RISK_ORDER.map((level) => (
@@ -110,7 +110,7 @@ export function PlatformMonthlyPanel({
 
       <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-faint">
         <span>
-          Sent on the 1st of each month to{" "}
+          Sent every morning to{" "}
           <span className="font-semibold text-ink-soft">{reportRecipient}</span>.
         </span>
         <Link

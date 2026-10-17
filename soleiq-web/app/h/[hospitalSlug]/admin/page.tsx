@@ -10,9 +10,10 @@ import {
 import { HospitalShell } from "@/components/hospital/HospitalShell";
 import { Metric, PageHeader } from "@/components/hospital/Ui";
 import { getAdminOverview } from "@/server/admin";
-import { getPlatformMonthlyStats, listPlatformFeedback } from "@/server/platform";
-import { PlatformMonthlyPanel } from "@/components/hospital/PlatformMonthlyPanel";
-import { platformReportRecipient } from "@/server/monthlyReport";
+import { getPlatformStats, listPlatformFeedback } from "@/server/platform";
+import { PlatformStatsPanel } from "@/components/hospital/PlatformStatsPanel";
+import { PlatformActivityChart } from "@/components/hospital/PlatformActivityChart";
+import { platformReportRecipient } from "@/server/platformReport";
 import { pageAccess } from "@/server/page-access";
 import { LocalTime } from "@/components/ui/LocalTime";
 
@@ -29,10 +30,10 @@ export default async function HospitalAdminPage({
   // hospital admins aren't platform admins, so this resolves to null and the
   // section simply doesn't render for them (RLS blocks the rows either way).
   const feedback = await listPlatformFeedback().catch(() => null);
-  // Same gate as the feedback block above: getPlatformMonthlyStats throws for
+  // Same gate as the feedback block above: getPlatformStats throws for
   // anyone who is not a platform administrator, so this resolves to null and
   // the panel does not render for an ordinary hospital admin.
-  const monthly = await getPlatformMonthlyStats().catch(() => null);
+  const monthly = await getPlatformStats().catch(() => null);
   const activeDoctors = data.staff.filter(
     (row: any) => row.role === "doctor" && row.status === "active"
   ).length;
@@ -87,13 +88,16 @@ export default async function HospitalAdminPage({
 
       {monthly !== null && (
         <div className="mt-6">
-          <PlatformMonthlyPanel
+          <PlatformStatsPanel
             current={monthly.current}
             currentStats={monthly.currentStats}
             previous={monthly.previous}
             previousStats={monthly.previousStats}
             reportRecipient={platformReportRecipient()}
           />
+          <div className="mt-4">
+            <PlatformActivityChart />
+          </div>
         </div>
       )}
 

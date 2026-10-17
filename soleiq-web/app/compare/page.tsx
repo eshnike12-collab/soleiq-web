@@ -55,10 +55,10 @@ function CompareContent() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
           <div>
             <Link
-              href="/home"
+              href="/features"
               className="inline-flex min-h-[44px] items-center gap-1 py-1 text-[13px] font-semibold text-ink-soft transition-colors hover:text-primary"
             >
-              <ArrowLeft className="h-3.5 w-3.5" /> My dashboard
+              <ArrowLeft className="h-3.5 w-3.5" /> Features
             </Link>
             <h1 className="mt-0.5 text-lg font-bold text-ink">
               Compare your checks

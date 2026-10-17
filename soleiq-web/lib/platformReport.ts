@@ -1,5 +1,9 @@
 /**
- * The monthly platform report's shape and date arithmetic.
+ * The platform report's shape and date arithmetic.
+ *
+ * Drives the DAILY operator email and the admin dashboard's range selector.
+ * (It began as a monthly report; the windows are now day, week, month, year
+ * and all-time, and the file was renamed to match.)
  *
  * Pure — no database, no clock of its own — so the window maths is testable.
  * It matters: an off-by-one at a month boundary silently reports the wrong
@@ -18,6 +22,9 @@
  * identifies nobody. A breakdown narrow enough to single somebody out would
  * not be, which is why nothing here is grouped by hospital.
  */
+
+/** One day in milliseconds. Declared here so this module has no imports. */
+export const DAY_MS = 86_400_000;
 
 export interface ReportWindow {
   /** Inclusive start, UTC. */
@@ -56,6 +63,86 @@ export function currentMonthWindow(now: Date): ReportWindow {
   return { start, end, label: monthLabel(start) };
 }
 
+/**
+ * The calendar day before the one `now` falls in, in UTC.
+ *
+ * Yesterday, not today: a report sent at 07:00 about the day just ended is
+ * complete, where one about the day in progress is a partial count that looks
+ * like a collapse. Same reasoning as the month window above.
+ */
+export function previousDayWindow(now: Date): ReportWindow {
+  const end = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+  );
+  const start = new Date(end.getTime() - DAY_MS);
+  return { start, end, label: dayLabel(start) };
+}
+
+/** The UTC day `now` falls in. The dashboard's "so far today". */
+export function currentDayWindow(now: Date): ReportWindow {
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+  );
+  return { start, end: new Date(start.getTime() + DAY_MS), label: dayLabel(start) };
+}
+
+export function dayLabel(date: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+/** Ranges the dashboard offers. */
+export type StatsRange = "1d" | "7d" | "30d" | "365d" | "all";
+
+export const RANGE_LABEL: Record<StatsRange, string> = {
+  "1d": "1 day",
+  "7d": "1 week",
+  "30d": "1 month",
+  "365d": "1 year",
+  all: "All time",
+};
+
+/** How many buckets each range is drawn with, and how wide a bucket is. */
+export const RANGE_BUCKETS: Record<StatsRange, { days: number; bucketDays: number }> = {
+  // A day drawn as 24 hourly buckets; the others as days or weeks, so a line
+  // never has more points than a chart can legibly carry.
+  "1d": { days: 1, bucketDays: 1 / 24 },
+  "7d": { days: 7, bucketDays: 1 },
+  "30d": { days: 30, bucketDays: 1 },
+  "365d": { days: 365, bucketDays: 7 },
+  all: { days: 0, bucketDays: 7 },
+};
+
+/**
+ * The window a dashboard range covers, ending now.
+ *
+ * `all` has no fixed start — the caller supplies the earliest timestamp it
+ * can find, so "all time" means the real beginning of the data rather than an
+ * arbitrary cut-off that quietly hides the first weeks.
+ */
+export function rangeWindow(
+  range: StatsRange,
+  now: Date,
+  earliest?: Date | null
+): ReportWindow {
+  const end = now;
+  if (range === "all") {
+    const start = earliest ?? new Date(end.getTime() - 365 * DAY_MS);
+    return { start, end, label: RANGE_LABEL.all };
+  }
+  const { days } = RANGE_BUCKETS[range];
+  return {
+    start: new Date(end.getTime() - days * DAY_MS),
+    end,
+    label: RANGE_LABEL[range],
+  };
+}
+
 export function monthLabel(date: Date): string {
   return new Intl.DateTimeFormat("en-GB", {
     month: "long",
@@ -65,7 +152,7 @@ export function monthLabel(date: Date): string {
 }
 
 /** Aggregate totals only. Every field is a count. */
-export interface MonthlyReportStats {
+export interface PlatformReportStats {
   /** Accounts created inside the window. */
   newSignups: number;
   /** Accounts in total, at the moment the report ran. */
@@ -89,7 +176,7 @@ export interface MonthlyReportStats {
   unavailable: string[];
 }
 
-export function emptyStats(): MonthlyReportStats {
+export function emptyStats(): PlatformReportStats {
   return {
     newSignups: 0,
     totalUsers: 0,

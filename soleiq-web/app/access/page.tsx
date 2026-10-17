@@ -12,7 +12,7 @@ export default async function PatientAccessPage() {
   return (
     <div className="min-h-screen px-5 py-8">
       <main className="mx-auto max-w-3xl">
-        <Link href="/home" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">← My foot health</Link>
+        <Link href="/features" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">← Features</Link>
         <header className="my-5">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Privacy & access</p>
           <h1 className="mt-1 text-2xl font-bold text-ink">Who can see my records?</h1>

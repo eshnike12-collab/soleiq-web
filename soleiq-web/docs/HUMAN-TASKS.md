@@ -241,54 +241,52 @@ were not exercised on real hardware. Worth one look on your iPhone.
 
 ---
 
-## Stage P — monthly platform report
+## Stage P — daily platform report + usage graph
 
-Added 2026-10-04. Emails the platform operator an operations summary on the
-1st of each month, and shows the same figures on the admin dashboard.
+Updated 2026-10-05. Was monthly; now a daily email at 07:00 UTC about the day
+just closed, plus a usage graph on the operator dashboard.
 
 | # | Task | Check that it worked |
 |---|---|---|
-| P1 | `CRON_SECRET` must already be set from Stage R | `curl https://app.soleiqhealth.com/api/cron/monthly-report` returns **401** |
-| P2 | Redeploy so Vercel picks up the new cron in `vercel.json` | Vercel → Settings → Cron Jobs lists `/api/cron/monthly-report` monthly |
-| P3 | *(optional)* Set `PLATFORM_REPORT_TO` if the recipient should change | Defaults to `eshnike12@gmail.com` without it |
+| P1 | `CRON_SECRET` must already be set from Stage R | `curl https://app.soleiqhealth.com/api/cron/platform-report` returns **401** |
+| P2 | Redeploy so Vercel picks up `vercel.json` | Settings → Cron Jobs lists `/api/cron/platform-report` **daily** |
+| P3 | Run `supabase/migrations/202610050014_user_activity.sql` | `select * from public.user_activity_daily limit 1;` runs |
+| P4 | *(optional)* `PLATFORM_REPORT_TO` to change the recipient | Defaults to `eshnike12@gmail.com` |
 
-### The sender address — read this
+### The sender address — unchanged, and still worth knowing
 
-**The report cannot be sent *from* `contact.soleiq@gmail.com`.** Resend only
-sends from a domain you have proved by DNS, and nobody can prove `gmail.com`.
+The report **cannot be sent from `contact.soleiq@gmail.com`**. Resend only sends
+from a domain proved by DNS, and nobody can prove `gmail.com`. It sends from
+`EMAIL_FROM` (your verified `soleiqhealth.com` sender) with **Reply-To:
+contact.soleiq@gmail.com**, so replies land in that mailbox.
 
-So the report is sent from `EMAIL_FROM` (the verified `soleiqhealth.com`
-sender) and carries **Reply-To: contact.soleiq@gmail.com** — replies land in
-that mailbox, which is the part that actually matters. Change it with
-`PLATFORM_REPORT_REPLY_TO`.
+### The usage graph, and what P3 actually buys
 
-If you want the From line itself to read `contact.soleiq@…`, that needs a
-domain you control — e.g. verifying `soleiq.com` or sending as
-`contact@soleiqhealth.com`, which the existing verified domain already allows.
+**Nothing recorded app usage before this.** `auth.users.last_sign_in_at` holds
+only the most recent sign-in and is overwritten each time — I checked, and it
+is not even exposed to the admin API here. So a per-day history of who used
+the app was never written down and **cannot be reconstructed**.
 
-### What the report contains
+P3 creates `user_activity_daily` and starts recording: one row per account per
+UTC day, written when a signed-in user opens the app. Counts only — no page, no
+route, no IP, no user agent, nothing clinical.
 
-**Aggregate counts only.** New sign-ups, total accounts, new enrollments, foot
-checks started, reports released, reports by screening level, new and total
-organizations, and feedback by category.
+That means:
 
-**It deliberately carries no patient-identifying or clinical information** — no
-name, no email, no photograph, no finding, no per-patient row. The report goes
-to an ordinary mailbox outside the application, and "41 checks completed"
-answers the operational question without putting protected health information
-in an inbox. `tests/monthly-report.test.ts` pins that so it cannot regress.
+- **Sign-ups, checks and reports are exact for the whole history**, because
+  those rows always carried real timestamps.
+- **Active users starts the day P3 runs.** Earlier buckets are drawn as a gap
+  in the line, not as zero — a flat zero would say "nobody came", which the
+  data cannot support.
 
-A run that cannot read one of the counts says so, in the email and on the
-dashboard, rather than reporting a zero that is really an error.
+Ranges on the dashboard: 1 day, 1 week, 1 month, 1 year, all time. All time
+starts at the first account, not an arbitrary cut-off.
 
-### On the dashboard
+### Live, not cached
 
-The same figures appear on `/platform` and, for platform operators only, on the
-hospital admin overview. The panel shows the month in progress against the
-month just closed, so the dashboard and the emailed report can be reconciled.
-
-Both are gated on `is_platform_admin()` **before** any service-role read
-happens — an ordinary hospital admin sees no panel at all.
+Both the graph API and the dashboard pages are `force-dynamic` and fetch with
+`cache: "no-store"`, so every load is a fresh read of the database. There is no
+cache layer to go stale between the email and the screen.
 
 ---
 

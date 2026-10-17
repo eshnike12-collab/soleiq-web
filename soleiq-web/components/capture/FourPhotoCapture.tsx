@@ -11,6 +11,7 @@ import { LiveCamera } from "./LiveCamera";
 import { PhotoGuideAnimation } from "./PhotoGuideAnimation";
 import { deviceTimeZone } from "@/lib/localTime";
 import { segmentPhoto } from "@/lib/woundMeasurement";
+import { checkCoverage } from "@/lib/captureCoverage";
 import { detectHandheld } from "@/lib/cameraOrientation";
 
 const SHOTS: {
@@ -127,18 +128,29 @@ export function FourPhotoCapture() {
     )
   );
   // Every slot must be resolved — photographed or deliberately skipped — and
-  // at least one has to be a real photo. Skipping all four would produce a
-  // report about nothing.
+  // at least one has to be a real photo.
+  //
+  // The rule comes from lib/captureCoverage.ts, which the SERVER also uses.
+  // They were stated separately once and drifted: this screen allowed a
+  // skipped check through while the server refused it with a 409 the client
+  // reported as "kept on this device", so the patient saw success and an
+  // unchanged dashboard. One definition, both sides.
+  //
+  // `quality?.passed` is this screen's own extra condition — a photo that
+  // failed quality is not yet a photo as far as the patient is concerned —
+  // so the images handed to the shared rule are the passing ones.
   const complete =
-    captured.length > 0 &&
-    SHOTS.every(
-      ({ side, view }) =>
-        isSkipped(side, view) ||
-        images.some(
-          (image) =>
-            image.side === side && image.view === view && image.quality?.passed
+    checkCoverage({
+      images: captured.map(({ side, view }) => ({ side, view })),
+      // SkippedSlot.view is the wider CaptureView; the four-photo check only
+      // has top and sole, so anything else is not one of these four slots.
+      skippedSlots: skipped
+        .filter(
+          (slot): slot is typeof slot & { view: "top" | "sole" } =>
+            slot.view === "top" || slot.view === "sole"
         )
-    );
+        .map(({ side, view }) => ({ side, view })),
+    }).ok;
 
   const choosePhoto = async (file?: File) => {
     if (!file) return;

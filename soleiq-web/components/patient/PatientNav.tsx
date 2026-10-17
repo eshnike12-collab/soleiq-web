@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Camera, ChevronDown, Home, LayoutGrid } from "lucide-react";
 import { BrandNavLockup } from "@/components/brand/Logo";
 import { PATIENT_FEATURES } from "./patientFeatures";
+import { ActivityPing } from "@/components/chrome/ActivityPing";
 
 /**
  * Patient portal navigation.
@@ -41,6 +42,8 @@ export function PatientNav({ active }: { active?: PatientNavTab }) {
 
   return (
     <>
+      <ActivityPing />
+
       {/* ── Mobile / tablet: bottom bar ─────────────────────────────────── */}
       <nav
         aria-label="Main"

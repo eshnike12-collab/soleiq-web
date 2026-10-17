@@ -2,19 +2,19 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { appBaseUrl, sendEmail } from "@/server/email/client";
 import {
-  monthlyReportSubject,
-  renderMonthlyReportHtml,
-  renderMonthlyReportText,
-} from "@/server/email/templates/monthlyReport";
-import { gatherMonthlyStats, platformReportRecipient } from "@/server/monthlyReport";
-import { previousMonthWindow } from "@/lib/monthlyReport";
+  platformReportSubject,
+  renderPlatformReportHtml,
+  renderPlatformReportText,
+} from "@/server/email/templates/platformReport";
+import { gatherPlatformStats, platformReportRecipient } from "@/server/platformReport";
+import { previousDayWindow } from "@/lib/platformReport";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Monthly platform report for the operator.
+ * Daily platform report for the operator.
  *
  * FAIL CLOSED, same as the reminder sweep: with no CRON_SECRET configured this
  * refuses every request including Vercel's own. The report is aggregate-only,
@@ -57,10 +57,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const window = previousMonthWindow(new Date());
-    const stats = await gatherMonthlyStats(window);
+    const window = previousDayWindow(new Date());
+    const stats = await gatherPlatformStats(window);
     const data = {
-      monthLabel: window.label,
+      periodLabel: window.label,
       stats,
       dashboardUrl: `${appBaseUrl()}/platform`,
     };
@@ -68,16 +68,16 @@ export async function GET(request: Request) {
     const result = await sendEmail({
       to: platformReportRecipient(),
       replyTo: replyTo(),
-      subject: monthlyReportSubject(data),
-      html: renderMonthlyReportHtml(data),
-      text: renderMonthlyReportText(data),
+      subject: platformReportSubject(data),
+      html: renderPlatformReportHtml(data),
+      text: renderPlatformReportText(data),
     });
 
     // Counts only in the log, never the recipient or the figures.
     console.info(
-      "[platform-report] monthly sweep:",
+      "[platform-report] daily sweep:",
       JSON.stringify({
-        month: window.label,
+        day: window.label,
         sent: result.ok,
         reason: result.ok ? null : result.reason,
         partial: stats.partial,
@@ -86,13 +86,13 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       ok: result.ok,
-      month: window.label,
+      day: window.label,
       partial: stats.partial,
       ...(result.ok ? {} : { reason: result.reason }),
     });
   } catch (cause) {
     console.error(
-      "[platform-report] monthly sweep failed:",
+      "[platform-report] daily sweep failed:",
       cause instanceof Error ? cause.message : "unknown error"
     );
     return NextResponse.json({ ok: false }, { status: 500 });

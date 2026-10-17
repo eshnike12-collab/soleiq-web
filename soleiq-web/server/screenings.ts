@@ -8,6 +8,7 @@ import { infrastructureClient } from "./storage";
 import { sendReportSummaryForSession } from "./email/sendReportSummary";
 import { linkedUserForSession, recordScanCompleted } from "./rescan";
 import { isValidTimeZone } from "@/lib/localTime";
+import { checkCoverage } from "@/lib/captureCoverage";
 import { anthropicAnalysisProvider } from "./providers/anthropic-analysis";
 import {
   MAX_ANALYSIS_ATTEMPTS,
@@ -295,14 +296,22 @@ export async function createCanonicalScreening(
 ) {
   const requestStartedAt = Date.now();
   const body = CompleteScreeningSchema.parse(input);
-  const expected = new Set([
-    "left-top",
-    "left-sole",
-    "right-top",
-    "right-sole",
-  ]);
-  for (const image of body.images) expected.delete(`${image.side}-${image.view}`);
-  if (expected.size) throw conflict("Exactly one photo for each required view is needed.");
+  // Every view must be RESOLVED — photographed or deliberately skipped — and
+  // at least one has to be a real photograph. The rule lives in
+  // lib/captureCoverage.ts so the capture screen and this gate cannot drift:
+  // when they did, the screen let a skipped check through and this threw it
+  // away with a 409 the patient read as success.
+  const coverage = checkCoverage({
+    images: body.images,
+    skippedSlots: body.skippedSlots,
+  });
+  if (!coverage.ok) {
+    throw conflict(
+      coverage.reason === "no_photos"
+        ? "At least one photo is needed to run a check."
+        : "Each view needs either a photo or a reason it was skipped."
+    );
+  }
 
   const { supabase, user } = await requireAuth();
   let enrollmentQuery = supabase

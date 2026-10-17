@@ -48,15 +48,25 @@ export function NextSteps() {
       setAnalysisPending(outcome.analysisPending ?? false);
       // Straight to the finished report when analysis completed inline;
       // otherwise a brief success beat, then home.
-      setTimeout(
-        () =>
-          router.push(
-            outcome.status === "saved" && outcome.reportId
-              ? `/records/${outcome.reportId}`
-              : "/home"
-          ),
-        1400
-      );
+      setTimeout(() => {
+        const target =
+          outcome.status === "saved" && outcome.reportId
+            ? `/records/${outcome.reportId}`
+            : "/home";
+        router.push(target);
+        // Invalidate the client router cache.
+        //
+        // /home and /records are server components that read the database on
+        // every request, but `router.push` can still paint the RSC payload
+        // cached when the patient left that page to START this check — which
+        // is a snapshot from BEFORE the check existed. The result was a
+        // dashboard that looked like the check had been thrown away, until a
+        // hard reload or a few minutes passed.
+        //
+        // refresh() after push() refetches the destination from the server,
+        // so the check the patient just finished is there when they arrive.
+        router.refresh();
+      }, 1400);
     } else {
       setSave("failed");
       setFailReason(outcome.reason ?? null);
@@ -96,7 +106,7 @@ export function NextSteps() {
         </h1>
         <p className="mt-2 max-w-[280px] text-[15px] leading-relaxed text-ink-soft">
           {save === "local"
-            ? "This account is not linked to one hospital patient record, so no hospital record was created."
+            ? "This account is not linked to a hospital patient record, so this check was NOT added to your history and your care team cannot see it. It stays on this device only."
             : analysisPending
               ? "Your photos are stored safely. The reading is still being prepared and will appear in your history shortly."
               : "Your results and photos are available to you and your care team right away; a clinician will also review them."}{" "}
@@ -104,11 +114,14 @@ export function NextSteps() {
         </p>
         <button
           type="button"
-          onClick={() =>
+          onClick={() => {
             router.push(
               save === "saved" && reportId ? `/records/${reportId}` : "/home"
-            )
-          }
+            );
+            // Same reason as the auto-redirect above: without this the
+            // dashboard can paint a pre-check snapshot.
+            router.refresh();
+          }}
           className="mt-4 inline-flex min-h-[44px] items-center rounded-xl px-4 text-[15px] font-bold text-primary"
         >
           {save === "saved" && reportId ? "View my full report now" : "Go now"}

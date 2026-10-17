@@ -1,8 +1,8 @@
 import { escapeHtml } from "./reportSummary";
-import { RISK_ORDER, type MonthlyReportStats } from "@/lib/monthlyReport";
+import { RISK_ORDER, type PlatformReportStats } from "@/lib/platformReport";
 
 /**
- * The monthly platform report, for the operator only.
+ * The daily platform report, for the operator only.
  *
  * Pure functions: data in, strings out. No network, no env, no Resend import,
  * so the markup is unit-testable without a mail account.
@@ -11,17 +11,17 @@ import { RISK_ORDER, type MonthlyReportStats } from "@/lib/monthlyReport";
  *
  * Counts. Only counts. No patient name, no email address, no photograph, no
  * finding, no per-patient row — see the note at the top of
- * lib/monthlyReport.ts. The recipient is the platform operator, but the
+ * li./platformReport.ts. The recipient is the platform operator, but the
  * mailbox is an ordinary one outside the application, and an operations
  * summary does not need identifiable health information to do its job.
  *
- * tests/monthly-report-email.test.ts pins that property so it cannot regress.
+ * tests/platform-report.test.ts pins that property so it cannot regress.
  */
 
-export interface MonthlyReportEmailData {
-  /** "September 2026" — the month being reported on. */
-  monthLabel: string;
-  stats: MonthlyReportStats;
+export interface PlatformReportEmailData {
+  /** The period being reported on, e.g. "Saturday 4 October 2026". */
+  periodLabel: string;
+  stats: PlatformReportStats;
   /** Absolute link to the admin dashboard showing the same figures. */
   dashboardUrl: string;
 }
@@ -40,11 +40,11 @@ const RISK_LABEL: Record<string, string> = {
   urgent: "Urgent",
 };
 
-export function monthlyReportSubject(data: MonthlyReportEmailData): string {
-  return `SoleIQ platform report — ${data.monthLabel}`;
+export function platformReportSubject(data: PlatformReportEmailData): string {
+  return `SoleIQ daily report — ${data.periodLabel}`;
 }
 
-function rows(data: MonthlyReportEmailData): [string, string][] {
+function rows(data: PlatformReportEmailData): [string, string][] {
   const s = data.stats;
   return [
     ["New sign-ups", String(s.newSignups)],
@@ -58,10 +58,10 @@ function rows(data: MonthlyReportEmailData): [string, string][] {
   ];
 }
 
-export function renderMonthlyReportText(data: MonthlyReportEmailData): string {
+export function renderPlatformReportText(data: PlatformReportEmailData): string {
   const s = data.stats;
   const lines = [
-    `SoleIQ platform report — ${data.monthLabel}`,
+    `SoleIQ daily report — ${data.periodLabel}`,
     "",
     ...rows(data).map(([k, v]) => `${k}: ${v}`),
     "",
@@ -97,7 +97,7 @@ export function renderMonthlyReportText(data: MonthlyReportEmailData): string {
   return lines.join("\n");
 }
 
-export function renderMonthlyReportHtml(data: MonthlyReportEmailData): string {
+export function renderPlatformReportHtml(data: PlatformReportEmailData): string {
   const s = data.stats;
 
   const statRows = rows(data)
@@ -153,7 +153,7 @@ export function renderMonthlyReportHtml(data: MonthlyReportEmailData): string {
   return `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(
-    monthlyReportSubject(data)
+    platformReportSubject(data)
   )}</title></head>
 <body style="margin:0;padding:0;background:${SOFT};">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${SOFT};padding:24px 12px;">
@@ -165,9 +165,9 @@ export function renderMonthlyReportHtml(data: MonthlyReportEmailData): string {
         </td></tr>
 
         <tr><td style="padding:28px 28px 0 28px;font-family:Inter,Helvetica,Arial,sans-serif;">
-          <p style="margin:0 0 4px 0;color:${PRIMARY};font-size:13px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;">Monthly report</p>
+          <p style="margin:0 0 4px 0;color:${PRIMARY};font-size:13px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;">Daily report</p>
           <h1 style="margin:0 0 20px 0;color:${INK};font-size:24px;font-weight:700;">${escapeHtml(
-            data.monthLabel
+            data.periodLabel
           )}</h1>
         </td></tr>
 

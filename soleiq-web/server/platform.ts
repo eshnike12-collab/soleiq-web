@@ -3,8 +3,13 @@ import "server-only";
 import { z } from "zod";
 import { forbidden } from "./errors";
 import { requireAuth } from "./auth";
-import { gatherMonthlyStats } from "./monthlyReport";
-import { currentMonthWindow, previousMonthWindow } from "@/lib/monthlyReport";
+import { gatherPlatformStats } from "./platformReport";
+import { currentDayWindow, previousDayWindow } from "@/lib/platformReport";
+
+/** The platform-admin gate, for callers outside this module (API routes). */
+export async function requirePlatformAdminContext() {
+  return requirePlatformAdmin();
+}
 
 async function requirePlatformAdmin() {
   const context = await requireAuth();
@@ -41,7 +46,7 @@ export async function listPlatformFeedback() {
  * The figures behind the monthly operator report, for the dashboard.
  *
  * ORDER MATTERS HERE. `requirePlatformAdmin()` runs FIRST and throws for
- * anyone else; only then does `gatherMonthlyStats` touch the service-role
+ * anyone else; only then does `gatherPlatformStats` touch the service-role
  * client. That client bypasses RLS, so it must never be reachable by a caller
  * who has not already been checked — the authorization is this line, not
  * anything inside the gatherer.
@@ -50,16 +55,19 @@ export async function listPlatformFeedback() {
  * is happening now, the second is what the email reported, so the dashboard
  * and the inbox can be reconciled.
  *
- * Aggregate counts only — see lib/monthlyReport.ts.
+ * Aggregate counts only — see li./platformReport.ts.
  */
-export async function getPlatformMonthlyStats() {
+export async function getPlatformStats() {
   await requirePlatformAdmin();
   const now = new Date();
-  const current = currentMonthWindow(now);
-  const previous = previousMonthWindow(now);
+  // Today so far against yesterday's total — the same pairing the daily email
+  // reports, so the inbox and the dashboard can be reconciled rather than
+  // quietly disagreeing about which period they mean.
+  const current = currentDayWindow(now);
+  const previous = previousDayWindow(now);
   const [currentStats, previousStats] = await Promise.all([
-    gatherMonthlyStats(current),
-    gatherMonthlyStats(previous),
+    gatherPlatformStats(current),
+    gatherPlatformStats(previous),
   ]);
   return { current, currentStats, previous, previousStats };
 }
