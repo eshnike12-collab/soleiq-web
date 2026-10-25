@@ -5,6 +5,7 @@ import { DomainError, notFound } from "./errors";
 import { requireAuth } from "./auth";
 import { resolveHospital } from "./tenancy";
 import { writeAudit } from "./audit";
+import { callAnthropic } from "./anthropic";
 import {
   getStoredRecommendation,
   patientPhotoLabels,
@@ -277,14 +278,9 @@ export async function chatAboutReport(
     JSON.stringify(recordContext),
   ].join("\n");
 
-  const upstream = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  // Model, system prompt and max_tokens unchanged — transport only.
+  const result = await callAnthropic(
+    {
       model:
         process.env.ANTHROPIC_CHAT_MODEL ??
         process.env.ANTHROPIC_VISION_MODEL ??
@@ -292,16 +288,21 @@ export async function chatAboutReport(
       max_tokens: 1500,
       system,
       messages: body.messages,
-    }),
-  });
-  const payload = await upstream.json().catch(() => null);
-  if (!upstream.ok) {
+    },
+    { event: "clinical_assistant.provider_failed", requestId }
+  );
+  if (!result.ok) {
     throw new DomainError(
       "DEPENDENCY_ERROR",
-      "The clinical assistant could not answer. Please try again.",
-      502
+      // The clinician sees the classified cause too — a doctor waiting on a
+      // record deserves to know whether to retry or to call someone.
+      result.failure.clientStatus === 503
+        ? result.failure.clientMessage
+        : "The clinical assistant could not answer. Please try again.",
+      result.failure.clientStatus === 502 ? 502 : 503
     );
   }
+  const payload = result.payload;
   const reply = payload?.content?.find(
     (item: { type: string }) => item.type === "text"
   )?.text;

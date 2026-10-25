@@ -26,7 +26,7 @@ const ja: Dictionary = {
     noMembership: '医療機関との連携なし',
     feedback: 'ご意見',
     adminConsole: '管理コンソール',
-    doctorDashboard: '医師ダッシュボード',
+    doctorDashboard: '介護者ダッシュボード',
     footHealth: '足の健康',
   },
 
@@ -63,14 +63,14 @@ const ja: Dictionary = {
     chooseSubtitle: 'どちらの立場かをお知らせください。それに合わせて画面をご用意します。',
     iAmPatient: '患者です',
     iAmPatientBody: '案内に沿って写真を撮り、足の状態を確認して、結果をひとつにまとめて残せます。',
-    iAmDoctor: '医師または介護者です',
+    iAmDoctor: '介護者です',
     iAmDoctorBody: '担当する患者さんの足のチェック、写真の記録、AI による要約をたどれます。',
     sendingReset: 'リンクを送信しています…',
     resetSent: '{email} のアカウントがあれば、再設定用のリンクをお送りしています。迷惑メールもご確認ください。このデバイスで開いてください。リンクは 1 時間で失効します。',
     signIn: 'ログイン',
     createAccount: 'アカウントを作成',
     titlePatient: 'SoleIQ にログイン',
-    titleDoctor: '医師・介護者向けログイン',
+    titleDoctor: '介護者向けログイン',
     subtitlePatient:
       '足のチェック結果はアカウントに保存されるため、次回もそのままご覧いただけます。',
     subtitleDoctor: 'ダッシュボードには担当の患者さんが表示されます。',
@@ -90,7 +90,7 @@ const ja: Dictionary = {
       'アカウントを作成しました。確認メールをお送りしましたので、リンクを開いてからここでログインしてください。',
     emailConfirmed: 'メールアドレスを確認しました。下からログインしてください。',
     staffNote:
-      '医師と管理者のアクセスは、有効期限のある医療機関からの招待によってのみ付与されます。新しい医師は医療機関の確認が済むまで無効のままです。',
+      '介護者と管理者のアクセスは、有効期限のある医療機関からの招待によってのみ付与されます。新しい介護者は医療機関の確認が済むまで無効のままです。',
     patientNote:
       '新規アカウントでスタッフの役割を選ぶことはできません。医療機関へのアクセスは、招待または診療記録の連携によって追加されます。',
     errorEmailFirst: '先にメールアドレスを入力してください。',
@@ -148,10 +148,96 @@ const ja: Dictionary = {
     demographicsSubtitle:
       '集団事前分布の調整と、モデルの公平性の監査に使用します。',
 
+    claim: {
+      eyebrow:
+        'あなたの記録',
+      title:
+        'ご自身の記録を引き継ぐ',
+      intro:
+        'どなたかがあなたのために SoleIQ の足の健康記録を作成し、代わりに管理してきました。どなたかは招待メールに記載されています。',
+      whatHappens:
+        '引き継ぐと、記録はあなたのものになります。今日より前に記録された内容も含めて履歴をすべて確認でき、ほかに誰が見られるかをご自身で決められます。',
+      canRemove:
+        'その方は引き続きお手伝いできるようケアサークルに残りますが、「プライバシーとアクセス」からいつでも外せます。これはあなただけの判断です。',
+      signInPrompt:
+        'この招待が届いたメールアドレスでサインインしてください。リンクはそのアカウントでのみ有効です。',
+      signInCta:
+        'サインインまたはアカウント作成',
+      claimCta:
+        '自分の記録を引き継ぐ',
+      claiming:
+        '引き継いでいます…',
+      successTitle:
+        'この記録はあなたのものになりました',
+      successBody:
+        '内容はすべてアプリにあります。今日より前に記録されたものも含まれます。',
+      successCta:
+        '足の健康を見る',
+      expiredTitle:
+        'このリンクは期限切れです',
+      expiredBody:
+        'リンクは {days} 日後に使えなくなります。新しいリンクをお願いできます。',
+      usedTitle:
+        'このリンクは使用済みです',
+      usedBody:
+        '記録がすでにご自身のものなら、サインインするだけで大丈夫です。そうでなければ新しいリンクをお願いしてください。',
+      mismatchTitle:
+        'このリンクは別の方のものです',
+      mismatchBody:
+        '招待が届いたアドレスでサインインしてください。どなたかをお手伝いの場合はリンクをその方にお渡しください。ご本人だけが自分の記録を引き継げます。',
+      linkedTitle:
+        'このアカウントには既に記録があります',
+      linkedBody:
+        'このアカウントは別の患者記録と結び付いています。二つの診療履歴が自動で統合されることはありません。ケアチームにご連絡ください。',
+      unknownTitle:
+        'うまくいきませんでした',
+      unknownBody:
+        'リンクを使用できませんでした。新しいリンクをお願いできます。',
+      requestNewCta:
+        '新しいリンクをお願いする',
+      requestNewSent:
+        'ご依頼を記録しました。記録を作成した方に新しいリンクの送信をお願いしてください。',
+    },
+
     historyEyebrow: '既往歴',
     conditionsTitle: '既往疾患',
     conditionsSubtitle:
       '当てはまるものをすべて選んでください。(?) を押すと各疾患の臨床的な説明が表示されます。',
+
+    medications: {
+      title: 'お薬',
+      subtitle:
+        'お薬によっては、あざのでき方、出血のしかた、傷の治り方が変わります。把握しておくことで、お写真を正しく読み取れます。',
+      newQuestion: 'これは、現在すべての方にお伺いしている新しい質問です。',
+      question: '主要なお薬を服用していますか？',
+      preferNotToSay: '回答しない',
+      listTitle: 'どのお薬ですか？',
+      listHint: 'どのような名前でも入力できます。候補と一致しなくてもかまいません。',
+      inputPlaceholder: 'お薬の名前を入力してください',
+      suggestions: '候補',
+      added: '追加済み',
+      empty: 'まだ追加されていません。そのまま進めます。',
+      notesLabel: 'ケアチームに伝えておきたいこと',
+      notesPlaceholder: '用量、服用期間、最近の変更など',
+      privacy: 'この内容はご本人とケアチームだけが見られます。',
+      reviewNone: '主要なお薬はなし',
+      reviewHidden: '回答しない',
+      reviewUnanswered: '新しい質問 — ご回答ください',
+      reviewRequiredCta: '新しい質問に答えてから写真を撮ります',
+      categories: {
+        anticoagulant: '抗凝固薬',
+        antiplatelet: '抗血小板薬',
+        corticosteroid: 'ステロイド',
+        immunosuppressant: '免疫抑制薬',
+        chemotherapy: '抗がん剤',
+        insulin: 'インスリン',
+        oral_diabetes: '糖尿病の飲み薬',
+        statin: 'コレステロール（スタチン）',
+        antihypertensive: '血圧の薬',
+        antibiotic: '抗菌薬',
+        other: 'その他',
+      },
+    },
 
     vascularEyebrow: '血管スクリーニング',
     vascularTitle: '末梢動脈疾患',
@@ -210,6 +296,9 @@ const ja: Dictionary = {
   common: {
     yes: 'はい',
     no: 'いいえ',
+    continue: '次へ',
+    add: '追加',
+    remove: '削除',
     save: '保存',
     cancel: 'キャンセル',
     close: '閉じる',

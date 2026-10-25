@@ -24,6 +24,9 @@ const PROFILE_KEYS: (keyof PatientProfile)[] = [
   "pad",
   "priorEvents",
   "recentSurgery",
+  // Without this the answer never reaches patients.demographics, so the
+  // question would be re-asked at every visit as if never answered.
+  "medications",
   "numbness",
   "alcohol",
   "smoking",

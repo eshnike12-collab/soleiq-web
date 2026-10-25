@@ -7,6 +7,7 @@ import { SkippedViews } from "@/components/patient/SkippedViewCard";
 import { pageAccess } from "@/server/page-access";
 import { RecommendationBlock } from "@/components/result/RecommendationBlock";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { ReportLiveRefresh } from "@/components/live/ReportLiveRefresh";
 import { MedicalAlert, MedicalCard, SectionHeader } from "@/components/ui/medical";
 import { PatientAssistant } from "@/components/patient/PatientAssistant";
 
@@ -63,6 +64,12 @@ export default async function PatientReportPage({
               <LocalTime value={report.finalized_at || report.created_at} />
             </p>
 
+            {/* Watches THIS report and refreshes when it is released, so a
+                page opened while the reading was still running resolves in
+                place instead of showing a stale shell. Stops once settled. */}
+            {report.status !== "released" && (
+              <ReportLiveRefresh watchReportId={report.id} />
+            )}
             {report.status !== "released" && (
               <MedicalAlert tone="attention" className="mt-4">
                 <span className="font-bold text-ink">

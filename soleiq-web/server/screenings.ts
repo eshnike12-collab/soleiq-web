@@ -8,6 +8,7 @@ import { infrastructureClient } from "./storage";
 import { sendReportSummaryForSession } from "./email/sendReportSummary";
 import { linkedUserForSession, recordScanCompleted } from "./rescan";
 import { isValidTimeZone } from "@/lib/localTime";
+import { TERMINAL_SESSION_STATUSES } from "@/lib/screeningResume";
 import { checkCoverage } from "@/lib/captureCoverage";
 import { anthropicAnalysisProvider } from "./providers/anthropic-analysis";
 import {
@@ -66,14 +67,9 @@ async function withDeadline<T>(
   }
 }
 
-/** Sessions past the point of re-uploading: the report already exists (or a
- *  clinician owns the row now), so a repeat submit returns it as-is. */
-const TERMINAL_SESSION_STATUSES = new Set([
-  "preliminary",
-  "clinician_reviewed",
-  "completed",
-  "released",
-]);
+/* TERMINAL_SESSION_STATUSES and the resume decision live in
+   lib/screeningResume.ts so they can be tested without a database. Imported
+   rather than restated, so the tested rule is the one that runs. */
 
 /** The report produced for a session, as visible to the CALLER (RLS applies —
  *  patients see their own reports immediately once migration 0009 is live). */

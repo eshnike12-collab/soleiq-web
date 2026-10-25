@@ -26,7 +26,7 @@ const ko: Dictionary = {
     noMembership: '연결된 병원 없음',
     feedback: '의견 보내기',
     adminConsole: '관리자 콘솔',
-    doctorDashboard: '의사 대시보드',
+    doctorDashboard: '보호자 대시보드',
     footHealth: '내 발 건강',
   },
 
@@ -63,14 +63,14 @@ const ko: Dictionary = {
     chooseSubtitle: '어떤 분인지 알려 주시면 그에 맞는 화면을 준비하겠습니다.',
     iAmPatient: '저는 환자입니다',
     iAmPatientBody: '안내에 따라 사진을 찍어 발을 확인하고 결과를 한곳에 모아 두세요.',
-    iAmDoctor: '저는 의사 또는 보호자입니다',
+    iAmDoctor: '저는 보호자입니다',
     iAmDoctorBody: '담당 환자의 발 검사, 사진 기록, AI 요약을 확인하세요.',
     sendingReset: '링크를 보내는 중…',
     resetSent: '{email}(으)로 등록된 계정이 있으면 재설정 링크가 발송됩니다. 스팸함도 확인해 주세요. 이 기기에서 열어 주세요. 링크는 한 시간 뒤 만료됩니다.',
     signIn: '로그인',
     createAccount: '계정 만들기',
     titlePatient: 'SoleIQ 로그인',
-    titleDoctor: '의사 / 보호자 로그인',
+    titleDoctor: '보호자 로그인',
     subtitlePatient: '발 검사 기록이 계정에 저장되어 다음에도 그대로 남아 있습니다.',
     subtitleDoctor: '대시보드에 배정된 환자가 표시됩니다.',
     email: '이메일',
@@ -89,7 +89,7 @@ const ko: Dictionary = {
       '계정을 만들었습니다. 확인 메일을 보냈으니 안의 링크를 열고 여기서 로그인해 주세요.',
     emailConfirmed: '이메일이 확인되었습니다. 아래에서 로그인하세요.',
     staffNote:
-      '의사와 관리자 권한은 만료 기한이 있는 병원 초대를 통해서만 부여됩니다. 새로 등록한 의사는 병원이 확인할 때까지 비활성 상태로 남습니다.',
+      '보호자와 관리자 권한은 만료 기한이 있는 병원 초대를 통해서만 부여됩니다. 새로 등록한 보호자는 병원이 확인할 때까지 비활성 상태입니다.',
     patientNote:
       '새 계정은 의료진 역할을 직접 선택할 수 없습니다. 병원 접근 권한은 초대 또는 환자 기록 연결 절차로 추가됩니다.',
     errorEmailFirst: '이메일을 먼저 입력해 주세요.',
@@ -146,10 +146,96 @@ const ko: Dictionary = {
     demographicsSubtitle:
       '집단 사전분포를 조정하고 모델의 공정성을 점검하는 데 사용합니다.',
 
+    claim: {
+      eyebrow:
+        '내 기록',
+      title:
+        '내 기록의 관리 권한 받기',
+      intro:
+        '누군가 당신을 위해 SoleIQ 발 건강 기록을 만들고 대신 관리해 왔습니다. 초대 이메일에 누구인지 적혀 있습니다.',
+      whatHappens:
+        '관리 권한을 받으면 이 기록은 당신의 것이 됩니다. 오늘 이전에 기록된 내용까지 전체 이력을 볼 수 있고, 누가 더 볼 수 있는지도 직접 정합니다.',
+      canRemove:
+        '그 사람은 계속 도울 수 있도록 케어 서클에 남지만, 개인정보 및 접근에서 언제든 제외할 수 있습니다. 그 결정은 전적으로 당신의 것입니다.',
+      signInPrompt:
+        '이 초대를 받은 이메일 주소로 로그인하세요. 링크는 해당 계정에서만 작동합니다.',
+      signInCta:
+        '로그인 또는 계정 만들기',
+      claimCta:
+        '내 기록의 관리 권한 받기',
+      claiming:
+        '권한을 받는 중…',
+      successTitle:
+        '이 기록은 이제 당신의 것입니다',
+      successBody:
+        '안에 있는 모든 내용이 앱에 있습니다. 오늘 이전에 기록된 것도 포함됩니다.',
+      successCta:
+        '내 발 건강으로 가기',
+      expiredTitle:
+        '이 링크는 만료되었습니다',
+      expiredBody:
+        '링크는 {days}일이 지나면 작동하지 않습니다. 새 링크를 요청할 수 있습니다.',
+      usedTitle:
+        '이 링크는 이미 사용되었습니다',
+      usedBody:
+        '기록이 이미 당신의 것이라면 로그인만 하면 됩니다. 그렇지 않으면 새 링크를 요청하세요.',
+      mismatchTitle:
+        '이 링크는 다른 사람을 위한 것입니다',
+      mismatchBody:
+        '초대를 받은 주소로 로그인하세요. 누군가를 돕고 있다면 링크를 그 사람에게 전달하세요. 본인만 자신의 기록을 받을 수 있습니다.',
+      linkedTitle:
+        '계정에 이미 기록이 있습니다',
+      linkedBody:
+        '이 계정은 이미 다른 환자 기록과 연결되어 있습니다. 두 개의 진료 기록은 자동으로 합쳐지지 않습니다. 의료진에게 문의해 주세요.',
+      unknownTitle:
+        '처리되지 않았습니다',
+      unknownBody:
+        '링크를 사용할 수 없었습니다. 새 링크를 요청할 수 있습니다.',
+      requestNewCta:
+        '새 링크 요청',
+      requestNewSent:
+        '요청이 기록되었습니다. 기록을 만든 분에게 새 링크를 보내 달라고 요청하세요.',
+    },
+
     historyEyebrow: '건강 이력',
     conditionsTitle: '질환',
     conditionsSubtitle:
       '해당하는 항목을 모두 선택하세요. (?)를 누르면 각 질환의 임상 설명이 나옵니다.',
+
+    medications: {
+      title: '복용 약물',
+      subtitle:
+        '일부 약은 피부에 멍이 드는 방식, 출혈, 상처가 아무는 속도를 바꿉니다. 그래서 알고 있으면 사진을 정확히 판단할 수 있습니다.',
+      newQuestion: '이것은 이제 모든 분께 여쭤보는 새로운 질문입니다.',
+      question: '복용 중인 주요 약물이 있나요?',
+      preferNotToSay: '답하지 않음',
+      listTitle: '어떤 약인가요?',
+      listHint: '어떤 이름이든 입력하세요. 제안과 일치하지 않아도 됩니다.',
+      inputPlaceholder: '약 이름을 입력하세요',
+      suggestions: '제안',
+      added: '추가됨',
+      empty: '아직 추가된 약이 없습니다. 그대로 계속할 수 있습니다.',
+      notesLabel: '의료진이 알아야 할 다른 사항',
+      notesPlaceholder: '용량, 복용 기간, 최근 변경 사항',
+      privacy: '이 내용은 본인과 의료진만 볼 수 있습니다.',
+      reviewNone: '주요 약물 없음',
+      reviewHidden: '답하지 않음',
+      reviewUnanswered: '새 질문 — 답변해 주세요',
+      reviewRequiredCta: '새 질문에 답한 뒤 사진을 촬영하세요',
+      categories: {
+        anticoagulant: '항응고제',
+        antiplatelet: '항혈소판제',
+        corticosteroid: '스테로이드',
+        immunosuppressant: '면역억제제',
+        chemotherapy: '항암 치료제',
+        insulin: '인슐린',
+        oral_diabetes: '당뇨 경구약',
+        statin: '콜레스테롤(스타틴)',
+        antihypertensive: '혈압약',
+        antibiotic: '항생제',
+        other: '기타',
+      },
+    },
 
     vascularEyebrow: '혈관 선별검사',
     vascularTitle: '말초동맥질환',
@@ -208,6 +294,9 @@ const ko: Dictionary = {
   common: {
     yes: '예',
     no: '아니요',
+    continue: '계속',
+    add: '추가',
+    remove: '제거',
     save: '저장',
     cancel: '취소',
     close: '닫기',

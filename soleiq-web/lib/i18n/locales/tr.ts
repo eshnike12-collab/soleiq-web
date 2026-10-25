@@ -25,7 +25,7 @@ const tr: Dictionary = {
     noMembership: 'hastane bağlantısı yok',
     feedback: 'Geri bildirim',
     adminConsole: 'Yönetici konsolu',
-    doctorDashboard: 'Hekim paneli',
+    doctorDashboard: 'Bakım veren paneli',
     footHealth: 'Ayak sağlığım',
   },
 
@@ -62,14 +62,14 @@ const tr: Dictionary = {
     chooseSubtitle: 'Doğru deneyimi hazırlayabilmemiz için kim olduğunuzu söyleyin.',
     iAmPatient: 'Ben hastayım',
     iAmPatientBody: 'Yönlendirmeli fotoğraflarla ayaklarınızı kontrol edin, sonuçlarınızı tek yerde tutun.',
-    iAmDoctor: 'Ben hekim ya da bakım verenim',
+    iAmDoctor: 'Ben bakım verenim',
     iAmDoctorBody: 'Hastalarınızın ayak kontrollerini, fotoğraf zaman çizelgelerini ve yapay zekâ özetlerini izleyin.',
     sendingReset: 'Bağlantı gönderiliyor…',
     resetSent: '{email} için bir hesap varsa sıfırlama bağlantısı yolda — gereksiz klasörüne de bakın. Bu cihazda açın; bağlantı bir saatte geçerliliğini yitirir.',
     signIn: 'Giriş yap',
     createAccount: 'Hesap oluştur',
     titlePatient: "SoleIQ'ya giriş yapın",
-    titleDoctor: 'Hekim / bakım veren girişi',
+    titleDoctor: 'Bakım veren girişi',
     subtitlePatient:
       'Ayak kontrolleriniz hesabınıza kaydedilir, bir sonraki gelişinizde de burada olur.',
     subtitleDoctor: 'Panelinizde size atanan hastalar görünür.',
@@ -90,7 +90,7 @@ const tr: Dictionary = {
       'Hesap oluşturuldu — bir doğrulama e-postası gönderdik. İçindeki bağlantıyı açın, sonra buradan giriş yapın.',
     emailConfirmed: 'E-posta doğrulandı — aşağıdan giriş yapın.',
     staffNote:
-      'Hekim ve yönetici erişimi yalnızca süresi dolan bir hastane davetiyle verilir. Yeni hekimler hastane doğrulayana kadar pasif kalır.',
+      'Bakım veren ve yönetici erişimi yalnızca süresi dolan bir hastane davetiyle verilir. Yeni bakım verenler hastane doğrulayana kadar etkin olmaz.',
     patientNote:
       'Yeni hesaplar personel rolü seçmez. Hastane erişimi davetle ya da hasta kaydı eşleştirmesiyle eklenir.',
     errorEmailFirst: 'Önce e-posta adresinizi girin.',
@@ -149,10 +149,96 @@ const tr: Dictionary = {
     demographicsSubtitle:
       'Popülasyon önsellerini kişiselleştirmek ve modelin adilliğini denetlemek için kullanılır.',
 
+    claim: {
+      eyebrow:
+        'Kaydınız',
+      title:
+        'Kaydınızın kontrolünü alın',
+      intro:
+        'Biri sizin için bir SoleIQ ayak sağlığı kaydı oluşturdu ve sizin adınıza takip ediyor. Davet e-postanızda kim olduğu yazıyor.',
+      whatHappens:
+        'Kontrolü alırsanız kayıt sizin olur. Bugünden öncesine ait her şey dahil tüm geçmişi görürsünüz ve başka kimin görebileceğine siz karar verirsiniz.',
+      canRemove:
+        'O kişi yardım etmeye devam edebilmek için bakım çevrenizde kalır — ve Gizlilik ve erişim bölümünden dilediğiniz zaman çıkarabilirsiniz. Bu karar yalnızca sizin.',
+      signInPrompt:
+        'Bu davetin gönderildiği e-posta adresiyle giriş yapın. Bağlantı yalnızca o hesapla çalışır.',
+      signInCta:
+        'Giriş yapın veya hesap oluşturun',
+      claimCta:
+        'Kaydımın kontrolünü al',
+      claiming:
+        'Kontrol alınıyor…',
+      successTitle:
+        'Bu kayıt artık sizin',
+      successBody:
+        'İçindeki her şey uygulamanızda, bugünden önce kaydedilenler dahil.',
+      successCta:
+        'Ayak sağlığıma git',
+      expiredTitle:
+        'Bu bağlantının süresi doldu',
+      expiredBody:
+        'Bağlantılar {days} gün sonra çalışmaz. Yenisini isteyebilirsiniz.',
+      usedTitle:
+        'Bu bağlantı daha önce kullanıldı',
+      usedBody:
+        'Kayıt zaten sizinse yalnızca giriş yapın. Değilse yeni bir bağlantı isteyin.',
+      mismatchTitle:
+        'Bu bağlantı başka biri için',
+      mismatchBody:
+        'Davetin gönderildiği adresle giriş yapın. Birine yardım ediyorsanız bağlantıyı ona iletin — yalnızca o kişi kendi kaydının kontrolünü alabilir.',
+      linkedTitle:
+        'Hesabınızın zaten bir kaydı var',
+      linkedBody:
+        'Bu hesap başka bir hasta kaydına bağlı. İki tıbbi geçmiş asla otomatik olarak birleştirilmez — lütfen bakım ekibinizle görüşün.',
+      unknownTitle:
+        'Bu işlem olmadı',
+      unknownBody:
+        'Bağlantı kullanılamadı. Yenisini isteyebilirsiniz.',
+      requestNewCta:
+        'Yeni bağlantı isteyin',
+      requestNewSent:
+        'Talebiniz not edildi. Kaydınızı oluşturan kişiden yeni bir bağlantı göndermesini isteyin.',
+    },
+
     historyEyebrow: 'Sağlık geçmişi',
     conditionsTitle: 'Tıbbi durumlar',
     conditionsSubtitle:
       'Geçerli olan her şeyi seçin. Herhangi bir durumun klinik ayrıntısı için (?) simgesine dokunun.',
+
+    medications: {
+      title: 'İlaçlar',
+      subtitle:
+        'Bazı ilaçlar cildin nasıl morardığını, kanadığını ve iyileştiğini değiştirir; bunları bilmek fotoğraflarınızı doğru okumamıza yardımcı olur.',
+      newQuestion: 'Bu, artık herkese sorduğumuz yeni bir soru.',
+      question: 'Önemli bir ilaç kullanıyor musunuz?',
+      preferNotToSay: 'Söylemek istemiyorum',
+      listTitle: 'Hangileri?',
+      listHint: 'Herhangi bir ad yazabilirsiniz. Önerilerimizle aynı olması gerekmez.',
+      inputPlaceholder: 'İlaç adını yazmaya başlayın',
+      suggestions: 'Öneriler',
+      added: 'Eklenenler',
+      empty: 'Henüz eklenmedi. Yine de devam edebilirsiniz.',
+      notesLabel: 'Bakım ekibinizin bilmesi gereken başka bir şey',
+      notesPlaceholder: 'Dozlar, ne kadar süredir, son değişiklikler',
+      privacy: 'Bunu yalnızca siz ve bakım ekibiniz görebilir.',
+      reviewNone: 'Önemli ilaç yok',
+      reviewHidden: 'Söylemek istemiyor',
+      reviewUnanswered: 'Yeni soru — lütfen yanıtlayın',
+      reviewRequiredCta: 'Bir yeni soruyu yanıtlayın, sonra fotoğraf çekin',
+      categories: {
+        anticoagulant: 'Kan sulandırıcı',
+        antiplatelet: 'Antiagregan',
+        corticosteroid: 'Kortizon',
+        immunosuppressant: 'Bağışıklık baskılayıcı',
+        chemotherapy: 'Kemoterapi',
+        insulin: 'İnsülin',
+        oral_diabetes: 'Diyabet tableti',
+        statin: 'Kolesterol (statin)',
+        antihypertensive: 'Tansiyon',
+        antibiotic: 'Antibiyotik',
+        other: 'Diğer',
+      },
+    },
 
     vascularEyebrow: 'Damar taraması',
     vascularTitle: 'Periferik arter hastalığı',
@@ -211,6 +297,9 @@ const tr: Dictionary = {
   common: {
     yes: 'Evet',
     no: 'Hayır',
+    continue: 'Devam',
+    add: 'Ekle',
+    remove: 'Kaldır',
     save: 'Kaydet',
     cancel: 'Vazgeç',
     close: 'Kapat',

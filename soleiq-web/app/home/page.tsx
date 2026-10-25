@@ -18,6 +18,7 @@ import { pageAccess } from "@/server/page-access";
 import { PatientNav } from "@/components/patient/PatientNav";
 import { SharedWithMeCard } from "@/components/patient/SharedWithMeCard";
 import { RescanReminderCard } from "@/components/patient/RescanReminderCard";
+import { PendingCheckCard } from "@/components/patient/PendingCheckCard";
 import { Greeting } from "@/components/patient/Greeting";
 import {
   PhotoStageBadge,
@@ -26,6 +27,7 @@ import {
 import { LocalTime } from "@/components/ui/LocalTime";
 import { MedicalCard, SectionHeader } from "@/components/ui/medical";
 import { PatientAssistant } from "@/components/patient/PatientAssistant";
+import { ReportLiveRefresh } from "@/components/live/ReportLiveRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,7 @@ export default async function PatientHomePage() {
         }
       />
       <main className="mx-auto max-w-5xl space-y-5 px-5 py-7 pb-28 lg:px-8 lg:pb-12">
+        <ReportLiveRefresh />
         {/* ── Identity ──────────────────────────────────────────────────── */}
         <div>
           <Greeting name={patientName} />
@@ -221,7 +224,13 @@ export default async function PatientHomePage() {
             }
           />
           <div className="mt-2 divide-y divide-slate-100">
-            {data.reports.length === 0 ? (
+            {/* Saved but not yet analysed, newest first and above the
+                finished reports. These resolve in place once the report is
+                released — see components/live/ReportLiveRefresh. */}
+            {(data.pendingSessions ?? []).map((session: any) => (
+              <PendingCheckCard key={session.id} session={session} />
+            ))}
+            {data.reports.length === 0 && (data.pendingSessions ?? []).length === 0 ? (
               <div className="flex flex-col items-center py-6 text-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary-soft">
                   <FileClock className="h-6 w-6 text-secondary" aria-hidden="true" />

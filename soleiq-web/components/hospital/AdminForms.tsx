@@ -54,7 +54,7 @@ export function InviteStaffForm({ hospitalSlug }: { hospitalSlug: string }) {
           setEmail("");
           setMessage(
             role === "doctor"
-              ? "Invitation created. The doctor remains inactive until you verify them."
+              ? "Invitation created. The caregiver remains inactive until you verify them."
               : "Invitation created."
           );
           router.refresh();
@@ -84,7 +84,7 @@ export function InviteStaffForm({ hospitalSlug }: { hospitalSlug: string }) {
           value={role}
           onChange={(event) => setRole(event.target.value as typeof role)}
         >
-          <option value="doctor">Doctor</option>
+          <option value="doctor">Caregiver</option>
           <option value="admin">Administrator</option>
           <option value="patient">Patient</option>
         </select>
@@ -263,7 +263,7 @@ export function AssignmentForm({
       <h3 className="font-semibold text-slate-950">Create assignment</h3>
       <div className="mt-4 grid gap-3 md:grid-cols-4">
         <select className={inputClass} name="doctor" required>
-          <option value="">Select doctor</option>
+          <option value="">Select caregiver</option>
           {doctors.map((doctor) => (
             <option key={doctor.id} value={doctor.id}>{doctor.label}</option>
           ))}

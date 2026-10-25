@@ -26,7 +26,7 @@ const fr: Dictionary = {
     noMembership: 'aucun rattachement hospitalier',
     feedback: 'Commentaires',
     adminConsole: "Console d'administration",
-    doctorDashboard: 'Tableau de bord du médecin',
+    doctorDashboard: 'Tableau de bord de l\'aidant',
     footHealth: 'La santé de mes pieds',
   },
 
@@ -63,14 +63,14 @@ const fr: Dictionary = {
     chooseSubtitle: 'Dites-nous qui vous êtes pour que nous préparions la bonne expérience.',
     iAmPatient: 'Je suis patient',
     iAmPatientBody: 'Examinez vos pieds avec des photos guidées et gardez vos résultats au même endroit.',
-    iAmDoctor: 'Je suis médecin ou aidant',
+    iAmDoctor: 'Je suis aidant',
     iAmDoctorBody: 'Suivez les examens des pieds de vos patients, leurs chronologies de photos et les synthèses IA.',
     sendingReset: 'Envoi du lien…',
     resetSent: 'Si un compte existe pour {email}, un lien de réinitialisation est en route — vérifiez aussi les indésirables. Ouvrez-le sur cet appareil ; le lien expire dans une heure.',
     signIn: 'Se connecter',
     createAccount: 'Créer un compte',
     titlePatient: 'Connectez-vous à SoleIQ',
-    titleDoctor: 'Connexion médecin / aidant',
+    titleDoctor: 'Connexion aidant',
     subtitlePatient:
       'Vos examens des pieds sont enregistrés dans votre compte, vous les retrouverez la prochaine fois.',
     subtitleDoctor: 'Votre tableau de bord affiche les patients qui vous sont attribués.',
@@ -91,7 +91,7 @@ const fr: Dictionary = {
       "Compte créé — nous vous avons envoyé un e-mail de confirmation. Ouvrez le lien qu'il contient, puis connectez-vous ici.",
     emailConfirmed: 'Adresse confirmée — connectez-vous ci-dessous.',
     staffNote:
-      "L'accès médecin et administrateur passe uniquement par une invitation hospitalière à durée limitée. Les nouveaux médecins restent inactifs jusqu'à leur vérification par l'hôpital.",
+      'L\'accès aidant et administrateur passe uniquement par une invitation hospitalière à durée limitée. Les nouveaux aidants restent inactifs jusqu\'à vérification par l\'hôpital.',
     patientNote:
       "Les nouveaux comptes ne choisissent pas de rôle soignant. L'accès hospitalier est ajouté par invitation ou par rattachement au dossier patient.",
     errorEmailFirst: "Saisissez d'abord votre adresse e-mail.",
@@ -150,10 +150,96 @@ const fr: Dictionary = {
     demographicsSubtitle:
       "Utilisées pour personnaliser les a priori de population et auditer l'équité du modèle.",
 
+    claim: {
+      eyebrow:
+        'Votre dossier',
+      title:
+        'Prenez le contrôle de votre dossier',
+      intro:
+        'Quelqu\'un a créé pour vous un dossier de santé du pied SoleIQ et le gère en votre nom. Votre e-mail d\'invitation indique qui.',
+      whatHappens:
+        'Si vous en prenez le contrôle, le dossier devient le vôtre. Vous voyez tout l\'historique, y compris ce qui a été enregistré avant aujourd\'hui, et vous décidez qui peut le consulter.',
+      canRemove:
+        'Cette personne reste dans votre cercle de soins pour continuer à vous aider, et vous pouvez la retirer à tout moment depuis Confidentialité et accès. Cette décision n\'appartient qu\'à vous.',
+      signInPrompt:
+        'Connectez-vous avec l\'adresse e-mail à laquelle cette invitation a été envoyée. Le lien ne fonctionne qu\'avec ce compte.',
+      signInCta:
+        'Se connecter ou créer un compte',
+      claimCta:
+        'Prendre le contrôle de mon dossier',
+      claiming:
+        'Prise de contrôle…',
+      successTitle:
+        'Ce dossier est désormais le vôtre',
+      successBody:
+        'Tout son contenu est dans votre application, y compris ce qui a été enregistré avant aujourd\'hui.',
+      successCta:
+        'Aller à ma santé du pied',
+      expiredTitle:
+        'Ce lien a expiré',
+      expiredBody:
+        'Les liens cessent de fonctionner après {days} jours. Vous pouvez en demander un nouveau.',
+      usedTitle:
+        'Ce lien a déjà été utilisé',
+      usedBody:
+        'Si le dossier est déjà le vôtre, connectez-vous simplement. Sinon, demandez un nouveau lien.',
+      mismatchTitle:
+        'Ce lien est destiné à quelqu\'un d\'autre',
+      mismatchBody:
+        'Connectez-vous avec l\'adresse à laquelle l\'invitation a été envoyée. Si vous aidez quelqu\'un, transmettez-lui le lien : seule cette personne peut prendre le contrôle de son dossier.',
+      linkedTitle:
+        'Votre compte a déjà un dossier',
+      linkedBody:
+        'Ce compte est déjà lié à un autre dossier patient. Deux historiques médicaux ne sont jamais fusionnés automatiquement ; veuillez contacter votre équipe soignante.',
+      unknownTitle:
+        'Cela n\'a pas fonctionné',
+      unknownBody:
+        'Le lien n\'a pas pu être utilisé. Vous pouvez en demander un nouveau.',
+      requestNewCta:
+        'Demander un nouveau lien',
+      requestNewSent:
+        'Demande enregistrée. Demandez à la personne qui a créé votre dossier de vous envoyer un nouveau lien.',
+    },
+
     historyEyebrow: 'Antécédents médicaux',
     conditionsTitle: 'Affections',
     conditionsSubtitle:
       'Sélectionnez tout ce qui correspond. Touchez le (?) pour les détails cliniques de chaque affection.',
+
+    medications: {
+      title: 'Médicaments',
+      subtitle:
+        'Certains médicaments modifient la façon dont la peau bleuit, saigne et cicatrise ; les connaître nous aide à bien lire vos photos.',
+      newQuestion: 'Il s\'agit d\'une nouvelle question que nous posons désormais à tout le monde.',
+      question: 'Prenez-vous des médicaments importants ?',
+      preferNotToSay: 'Je préfère ne pas répondre',
+      listTitle: 'Lesquels ?',
+      listHint: 'Saisissez n\'importe quel nom. Il n\'a pas besoin de correspondre à nos suggestions.',
+      inputPlaceholder: 'Commencez à saisir le nom d\'un médicament',
+      suggestions: 'Suggestions',
+      added: 'Ajoutés',
+      empty: 'Aucun pour le moment. Vous pouvez tout de même continuer.',
+      notesLabel: 'Autre chose que votre équipe soignante devrait savoir',
+      notesPlaceholder: 'Doses, depuis combien de temps, changements récents',
+      privacy: 'Seuls vous et votre équipe soignante pouvez voir ceci.',
+      reviewNone: 'Aucun médicament important',
+      reviewHidden: 'Préfère ne pas répondre',
+      reviewUnanswered: 'Nouvelle question — merci de répondre',
+      reviewRequiredCta: 'Répondez à une nouvelle question, puis prenez les photos',
+      categories: {
+        anticoagulant: 'Anticoagulant',
+        antiplatelet: 'Antiagrégant',
+        corticosteroid: 'Corticoïde',
+        immunosuppressant: 'Immunosuppresseur',
+        chemotherapy: 'Chimiothérapie',
+        insulin: 'Insuline',
+        oral_diabetes: 'Comprimé pour le diabète',
+        statin: 'Cholestérol (statine)',
+        antihypertensive: 'Tension artérielle',
+        antibiotic: 'Antibiotique',
+        other: 'Autre',
+      },
+    },
 
     vascularEyebrow: 'Dépistage vasculaire',
     vascularTitle: 'Artériopathie périphérique',
@@ -214,6 +300,9 @@ const fr: Dictionary = {
   common: {
     yes: 'Oui',
     no: 'Non',
+    continue: 'Continuer',
+    add: 'Ajouter',
+    remove: 'Retirer',
     save: 'Enregistrer',
     cancel: 'Annuler',
     close: 'Fermer',

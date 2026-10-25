@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { getSupabase } from "./supabase";
 
 export type AppRole = "admin" | "doctor" | "patient";
@@ -35,10 +35,26 @@ export interface AuthState {
   configurationError: string | null;
 }
 
-/** Live auth, global profile, and hospital-membership state. */
-export function useAuth(): AuthState {
+/**
+ * Shared auth state, published by AuthProvider in the root layout.
+ *
+ * The root layout survives client-side navigation, so the session is resolved
+ * once per session rather than once per page.
+ */
+export const AuthContext = createContext<AuthState | null>(null);
+
+/**
+ * Resolves the session: one `getUser()` round trip, then profile and
+ * memberships in parallel — about two serial round trips in total.
+ *
+ * `enabled` is false when an AuthProvider above us already owns this state.
+ * Every page used to call this through its own AuthGate, so each navigation
+ * re-ran those round trips and AuthGate showed a full-screen loader for the
+ * duration, on a session that was already known.
+ */
+function useAuthSession(enabled: boolean): AuthState {
   const [state, setState] = useState<AuthState>({
-    loading: true,
+    loading: enabled,
     userId: null,
     profile: null,
     memberships: [],
@@ -46,6 +62,7 @@ export function useAuth(): AuthState {
   });
 
   useEffect(() => {
+    if (!enabled) return;
     const sb = getSupabase();
     if (!sb) {
       setState({
@@ -131,9 +148,26 @@ export function useAuth(): AuthState {
       cancelled = true;
       subscription.subscription.unsubscribe();
     };
-  }, []);
+  }, [enabled]);
 
   return state;
+}
+
+/** For AuthProvider only — the one place that actually does the round trips. */
+export function useAuthRoot(): AuthState {
+  return useAuthSession(true);
+}
+
+/** Live auth, global profile, and hospital-membership state. */
+export function useAuth(): AuthState {
+  const shared = useContext(AuthContext);
+  /* Both hooks run on every render, so hook order stays stable. The local
+     resolver is inert whenever a provider is present — which, because the
+     provider sits in the root layout, is always in the app. It stays here so
+     a component rendered outside the provider still works rather than
+     hanging forever in `loading`. */
+  const own = useAuthSession(shared === null);
+  return shared ?? own;
 }
 
 /** Where the password-recovery email link lands. */

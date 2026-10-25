@@ -129,6 +129,27 @@ export const FOOT_PROCEDURES: { value: string; label: string }[] = [
   { value: "other", label: "Other foot procedure" },
 ];
 
+/**
+ * Why a medicine matters to a foot photo, rather than what it is.
+ *
+ * Grouped by the effect on skin, bleeding and healing, because that is what
+ * changes how a photograph should be read. "other" is not a failure — a name
+ * we do not recognise is still recorded verbatim and still shown to the care
+ * team; only the reading hint is missing.
+ */
+export type MedicationCategory =
+  | "anticoagulant"
+  | "antiplatelet"
+  | "corticosteroid"
+  | "immunosuppressant"
+  | "chemotherapy"
+  | "insulin"
+  | "oral_diabetes"
+  | "statin"
+  | "antihypertensive"
+  | "antibiotic"
+  | "other";
+
 export interface PatientProfile {
   fullName: string;
   city: string;
@@ -176,6 +197,20 @@ export interface PatientProfile {
     year: number;
   }[];
   recentSurgery: { flag: boolean; procedures?: string[] };
+  /**
+   * Major medications the patient reports taking.
+   *
+   * `undefined` means the question has never been put to them — which is true
+   * of everyone whose intake was saved before this question existed, and is
+   * what makes the screen mandatory on their next check. It is deliberately
+   * distinct from an answered `takesMajorMedication: false` ("asked, says
+   * none") and from `null` ("asked, prefers not to say").
+   */
+  medications?: {
+    takesMajorMedication: boolean | null;
+    items: { name: string; category?: MedicationCategory }[];
+    notes?: string;
+  };
   numbness: Numbness;
   alcohol: boolean;
   smoking: boolean;
@@ -333,6 +368,15 @@ export interface PhotoScreeningResult {
   /** Plain positives actually visible in the photos ("the skin on top of
    *  both feet looks intact with even color"). Reassurance, not clearance. */
   looks_good: string[];
+  /**
+   * Keeping-it-that-way advice. Present only at level "clear" — enforced in
+   * enforceScreeningSafety, not merely prompted.
+   *
+   * Kept separate from what_to_do because what_to_do is what this check asks
+   * you to act on, and a healthy result has nothing to act on. Merging them
+   * would make every clear result read as though something had been found.
+   */
+  maintenance_tips: string[];
   /** Plain sentences connecting the person's questionnaire answers to what
    *  they should watch ("because you feel numbness in your right foot…"). */
   personal_notes: string[];
@@ -366,8 +410,23 @@ export interface DetectionRegion {
   type: "wound" | "redness" | "dryness" | "callus";
   side: FootSide;
   view: CaptureView;
+  /** The model's bounding region. Kept as the fallback shape, never drawn
+   *  as a hard rectangle — see components/result/ResultOverlay. */
   polygon: [number, number][];
   confidence: number;
+  /** The richer vocabulary; `type` is the narrower legacy one. */
+  kind?: import("./wound/changeKind").ChangeKind;
+  /** Traced outline in 0..1 coordinates, when segmentation produced one. */
+  contour?: [number, number][] | null;
+  /** Null when there is no reliable millimetre scale. */
+  lengthMm?: number | null;
+  widthMm?: number | null;
+  areaMm2?: number | null;
+  /** Always available — pixels need no calibration. */
+  lengthPx?: number;
+  widthPx?: number;
+  /** False when millimetres are scaled from an unreliable foot outline. */
+  scaleReliable?: boolean;
 }
 
 export interface VolumetricMetrics {

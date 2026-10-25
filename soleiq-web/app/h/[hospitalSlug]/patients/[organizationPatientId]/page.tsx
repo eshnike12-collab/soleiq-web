@@ -4,6 +4,11 @@ import { EmptyState, PageHeader } from "@/components/hospital/Ui";
 import { getPatientClinicalRecord } from "@/server/patients";
 import { pageAccess } from "@/server/page-access";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { ReportLiveRefresh } from "@/components/live/ReportLiveRefresh";
+import {
+  MedicationsBlock,
+  type ReportedMedications,
+} from "@/components/result/MedicationsBlock";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +34,38 @@ export default async function PatientClinicalPage({
     : (data.enrollment as any).facilities;
   return (
     <HospitalShell slug={data.hospital.slug} hospitalName={data.hospital.displayName} role="doctor">
+      <ReportLiveRefresh />
       <PageHeader
-        eyebrow="Authorized patient record"
+        eyebrow={
+          /* Unclaimed is part of what this record IS, so it goes in the
+             eyebrow where the record is named rather than in a side note. */
+          patient?.linked_user_id
+            ? "Authorized patient record"
+            : "Authorized patient record — UNCLAIMED"
+        }
         title={patient?.full_name || "Patient"}
         description={`${facility?.name || "No facility"} · Hospital ID ${data.enrollment.mrn || "not recorded"}. Timeline links preserve the exact report version.`}
       />
+      {!patient?.linked_user_id && (
+        <p className="mb-4 rounded-2xl bg-warn-soft px-4 py-3 text-sm leading-relaxed text-amber-800">
+          <strong>This record is unclaimed.</strong> Nobody has taken ownership
+          of it yet, so it is being kept on the patient&apos;s behalf. Invite
+          them to take control from the caregiver dashboard — once they do, they
+          own it and can remove your access.
+        </p>
+      )}
+      {/* Reported history that applies to every report in the timeline below,
+          rather than to one check — demographics is the saved intake, which
+          is where the medication answer lands. */}
+      <section className="mb-4">
+        <MedicationsBlock
+          medications={
+            (patient?.demographics as { medications?: ReportedMedications } | null)
+              ?.medications
+          }
+          className="rounded-2xl border border-slate-200 bg-surface-raised p-5 shadow-card"
+        />
+      </section>
       <section className="rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-semibold">Longitudinal report timeline</h3>

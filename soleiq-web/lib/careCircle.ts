@@ -12,10 +12,17 @@
  */
 
 import { getSupabase } from "./supabase";
-import { getCurrentPlan } from "./plans";
 
 export type CareRole = "family" | "caregiver" | "clinician";
-export type GrantStatus = "invited" | "active" | "revoked";
+export type GrantStatus =
+  | "invited"
+  | "pending_patient_approval"
+  | "active"
+  | "declined"
+  | "revoked";
+
+/** Who started this: the patient inviting, or the caregiver asking. */
+export type GrantDirection = "patient_invited" | "caregiver_requested";
 
 export interface CareGrant {
   id: string;
@@ -24,6 +31,34 @@ export interface CareGrant {
   status: GrantStatus;
   createdAt: string;
   revokedAt: string | null;
+  /**
+   * 'caregiver_created' marks the person who set this record up before the
+   * patient owned it. Surfaced so the patient can see who that was — and
+   * revoke them, which is an ordinary revoke with no special case.
+   */
+  direction: GrantDirection | "caregiver_created";
+}
+
+/** A request awaiting the patient's decision, with who is asking. */
+export interface PendingRequest {
+  id: string;
+  email: string;
+  role: CareRole;
+  createdAt: string;
+  expiresAt: string | null;
+  /** From caregiver_profiles. Null when the requester never filled it in. */
+  requesterName: string | null;
+  relationship: string | null;
+  organization: string | null;
+}
+
+/** One of the caller's own outbound requests. */
+export interface MyRequest {
+  id: string;
+  status: GrantStatus;
+  createdAt: string;
+  decidedAt: string | null;
+  expiresAt: string | null;
 }
 
 export interface SharedPatient {
@@ -54,7 +89,7 @@ export async function listMyCareCircle(): Promise<CareGrant[]> {
   if (!sb || !patientId) return [];
   const { data } = await sb
     .from("patient_access_grants")
-    .select("id, invitee_email, role, status, created_at, revoked_at")
+    .select("id, invitee_email, role, status, created_at, revoked_at, direction")
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false });
   return (data ?? []).map((g: any) => ({
@@ -64,14 +99,8 @@ export async function listMyCareCircle(): Promise<CareGrant[]> {
     status: g.status,
     createdAt: g.created_at,
     revokedAt: g.revoked_at,
+    direction: g.direction ?? "patient_invited",
   }));
-}
-
-/** Family + caregiver slots in use (invited or active; clinicians are free). */
-export function countCaregiverSlots(grants: CareGrant[]): number {
-  return grants.filter(
-    (g) => g.status !== "revoked" && g.role !== "clinician"
-  ).length;
 }
 
 /** Best-effort invite email; access never depends on it. */
@@ -107,15 +136,11 @@ export async function inviteToCareCircle(
     return { ok: false, reason: "That's your own email — you already see everything." };
   }
 
-  // Plan limit: family/caregiver slots are capped by the current plan.
+  // No cap on how many family members or caregivers a patient may invite.
+  // SoleIQ is free; there is no plan to limit this. Who may actually read the
+  // records is still decided per grant by has_care_circle_access() in
+  // Postgres, which is a security boundary rather than a product limit.
   const existing = await listMyCareCircle();
-  const plan = getCurrentPlan();
-  if (role !== "clinician" && countCaregiverSlots(existing) >= plan.maxCaregivers) {
-    return {
-      ok: false,
-      reason: `Your ${plan.name} plan includes ${plan.maxCaregivers} caregiver${plan.maxCaregivers === 1 ? "" : "s"}. Remove one or upgrade to add more.`,
-    };
-  }
 
   // Re-inviting a revoked email reactivates that grant instead of violating
   // the one-grant-per-email uniqueness.
@@ -147,18 +172,25 @@ export async function inviteToCareCircle(
   return { ok: true, emailSent: await notifyInvitee(normalized, role) };
 }
 
+/**
+ * Remove someone from the signed-in patient's care circle.
+ *
+ * Goes through the server so the removal is audited — this is a custody
+ * change on a medical record. The UPDATE is still performed with the
+ * patient's own credentials under the `owns_patient` RLS policy, so routing
+ * it through an endpoint grants no new authority; it only adds the trail.
+ */
 export async function revokeCareGrant(grantId: string): Promise<boolean> {
-  const sb = getSupabase();
-  if (!sb) return false;
-  const { error } = await sb
-    .from("patient_access_grants")
-    .update({
-      status: "revoked",
-      revoked_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", grantId);
-  return !error;
+  try {
+    const response = await fetch("/api/patient/care-circle/revoke", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ grantId }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -331,4 +363,126 @@ export async function getSharedReport(
     photos,
     recommendation,
   };
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Caregiver-initiated access
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Requests waiting on the signed-in patient's decision.
+ *
+ * The requester's name and relationship come from caregiver_profiles, which
+ * RLS exposes to a patient only for people who have actually asked them —
+ * so this join cannot become a directory of caregivers.
+ */
+export async function listPendingRequests(): Promise<PendingRequest[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const patientId = await myPatientId();
+  if (!patientId) return [];
+
+  const { data, error } = await sb
+    .from("patient_access_grants")
+    .select("id, invitee_email, role, created_at, expires_at, requested_by")
+    .eq("patient_id", patientId)
+    .eq("status", "pending_patient_approval")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+
+  const requesterIds = data
+    .map((row: any) => row.requested_by)
+    .filter(Boolean);
+  const profiles = new Map<string, any>();
+  if (requesterIds.length) {
+    const { data: rows } = await sb
+      .from("caregiver_profiles")
+      .select("user_id, full_name, relationship_to_patient, organization")
+      .in("user_id", requesterIds);
+    for (const row of rows ?? []) profiles.set((row as any).user_id, row);
+  }
+
+  return data.map((row: any) => {
+    const profile = profiles.get(row.requested_by);
+    return {
+      id: row.id,
+      email: row.invitee_email,
+      role: row.role,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at ?? null,
+      requesterName: profile?.full_name ?? null,
+      relationship: profile?.relationship_to_patient ?? null,
+      organization: profile?.organization ?? null,
+    };
+  });
+}
+
+/**
+ * The caller's own outbound requests.
+ *
+ * Carries NOTHING about the patient — not a name, not even the address asked
+ * about. A caregiver who typed an address already knows it; echoing it back
+ * from the database would confirm a row exists, which is the one thing the
+ * privacy rule forbids.
+ */
+export async function listMyRequests(): Promise<MyRequest[]> {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data: u } = await sb.auth.getUser();
+  if (!u.user) return [];
+
+  const { data, error } = await sb
+    .from("patient_access_grants")
+    .select("id, status, created_at, decided_at, expires_at")
+    .eq("requested_by", u.user.id)
+    .eq("direction", "caregiver_requested")
+    .order("created_at", { ascending: false })
+    .limit(25);
+  if (error || !data) return [];
+  return data.map((row: any) => ({
+    id: row.id,
+    status: row.status,
+    createdAt: row.created_at,
+    decidedAt: row.decided_at ?? null,
+    expiresAt: row.expires_at ?? null,
+  }));
+}
+
+/** Ask a patient for access. The reply is the same whoever the address is. */
+export async function requestPatientAccess(
+  patientEmail: string
+): Promise<{ acknowledged: boolean; message: string }> {
+  const response = await fetch("/api/care-circle/request", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ patientEmail }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.ok) {
+    throw new Error(
+      payload?.error?.message ?? "The request could not be sent."
+    );
+  }
+  return payload.data;
+}
+
+/** Approve or decline a request. Patient only — enforced in the database. */
+export async function decidePendingRequest(
+  grantId: string,
+  approve: boolean,
+  declineReason?: string
+): Promise<string> {
+  const response = await fetch("/api/care-circle/decide", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ grantId, approve, declineReason }),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload?.ok) {
+    throw new Error(
+      payload?.error?.message ?? "That decision could not be saved."
+    );
+  }
+  return payload.data.status as string;
 }

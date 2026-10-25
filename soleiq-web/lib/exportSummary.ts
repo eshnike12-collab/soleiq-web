@@ -52,6 +52,16 @@ export interface PatientSummary {
     restPain: boolean;
     signs: string[];
   };
+  /**
+   * Undefined means the question was never put to this patient (their intake
+   * predates it) — deliberately distinct from an answered "none", so an
+   * exported record never shows an unasked question as a negative answer.
+   */
+  medications?: {
+    takesMajorMedication: boolean | null;
+    items: { name: string; category?: string }[];
+    notes?: string;
+  };
   priorEvents: {
     type: string;
     side: string;
@@ -171,6 +181,16 @@ export function buildPatientSummary(
           claudication: profile.pad.claudication,
           restPain: profile.pad.restPain,
           signs: profile.pad.signs,
+        }
+      : undefined,
+    medications: profile.medications
+      ? {
+          takesMajorMedication: profile.medications.takesMajorMedication,
+          items: (profile.medications.items ?? []).map((item) => ({
+            name: item.name,
+            category: item.category,
+          })),
+          notes: profile.medications.notes,
         }
       : undefined,
     priorEvents: (profile.priorEvents ?? []).map((e) => ({

@@ -41,3 +41,31 @@ export function canReadClinicalResource(
   );
 }
 
+
+/**
+ * What a role is CALLED in the interface.
+ *
+ * The stored value and the label are deliberately different things. The
+ * database, the RLS policies, the `/h/[hospitalSlug]/doctor` route and
+ * `MatrixRole` all keep "doctor" — renaming any of those would silently break
+ * authorization for every clinician account. Only the words on screen change.
+ *
+ * Centralised so the mapping is stated once. It was previously a string
+ * literal at each call site, which is how "Doctor" and "doctor or caregiver"
+ * ended up coexisting on adjacent screens.
+ */
+export function roleLabel(role: MatrixRole | string): string {
+  switch (role) {
+    case "doctor":
+      return "Caregiver";
+    case "admin":
+      return "Administrator";
+    case "platform_admin":
+      return "Platform administrator";
+    case "patient":
+      return "Patient";
+    default:
+      // An unrecognised role is shown as-is rather than hidden or guessed at.
+      return role;
+  }
+}

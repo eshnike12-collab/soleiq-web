@@ -41,7 +41,7 @@ export default async function AssignmentsPage({
               <tr>
                 <th className="px-5 py-3">Relationship</th>
                 <th className="px-5 py-3">Patient enrollment</th>
-                <th className="px-5 py-3">Doctor membership</th>
+                <th className="px-5 py-3">Caregiver membership</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Validity</th>
               </tr>

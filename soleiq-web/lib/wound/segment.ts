@@ -327,12 +327,77 @@ export const WOUND_MIN_LUMA_DROP = 25;
  * this foot's own skin, or markedly darker than it — by both a statistical and
  * an absolute margin.
  */
+/**
+ * How a change separates from the surrounding skin.
+ *
+ * These do not share a channel, which is why one mode cannot serve them all:
+ *
+ *   wound       chromaticity + luminance deviation (the original behaviour)
+ *   redness     deviation on r chromaticity, POSITIVE direction only
+ *   callus      lighter AND less red-shifted — luma-positive, r-negative
+ *   dryness     local TEXTURE variance, not colour at all
+ *   maceration  luma-positive and low saturation
+ *
+ * EVERY THRESHOLD STAYS IN ROBUST STANDARD DEVIATIONS FROM THIS FOOT'S OWN
+ * SKIN. That is the property that makes the pipeline work across skin tones,
+ * and it is the easiest thing in this file to destroy: the moment one of
+ * these modes compares against a fixed colour, it starts working on the skin
+ * tones that colour was chosen from and failing quietly on the rest.
+ */
+export type SegmentationMode =
+  | "wound"
+  | "redness"
+  | "callus"
+  | "dryness"
+  | "maceration";
+
+/**
+ * Local luminance variance in a small window.
+ *
+ * Dry and fissured skin is a HIGH-FREQUENCY change — scale edges and
+ * cracks — and its average colour can sit right on top of healthy skin. A
+ * colour test misses it completely, which is why dryness gets its own
+ * texture channel rather than a looser colour threshold.
+ */
+function localVariance(
+  pixels: Uint8ClampedArray,
+  index: number,
+  width: number,
+  height: number,
+  radius = 2
+): number {
+  const x = index % width;
+  const y = (index / width) | 0;
+  let sum = 0;
+  let sumSquares = 0;
+  let n = 0;
+  for (let dy = -radius; dy <= radius; dy++) {
+    const yy = y + dy;
+    if (yy < 0 || yy >= height) continue;
+    for (let dx = -radius; dx <= radius; dx++) {
+      const xx = x + dx;
+      if (xx < 0 || xx >= width) continue;
+      const { luma } = chromaticityAt(pixels, yy * width + xx);
+      sum += luma;
+      sumSquares += luma * luma;
+      n++;
+    }
+  }
+  if (n === 0) return 0;
+  const mean = sum / n;
+  return Math.max(sumSquares / n - mean * mean, 0);
+}
+
 export function abnormalSkinMask(
   pixels: Uint8ClampedArray,
   searchArea: Mask,
   reference: SkinReference,
-  sigma: number = WOUND_DEVIATION_SIGMA
+  sigma: number = WOUND_DEVIATION_SIGMA,
+  mode: SegmentationMode = "wound"
 ): Mask {
+  if (mode !== "wound") {
+    return abnormalByMode(pixels, searchArea, reference, sigma, mode);
+  }
   const out = emptyMask(searchArea.width, searchArea.height);
   for (let i = 0; i < searchArea.data.length; i++) {
     if (!searchArea.data[i]) continue;
@@ -353,5 +418,92 @@ export function abnormalSkinMask(
   }
   // Open the mask (erode then dilate) so single-pixel speckle from sensor
   // noise does not become a "wound".
+  return dilate(erode(out));
+}
+
+/**
+ * The non-wound modes.
+ *
+ * Each is expressed as a signed deviation from this foot's own reference
+ * skin, in that reference's own standard deviations. No absolute cutoffs.
+ */
+function abnormalByMode(
+  pixels: Uint8ClampedArray,
+  searchArea: Mask,
+  reference: SkinReference,
+  sigma: number,
+  mode: Exclude<SegmentationMode, "wound">
+): Mask {
+  const out = emptyMask(searchArea.width, searchArea.height);
+
+  // Dryness needs a baseline for TEXTURE, which the colour reference does not
+  // carry. It is derived here from the same reference skin, so the threshold
+  // stays relative to this foot rather than to an assumed roughness.
+  let textureMean = 0;
+  let textureStd = 1;
+  if (mode === "dryness") {
+    const samples: number[] = [];
+    for (let i = 0; i < searchArea.data.length; i += 7) {
+      if (!searchArea.data[i]) continue;
+      samples.push(
+        localVariance(pixels, i, searchArea.width, searchArea.height)
+      );
+    }
+    if (samples.length >= 8) {
+      samples.sort((a, b) => a - b);
+      // Median and a robust spread: a few fissures must not inflate the
+      // baseline they are supposed to stand out from.
+      textureMean = samples[Math.floor(samples.length / 2)];
+      const q1 = samples[Math.floor(samples.length * 0.25)];
+      const q3 = samples[Math.floor(samples.length * 0.75)];
+      textureStd = Math.max((q3 - q1) / 1.349, 1e-6);
+    } else {
+      // Too little skin to characterise. Returning empty is the honest
+      // answer; a guessed baseline would outline noise.
+      return out;
+    }
+  }
+
+  for (let i = 0; i < searchArea.data.length; i++) {
+    if (!searchArea.data[i]) continue;
+    const { r, g, luma } = chromaticityAt(pixels, i);
+    const rSigma = (r - reference.rMean) / Math.max(reference.rStd, 1e-6);
+    const lumaSigma = (luma - reference.lumaMean) / Math.max(reference.lumaStd, 1e-6);
+    // Chromatic spread from neutral: low for washed-out macerated skin.
+    const saturation = Math.abs(r - 1 / 3) + Math.abs(g - 1 / 3);
+
+    let hit = false;
+    switch (mode) {
+      case "redness":
+        // Redder than this person's own skin, in that direction only.
+        hit = rSigma > sigma;
+        break;
+      case "callus":
+        // Lighter and less red: keratin reads pale and yellow-grey against
+        // the surrounding skin whatever that skin's tone.
+        hit = lumaSigma > sigma * 0.7 && rSigma < -sigma * 0.4;
+        break;
+      case "dryness": {
+        const variance = localVariance(
+          pixels,
+          i,
+          searchArea.width,
+          searchArea.height
+        );
+        hit = (variance - textureMean) / textureStd > sigma;
+        break;
+      }
+      case "maceration":
+        // Pale and washed out — the look of skin that has been wet too long.
+        hit = lumaSigma > sigma * 0.6 && saturation < reference.rStd * 2;
+        break;
+    }
+
+    if (hit) {
+      out.data[i] = 1;
+      out.count++;
+    }
+  }
+
   return dilate(erode(out));
 }

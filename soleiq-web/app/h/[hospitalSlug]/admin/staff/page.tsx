@@ -3,6 +3,7 @@ import { InviteStaffForm, VerifyMembershipButton } from "@/components/hospital/A
 import { PageHeader, EmptyState } from "@/components/hospital/Ui";
 import { getAdminOverview } from "@/server/admin";
 import { pageAccess } from "@/server/page-access";
+import { roleLabel } from "@/server/authz/matrix";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function StaffPage({
       <PageHeader
         eyebrow="Hospital administration"
         title="Staff & invitations"
-        description="Staff cannot self-select a role. Doctor memberships stay inactive until an administrator verifies them."
+        description="Staff cannot self-select a role. Caregiver memberships stay inactive until an administrator verifies them."
       />
       <InviteStaffForm hospitalSlug={data.hospital.slug} />
       <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-surface-raised shadow-card">
@@ -48,7 +49,7 @@ export default async function StaffPage({
                         <p className="font-medium">{profile?.full_name || "Pending user"}</p>
                         <p className="text-xs text-slate-500">{profile?.email || "Invitation not accepted"}</p>
                       </td>
-                      <td className="px-5 py-3 capitalize">{row.role}</td>
+                      <td className="px-5 py-3">{roleLabel(row.role)}</td>
                       <td className="px-5 py-3 capitalize">{row.status}</td>
                       <td className="px-5 py-3 text-xs text-slate-500">
                         {Object.entries(row.permissions ?? {})

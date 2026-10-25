@@ -1,6 +1,5 @@
 import {
   Activity,
-  BadgeCheck,
   BookOpen,
   Box,
   CalendarDays,
@@ -41,6 +40,5 @@ export const PATIENT_FEATURES: PatientFeature[] = [
   { name: "Visits", href: "/features/visits", icon: CalendarDays, caption: "Clinical visits and notes" },
   { name: "Product Recommendations", href: "/features/recommendations", icon: ShoppingBag, caption: "What was suggested and why" },
   { name: "Research", href: "/features/research", icon: BookOpen, caption: "Read about your condition" },
-  { name: "Membership", href: "/features/membership", icon: BadgeCheck, caption: "Your plan and limits" },
   { name: "Feedback", href: "/features/feedback", icon: MessageSquare, caption: "Tell us what to improve" },
 ];

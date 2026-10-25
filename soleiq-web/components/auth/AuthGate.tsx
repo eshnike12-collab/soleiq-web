@@ -2,13 +2,13 @@
 
 import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import {
   RESET_PASSWORD_PATH,
   hasRecoveryTokenInUrl,
   useAuth,
 } from "@/lib/auth";
 import { AuthConfigurationError } from "./AuthConfigurationError";
+import { DelayedSkeleton } from "@/components/ui/DelayedSkeleton";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 /**
@@ -37,12 +37,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
     router.replace("/login");
   }, [loading, userId, router]);
 
+  /* The session is resolved once by AuthProvider in the root layout, so on a
+     client-side navigation this state is already settled and the destination
+     renders straight away. It is only genuinely pending on a cold load, and
+     then the skeleton waits 150ms before drawing anything — a spinner here
+     used to flash on every single page change. */
   if (loading || !userId) {
-    return (
-      <div className="flex h-full min-h-screen items-center justify-center gap-2 text-[15px] text-ink-soft">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" /> {d.common.loading}
-      </div>
-    );
+    return <DelayedSkeleton label={d.common.loading} />;
   }
   if (configurationError) {
     return <AuthConfigurationError message={configurationError} />;

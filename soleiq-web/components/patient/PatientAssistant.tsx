@@ -151,22 +151,49 @@ export function PatientAssistant() {
           })),
         }),
       });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.ok) {
+
+      // A failure before the first token is still JSON with a real status;
+      // once streaming has begun the response is 200 text/plain.
+      if (!response.ok || !response.body) {
+        const payload = await response.json().catch(() => null);
         throw new Error(
           payload?.error?.message ?? "The assistant could not answer just now."
         );
       }
-      setTurns((previous) => [
-        ...previous,
-        { role: "assistant", content: payload.data.reply },
-      ]);
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "The assistant could not answer just now."
-      );
+
+      // Render tokens as they arrive. The assistant used to sit silent until
+      // the whole answer existed, which reads as broken even when it is
+      // working — on a phone connection that is several seconds of nothing.
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+      let incomplete = false;
+
+      // One empty assistant bubble to fill in place.
+      setTurns((previous) => [...previous, { role: "assistant", content: "" }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value, { stream: true });
+
+        // The server appends this only if it failed mid-answer. Strip it from
+        // what is shown and flag the answer as cut short.
+        if (text.endsWith("\n[error]")) {
+          text = text.slice(0, -"\n[error]".length);
+          incomplete = true;
+        }
+
+        setTurns((previous) => {
+          const next = [...previous];
+          next[next.length - 1] = { role: "assistant", content: text };
+          return next;
+        });
+      }
+
+      if (incomplete) {
+        setError("That answer was cut short. Please ask again.");
+      }
     } finally {
       setBusy(false);
     }

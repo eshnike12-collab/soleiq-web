@@ -25,7 +25,7 @@ const id: Dictionary = {
     noMembership: 'belum terhubung ke rumah sakit',
     feedback: 'Masukan',
     adminConsole: 'Konsol admin',
-    doctorDashboard: 'Dasbor dokter',
+    doctorDashboard: 'Dasbor pendamping',
     footHealth: 'Kesehatan kaki saya',
   },
 
@@ -62,14 +62,14 @@ const id: Dictionary = {
     chooseSubtitle: 'Beri tahu kami siapa Anda agar kami menyiapkan tampilan yang tepat.',
     iAmPatient: 'Saya pasien',
     iAmPatientBody: 'Periksa kaki Anda dengan foto berpanduan dan simpan hasilnya di satu tempat.',
-    iAmDoctor: 'Saya dokter atau pendamping',
+    iAmDoctor: 'Saya pendamping',
     iAmDoctorBody: 'Ikuti pemeriksaan kaki pasien Anda, lini masa foto, dan ringkasan AI.',
     sendingReset: 'Mengirim tautan…',
     resetSent: 'Jika ada akun untuk {email}, tautan penyetelan ulang sedang dikirim — periksa juga folder spam. Buka di perangkat ini; tautan kedaluwarsa dalam satu jam.',
     signIn: 'Masuk',
     createAccount: 'Buat akun',
     titlePatient: 'Masuk ke SoleIQ',
-    titleDoctor: 'Masuk untuk dokter / pendamping',
+    titleDoctor: 'Masuk untuk pendamping',
     subtitlePatient:
       'Pemeriksaan kaki Anda tersimpan di akun, jadi akan tetap ada saat Anda kembali.',
     subtitleDoctor: 'Dasbor Anda menampilkan pasien yang ditugaskan kepada Anda.',
@@ -89,7 +89,7 @@ const id: Dictionary = {
       'Akun dibuat — kami sudah mengirim email konfirmasi. Buka tautan di dalamnya, lalu masuk di sini.',
     emailConfirmed: 'Email terkonfirmasi — silakan masuk di bawah.',
     staffNote:
-      'Akses dokter dan administrator hanya berasal dari undangan rumah sakit yang punya masa berlaku. Dokter baru tetap nonaktif sampai rumah sakit memverifikasinya.',
+      'Akses pendamping dan administrator hanya berasal dari undangan rumah sakit yang akan kedaluwarsa. Pendamping baru tetap nonaktif sampai rumah sakit memverifikasinya.',
     patientNote:
       'Akun baru tidak memilih peran staf. Akses rumah sakit ditambahkan lewat undangan atau proses penautan rekam medis pasien.',
     errorEmailFirst: 'Masukkan email Anda dulu.',
@@ -148,10 +148,96 @@ const id: Dictionary = {
     demographicsSubtitle:
       'Digunakan untuk menyesuaikan prior populasi dan mengaudit keadilan model.',
 
+    claim: {
+      eyebrow:
+        'Catatan Anda',
+      title:
+        'Ambil kendali atas catatan Anda',
+      intro:
+        'Seseorang membuat catatan kesehatan kaki SoleIQ untuk Anda dan telah mengelolanya atas nama Anda. Email undangan Anda menyebutkan siapa.',
+      whatHappens:
+        'Jika Anda mengambil kendali, catatan itu menjadi milik Anda. Anda melihat seluruh riwayat, termasuk yang dicatat sebelum hari ini, dan Anda menentukan siapa lagi yang boleh melihatnya.',
+      canRemove:
+        'Orang tersebut tetap berada di lingkar perawatan Anda agar bisa terus membantu — dan Anda dapat menghapusnya kapan saja dari Privasi dan akses. Keputusan itu sepenuhnya milik Anda.',
+      signInPrompt:
+        'Masuk dengan alamat email tempat undangan ini dikirim. Tautan hanya berfungsi untuk akun tersebut.',
+      signInCta:
+        'Masuk atau buat akun',
+      claimCta:
+        'Ambil kendali catatan saya',
+      claiming:
+        'Mengambil kendali…',
+      successTitle:
+        'Catatan ini kini milik Anda',
+      successBody:
+        'Semua isinya ada di aplikasi Anda, termasuk yang dicatat sebelum hari ini.',
+      successCta:
+        'Buka kesehatan kaki saya',
+      expiredTitle:
+        'Tautan ini sudah kedaluwarsa',
+      expiredBody:
+        'Tautan berhenti berfungsi setelah {days} hari. Anda dapat meminta yang baru.',
+      usedTitle:
+        'Tautan ini sudah dipakai',
+      usedBody:
+        'Jika catatan sudah milik Anda, cukup masuk. Jika tidak, mintalah tautan baru.',
+      mismatchTitle:
+        'Tautan ini untuk orang lain',
+      mismatchBody:
+        'Masuk dengan alamat tempat undangan dikirim. Jika Anda membantu seseorang, kirimkan tautannya kepada mereka — hanya mereka yang bisa mengambil kendali catatan mereka sendiri.',
+      linkedTitle:
+        'Akun Anda sudah memiliki catatan',
+      linkedBody:
+        'Akun ini sudah tertaut ke catatan pasien lain. Dua riwayat medis tidak pernah digabungkan otomatis — silakan hubungi tim perawatan Anda.',
+      unknownTitle:
+        'Itu tidak berhasil',
+      unknownBody:
+        'Tautan tidak dapat digunakan. Anda dapat meminta yang baru.',
+      requestNewCta:
+        'Minta tautan baru',
+      requestNewSent:
+        'Permintaan dicatat. Mintalah orang yang membuat catatan Anda untuk mengirim tautan baru.',
+    },
+
     historyEyebrow: 'Riwayat kesehatan',
     conditionsTitle: 'Kondisi medis',
     conditionsSubtitle:
       'Pilih semua yang sesuai. Ketuk (?) untuk detail klinis setiap kondisi.',
+
+    medications: {
+      title: 'Obat-obatan',
+      subtitle:
+        'Beberapa obat mengubah cara kulit membiru, berdarah, dan menyembuh, sehingga mengetahuinya membantu kami membaca foto Anda dengan tepat.',
+      newQuestion: 'Ini pertanyaan baru yang kini kami tanyakan kepada semua orang.',
+      question: 'Apakah Anda sedang minum obat penting?',
+      preferNotToSay: 'Memilih tidak menjawab',
+      listTitle: 'Obat yang mana?',
+      listHint: 'Tulis nama apa pun. Tidak harus sama dengan saran kami.',
+      inputPlaceholder: 'Mulai menulis nama obat',
+      suggestions: 'Saran',
+      added: 'Ditambahkan',
+      empty: 'Belum ada yang ditambahkan. Anda tetap bisa melanjutkan.',
+      notesLabel: 'Hal lain yang perlu diketahui tim perawatan Anda',
+      notesPlaceholder: 'Dosis, sudah berapa lama, perubahan terbaru',
+      privacy: 'Hanya Anda dan tim perawatan Anda yang dapat melihat ini.',
+      reviewNone: 'Tidak ada obat penting',
+      reviewHidden: 'Memilih tidak menjawab',
+      reviewUnanswered: 'Pertanyaan baru — mohon dijawab',
+      reviewRequiredCta: 'Jawab satu pertanyaan baru, lalu ambil foto',
+      categories: {
+        anticoagulant: 'Pengencer darah',
+        antiplatelet: 'Antiplatelet',
+        corticosteroid: 'Steroid',
+        immunosuppressant: 'Penekan kekebalan',
+        chemotherapy: 'Kemoterapi',
+        insulin: 'Insulin',
+        oral_diabetes: 'Tablet diabetes',
+        statin: 'Kolesterol (statin)',
+        antihypertensive: 'Tekanan darah',
+        antibiotic: 'Antibiotik',
+        other: 'Lainnya',
+      },
+    },
 
     vascularEyebrow: 'Skrining pembuluh darah',
     vascularTitle: 'Penyakit arteri perifer',
@@ -211,6 +297,9 @@ const id: Dictionary = {
   common: {
     yes: 'Ya',
     no: 'Tidak',
+    continue: 'Lanjutkan',
+    add: 'Tambah',
+    remove: 'Hapus',
     save: 'Simpan',
     cancel: 'Batal',
     close: 'Tutup',

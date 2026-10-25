@@ -42,8 +42,8 @@ export function TokenAcceptance({
     <div>
       <p className="text-sm text-slate-600">
         {kind === "membership"
-          ? "Accept the hospital invitation for this signed-in account. Doctor access remains inactive until hospital verification."
-          : "Accept this patient-directed access grant with your active doctor membership."}
+          ? "Accept the hospital invitation for this signed-in account. Caregiver access remains inactive until hospital verification."
+          : "Accept this patient-directed access grant with your active caregiver membership."}
       </p>
       <button
         type="button"

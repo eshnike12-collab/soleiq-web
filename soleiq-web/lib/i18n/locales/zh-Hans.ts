@@ -26,7 +26,7 @@ const zhHans: Dictionary = {
     noMembership: '未关联医院',
     feedback: '反馈',
     adminConsole: '管理控制台',
-    doctorDashboard: '医生面板',
+    doctorDashboard: '照护者面板',
     footHealth: '我的足部健康',
   },
 
@@ -61,14 +61,14 @@ const zhHans: Dictionary = {
     chooseSubtitle: '请告诉我们您的身份，以便为您准备合适的界面。',
     iAmPatient: '我是患者',
     iAmPatientBody: '按引导拍照检查双脚，把结果集中保存在一处。',
-    iAmDoctor: '我是医生或照护者',
+    iAmDoctor: '我是照护者',
     iAmDoctorBody: '跟进您的患者的足部检查、照片时间线和 AI 摘要。',
     sendingReset: '正在发送链接…',
     resetSent: '如果 {email} 已注册，重置链接正在发送中——也请查看垃圾邮件。请在本设备上打开；链接一小时后失效。',
     signIn: '登录',
     createAccount: '创建账户',
     titlePatient: '登录 SoleIQ',
-    titleDoctor: '医生 / 照护者登录',
+    titleDoctor: '照护者登录',
     subtitlePatient: '您的足部检查会保存在账户中，下次仍可查看。',
     subtitleDoctor: '您的面板会显示分配给您的患者。',
     email: '电子邮箱',
@@ -86,7 +86,7 @@ const zhHans: Dictionary = {
     accountCreated: '账户已创建——我们发送了一封确认邮件。请打开其中的链接，然后在此登录。',
     emailConfirmed: '邮箱已确认——请在下方登录。',
     staffNote:
-      '医生和管理员权限只能通过有时限的医院邀请获得。新医生在医院核实前保持未激活状态。',
+      '照护者和管理员权限只能通过有时限的医院邀请获得。新照护者在医院核实前保持未激活状态。',
     patientNote:
       '新账户不能自行选择工作人员角色。医院权限通过邀请或关联患者病历的流程添加。',
     errorEmailFirst: '请先填写您的邮箱。',
@@ -137,9 +137,95 @@ const zhHans: Dictionary = {
     demographicsTitle: '患者人口学信息',
     demographicsSubtitle: '用于调整人群先验并审核模型的公平性。',
 
+    claim: {
+      eyebrow:
+        '您的记录',
+      title:
+        '接管您的记录',
+      intro:
+        '有人为您创建了 SoleIQ 足部健康记录，并一直代您管理。邀请邮件中说明了是谁。',
+      whatHappens:
+        '接管后，这份记录就归您所有。您可以看到完整历史，包括今天之前记录的内容，并由您决定还有谁可以查看。',
+      canRemove:
+        '对方会留在您的护理圈中继续提供帮助，而您可以随时在「隐私与访问」中移除他们。这个决定完全由您做出。',
+      signInPrompt:
+        '请使用收到此邀请的邮箱地址登录。该链接仅对该账户有效。',
+      signInCta:
+        '登录或创建账户',
+      claimCta:
+        '接管我的记录',
+      claiming:
+        '正在接管…',
+      successTitle:
+        '这份记录现在归您所有',
+      successBody:
+        '其中的全部内容都在您的应用里，包括今天之前记录的内容。',
+      successCta:
+        '前往我的足部健康',
+      expiredTitle:
+        '此链接已过期',
+      expiredBody:
+        '链接在 {days} 天后失效。您可以申请一个新链接。',
+      usedTitle:
+        '此链接已被使用',
+      usedBody:
+        '如果记录已归您所有，直接登录即可；否则请申请新链接。',
+      mismatchTitle:
+        '此链接属于他人',
+      mismatchBody:
+        '请使用收到邀请的地址登录。如果您在帮助他人，请把链接转给他们——只有本人才能接管自己的记录。',
+      linkedTitle:
+        '您的账户已有一份记录',
+      linkedBody:
+        '此账户已关联另一份患者记录。两份病史绝不会自动合并，请联系您的医护团队。',
+      unknownTitle:
+        '操作未成功',
+      unknownBody:
+        '无法使用该链接。您可以申请一个新链接。',
+      requestNewCta:
+        '申请新链接',
+      requestNewSent:
+        '已记录您的请求。请让为您建立记录的人重新发送链接。',
+    },
+
     historyEyebrow: '健康史',
     conditionsTitle: '既往疾病',
     conditionsSubtitle: '请选择所有适用项。点击 (?) 查看任一疾病的临床说明。',
+
+    medications: {
+      title: '用药情况',
+      subtitle:
+        '有些药物会改变皮肤淤青、出血和愈合的方式，了解这些有助于我们正确解读您的照片。',
+      newQuestion: '这是我们现在向所有人询问的新问题。',
+      question: '您在服用任何重要药物吗？',
+      preferNotToSay: '不愿透露',
+      listTitle: '是哪些？',
+      listHint: '可以输入任何名称，不必与我们的建议一致。',
+      inputPlaceholder: '开始输入药物名称',
+      suggestions: '建议',
+      added: '已添加',
+      empty: '尚未添加。您仍可以继续。',
+      notesLabel: '还有什么需要让医护团队知道的',
+      notesPlaceholder: '剂量、服用多久、近期的变化',
+      privacy: '只有您和您的医护团队能看到这些内容。',
+      reviewNone: '没有重要药物',
+      reviewHidden: '不愿透露',
+      reviewUnanswered: '新问题 — 请回答',
+      reviewRequiredCta: '回答一个新问题，然后拍照',
+      categories: {
+        anticoagulant: '抗凝药',
+        antiplatelet: '抗血小板药',
+        corticosteroid: '激素类药',
+        immunosuppressant: '免疫抑制剂',
+        chemotherapy: '化疗药',
+        insulin: '胰岛素',
+        oral_diabetes: '降糖药片',
+        statin: '降脂药（他汀）',
+        antihypertensive: '降压药',
+        antibiotic: '抗生素',
+        other: '其他',
+      },
+    },
 
     vascularEyebrow: '血管筛查',
     vascularTitle: '外周动脉疾病',
@@ -197,6 +283,9 @@ const zhHans: Dictionary = {
   common: {
     yes: '是',
     no: '否',
+    continue: '继续',
+    add: '添加',
+    remove: '移除',
     save: '保存',
     cancel: '取消',
     close: '关闭',

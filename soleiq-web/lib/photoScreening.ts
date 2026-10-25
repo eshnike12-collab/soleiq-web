@@ -36,6 +36,18 @@ export const PhotoScreeningSchema = z.object({
     })
   ),
   looks_good: z.array(z.string()),
+  /**
+   * Keeping-it-that-way advice, emitted only at level "clear".
+   *
+   * Separate from what_to_do on purpose: what_to_do is what this check asks
+   * you to DO about something seen, and a healthy result has nothing to act
+   * on. Folding maintenance into it would make every clear result read as if
+   * it had found something.
+   *
+   * Optional in the schema so a model response written before this field
+   * existed still parses.
+   */
+  maintenance_tips: z.array(z.string()).default([]),
   personal_notes: z.array(z.string()),
   what_to_do: z.array(z.string()),
   when_to_get_help: z.array(z.string()),
@@ -50,7 +62,23 @@ export function enforceScreeningSafety(
   result: PhotoScreeningResult,
   symptoms?: { pain?: boolean; numbness?: string }
 ): PhotoScreeningResult {
-  const discouragesCare = /\b(fine|nothing to worry|no need (to|for)|do not seek|don't seek)\b/i;
+  /**
+   * Language that discourages seeking care.
+   *
+   * PHRASES, NOT WORDS. The previous version matched the bare word "fine"
+   * anywhere, which is both too greedy and — because the word was carrying
+   * the whole job — too narrow. Measured against the eval in
+   * scripts/eval/safetyCases.ts it stripped four pieces of ordinary advice
+   * ("the fine, dry skin on your heels", "fine grit inside your shoes") while
+   * letting two genuinely care-discouraging claims through: "this rules out
+   * any infection" and "your feet are perfectly healthy".
+   *
+   * Both of those are worse than the wording problem they were meant to
+   * prevent. A photo screening cannot rule anything out, and saying it can is
+   * the exact claim this function exists to stop.
+   */
+  const discouragesCare =
+    /nothing to worry about|no need (?:to see|for a doctor|to see a doctor)|don'?t need (?:a doctor|to see)|you(?:'| a)?re fine\b|you are fine\b|perfectly healthy|rules? out|do not seek|don'?t seek/i;
   const safeHeadline = discouragesCare.test(result.overall.headline)
     ? result.overall.level === "clear"
       ? "Keep checking your feet and follow your care team's advice."
@@ -80,6 +108,11 @@ export function enforceScreeningSafety(
       ...symptomHelp,
     ],
     limits,
+    // Maintenance tips belong to a healthy result and nothing else. Enforced
+    // here rather than trusted from the prompt: a model that attaches
+    // "keep moisturising" to an urgent finding has buried the urgent part.
+    maintenance_tips:
+      result.overall.level === "clear" ? (result.maintenance_tips ?? []) : [],
     not_a_diagnosis: true,
   };
   const urgentFinding = result.findings.some((finding) =>
@@ -94,6 +127,8 @@ export function enforceScreeningSafety(
     "Get prompt medical care for spreading redness, drainage or pus, dark or black tissue, red streaks, or a deep or open wound.";
   return {
     ...safeResult,
+    // Escalating to urgent retracts any maintenance framing with it.
+    maintenance_tips: [],
     overall: {
       level: "urgent",
       headline: "Get prompt professional care for the visible foot concern.",
@@ -121,6 +156,7 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
     "overall",
     "findings",
     "looks_good",
+    "maintenance_tips",
     "personal_notes",
     "what_to_do",
     "when_to_get_help",
@@ -207,6 +243,7 @@ export const PHOTO_SCREENING_JSON_SCHEMA = {
       },
     },
     looks_good: { type: "array", items: { type: "string" } },
+    maintenance_tips: { type: "array", items: { type: "string" } },
     personal_notes: { type: "array", items: { type: "string" } },
     what_to_do: { type: "array", items: { type: "string" } },
     when_to_get_help: { type: "array", items: { type: "string" } },

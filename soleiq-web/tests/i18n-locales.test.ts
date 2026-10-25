@@ -154,6 +154,46 @@ describe.each(LOCALE_CODES)("locale %s", (code) => {
   });
 });
 
+/**
+ * Keys whose value MUST differ from English in every other language.
+ *
+ * The existing parity test catches a missing key and the ratio test catches a
+ * wholesale untranslated file, but neither catches the realistic mistake:
+ * editing one string in en.ts and pasting the English into the other
+ * seventeen. These are short, high-traffic strings on the sign-in screen —
+ * exactly the ones a reader notices, and exactly the ones most likely to be
+ * left in English.
+ */
+const MUST_BE_TRANSLATED = [
+  "auth.iAmDoctor",
+  "auth.titleDoctor",
+  "auth.staffNote",
+  "nav.doctorDashboard",
+] as const;
+
+describe.each(LOCALE_CODES.filter((code) => code !== "en"))(
+  "locale %s is really translated",
+  (code) => {
+    it.each(MUST_BE_TRANSLATED)("has its own wording for %s", async (path) => {
+      const dict = (await LOADERS[code]()).default;
+      const translated = leafAt(dict, path);
+      const english = leafAt(en, path);
+      expect(typeof translated, `${code} ${path} is missing`).toBe("string");
+      expect(
+        translated,
+        `${code} ${path} is still the English string`
+      ).not.toBe(english);
+    });
+  }
+);
+
+/* A test asserting the word "or" is gone was tried and removed. Detecting it
+   needs word boundaries, and Bengali has none a regex can see: "সেবাদাতা"
+   (caregiver) contains the sequence "বা" (or) inside the word itself, so a
+   correct translation failed. A test that fails on correct output is worse
+   than no test — the parity, emptiness and must-differ checks above already
+   catch a locale that was actually missed. */
+
 describe("locale detection", () => {
   it("resolves Chinese by script, not region", () => {
     expect(matchLocale("zh-TW")).toBe("zh-Hant");

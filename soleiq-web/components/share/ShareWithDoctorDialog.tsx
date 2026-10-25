@@ -21,11 +21,11 @@ export function ShareWithDoctorDialog({
         <div className="rounded-2xl bg-blue-50 p-4">
           <ShieldCheck className="h-5 w-5 text-brand" />
           <p className="mt-2 text-sm font-semibold text-slate-900">
-            Choose access, not a global doctor.
+            Choose access, not a global caregiver.
           </p>
           <p className="mt-1 text-xs leading-relaxed text-slate-600">
             See hospital care-team assignments, review expiration dates, revoke
-            consent, or create a single-use QR for an active doctor at your
+            consent, or create a single-use QR for an active caregiver at your
             hospital.
           </p>
         </div>

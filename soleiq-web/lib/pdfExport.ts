@@ -227,6 +227,31 @@ export async function downloadPatientSummaryPdf(s: PatientSummary): Promise<void
       bullet(`Clinical signs: ${s.pad.signs.join("; ")}`);
   }
 
+  y += 4;
+  if (!s.medications) {
+    // An unasked question must not read as "no medications" on a printout a
+    // clinician may act on.
+    body("Medications: not asked (record predates this question)");
+  } else if (s.medications.takesMajorMedication === null) {
+    body("Medications: patient preferred not to say");
+  } else if (!s.medications.takesMajorMedication) {
+    body("Medications: none reported");
+  } else {
+    body("Medications (self-reported, not reconciled):");
+    if (s.medications.items.length === 0) {
+      bullet("Takes medication; names not given");
+    } else {
+      s.medications.items.forEach((item) =>
+        bullet(
+          item.category
+            ? `${item.name} — ${item.category.replace(/_/g, " ")}`
+            : item.name
+        )
+      );
+    }
+    if (s.medications.notes) bullet(`Patient notes: ${s.medications.notes}`);
+  }
+
   if (s.priorEvents.length) {
     y += 4;
     body("Prior foot events:");

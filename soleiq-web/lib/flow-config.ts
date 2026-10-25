@@ -7,6 +7,7 @@ import { ReturningReview } from "@/components/screens/02b-ReturningReview";
 import { AboutYou } from "@/components/screens/03-AboutYou";
 import { Demographics } from "@/components/screens/04-Demographics";
 import { MedicalHistory } from "@/components/screens/05-MedicalHistory";
+import { Medications } from "@/components/screens/05c-Medications";
 import { VascularPAD } from "@/components/screens/05b-VascularPAD";
 import { DiabetesDetails } from "@/components/screens/06-DiabetesDetails";
 import { GlucoseMarkers } from "@/components/screens/07-GlucoseMarkers";
@@ -46,6 +47,11 @@ export const SCREEN_ORDER: ScreenDef[] = [
   { id: "about_you", component: AboutYou, showInProgress: true },
   { id: "demographics", component: Demographics, showInProgress: true },
   { id: "medical_history", component: MedicalHistory, showInProgress: true },
+  // Asked of everyone, with no visibleIf: medications change how skin bruises
+  // and heals, so they matter whatever else is in the history. Returning
+  // patients who predate the question cannot skip it either — see
+  // 02b-ReturningReview.
+  { id: "medications", component: Medications, showInProgress: true },
   {
     id: "vascular_pad",
     component: VascularPAD,

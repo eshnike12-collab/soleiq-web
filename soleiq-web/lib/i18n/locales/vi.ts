@@ -26,7 +26,7 @@ const vi: Dictionary = {
     noMembership: 'chưa liên kết bệnh viện',
     feedback: 'Góp ý',
     adminConsole: 'Bảng quản trị',
-    doctorDashboard: 'Bảng của bác sĩ',
+    doctorDashboard: 'Bảng của người chăm sóc',
     footHealth: 'Sức khỏe bàn chân của tôi',
   },
 
@@ -63,14 +63,14 @@ const vi: Dictionary = {
     chooseSubtitle: 'Hãy cho chúng tôi biết bạn là ai để chuẩn bị đúng phần dành cho bạn.',
     iAmPatient: 'Tôi là bệnh nhân',
     iAmPatientBody: 'Kiểm tra bàn chân bằng ảnh có hướng dẫn và lưu kết quả ở một nơi.',
-    iAmDoctor: 'Tôi là bác sĩ hoặc người chăm sóc',
+    iAmDoctor: 'Tôi là người chăm sóc',
     iAmDoctorBody: 'Theo dõi các lần kiểm tra bàn chân của bệnh nhân, dòng thời gian ảnh và bản tóm tắt bằng AI.',
     sendingReset: 'Đang gửi liên kết…',
     resetSent: 'Nếu có tài khoản cho {email}, liên kết đặt lại đang được gửi — hãy xem cả thư rác. Mở nó trên thiết bị này; liên kết hết hạn sau một giờ.',
     signIn: 'Đăng nhập',
     createAccount: 'Tạo tài khoản',
     titlePatient: 'Đăng nhập SoleIQ',
-    titleDoctor: 'Đăng nhập cho bác sĩ / người chăm sóc',
+    titleDoctor: 'Đăng nhập cho người chăm sóc',
     subtitlePatient:
       'Các lần kiểm tra bàn chân được lưu vào tài khoản, nên lần sau bạn vẫn thấy chúng ở đây.',
     subtitleDoctor: 'Bảng của bạn hiển thị những bệnh nhân được phân công cho bạn.',
@@ -90,7 +90,7 @@ const vi: Dictionary = {
       'Đã tạo tài khoản — chúng tôi đã gửi email xác nhận. Mở liên kết trong đó rồi đăng nhập tại đây.',
     emailConfirmed: 'Email đã được xác nhận — hãy đăng nhập bên dưới.',
     staffNote:
-      'Quyền của bác sĩ và quản trị viên chỉ đến từ lời mời có thời hạn của bệnh viện. Bác sĩ mới vẫn ở trạng thái chưa kích hoạt cho đến khi bệnh viện xác minh.',
+      'Quyền của người chăm sóc và quản trị viên chỉ đến từ lời mời có thời hạn của bệnh viện. Người chăm sóc mới vẫn chưa kích hoạt cho đến khi bệnh viện xác minh.',
     patientNote:
       'Tài khoản mới không tự chọn vai trò nhân viên. Quyền truy cập bệnh viện được thêm qua lời mời hoặc quy trình liên kết hồ sơ bệnh nhân.',
     errorEmailFirst: 'Hãy nhập email của bạn trước.',
@@ -149,10 +149,96 @@ const vi: Dictionary = {
     demographicsSubtitle:
       'Dùng để điều chỉnh giả định theo quần thể và kiểm tra tính công bằng của mô hình.',
 
+    claim: {
+      eyebrow:
+        'Hồ sơ của bạn',
+      title:
+        'Nhận quyền kiểm soát hồ sơ của bạn',
+      intro:
+        'Có người đã tạo hồ sơ sức khoẻ bàn chân SoleIQ cho bạn và đang quản lý thay bạn. Email mời của bạn cho biết đó là ai.',
+      whatHappens:
+        'Nếu bạn nhận quyền kiểm soát, hồ sơ sẽ thuộc về bạn. Bạn thấy toàn bộ lịch sử, kể cả những gì được ghi trước hôm nay, và bạn quyết định ai khác được xem.',
+      canRemove:
+        'Người đó vẫn ở trong nhóm chăm sóc của bạn để tiếp tục giúp đỡ — và bạn có thể loại họ bất cứ lúc nào trong phần Quyền riêng tư và truy cập. Đó là quyết định của riêng bạn.',
+      signInPrompt:
+        'Hãy đăng nhập bằng địa chỉ email đã nhận lời mời này. Liên kết chỉ hoạt động với tài khoản đó.',
+      signInCta:
+        'Đăng nhập hoặc tạo tài khoản',
+      claimCta:
+        'Nhận quyền kiểm soát hồ sơ của tôi',
+      claiming:
+        'Đang nhận quyền kiểm soát…',
+      successTitle:
+        'Hồ sơ này giờ là của bạn',
+      successBody:
+        'Mọi thứ trong đó đều có trong ứng dụng của bạn, kể cả những gì được ghi trước hôm nay.',
+      successCta:
+        'Đến phần sức khoẻ bàn chân',
+      expiredTitle:
+        'Liên kết này đã hết hạn',
+      expiredBody:
+        'Liên kết sẽ hết hiệu lực sau {days} ngày. Bạn có thể yêu cầu liên kết mới.',
+      usedTitle:
+        'Liên kết này đã được dùng',
+      usedBody:
+        'Nếu hồ sơ đã là của bạn, chỉ cần đăng nhập. Nếu không, hãy yêu cầu liên kết mới.',
+      mismatchTitle:
+        'Liên kết này dành cho người khác',
+      mismatchBody:
+        'Hãy đăng nhập bằng địa chỉ đã nhận lời mời. Nếu bạn đang giúp ai đó, hãy chuyển liên kết cho họ — chỉ họ mới có thể nhận quyền kiểm soát hồ sơ của mình.',
+      linkedTitle:
+        'Tài khoản của bạn đã có hồ sơ',
+      linkedBody:
+        'Tài khoản này đã liên kết với một hồ sơ bệnh nhân khác. Hai bệnh sử không bao giờ được gộp tự động — vui lòng liên hệ nhóm chăm sóc của bạn.',
+      unknownTitle:
+        'Việc đó không thành',
+      unknownBody:
+        'Không thể dùng liên kết này. Bạn có thể yêu cầu liên kết mới.',
+      requestNewCta:
+        'Yêu cầu liên kết mới',
+      requestNewSent:
+        'Đã ghi nhận yêu cầu. Hãy nhờ người tạo hồ sơ gửi cho bạn liên kết mới.',
+    },
+
     historyEyebrow: 'Tiền sử sức khỏe',
     conditionsTitle: 'Bệnh lý',
     conditionsSubtitle:
       'Chọn tất cả những mục phù hợp. Chạm vào (?) để xem chi tiết lâm sàng của từng bệnh.',
+
+    medications: {
+      title: 'Thuốc đang dùng',
+      subtitle:
+        'Một số thuốc làm thay đổi cách da bị bầm, chảy máu và lành lại, nên biết rõ sẽ giúp chúng tôi đọc ảnh của bạn chính xác.',
+      newQuestion: 'Đây là câu hỏi mới mà hiện nay chúng tôi hỏi tất cả mọi người.',
+      question: 'Bạn có đang dùng loại thuốc quan trọng nào không?',
+      preferNotToSay: 'Không muốn trả lời',
+      listTitle: 'Những thuốc nào?',
+      listHint: 'Hãy nhập bất kỳ tên nào. Không cần trùng với gợi ý của chúng tôi.',
+      inputPlaceholder: 'Bắt đầu nhập tên thuốc',
+      suggestions: 'Gợi ý',
+      added: 'Đã thêm',
+      empty: 'Chưa thêm thuốc nào. Bạn vẫn có thể tiếp tục.',
+      notesLabel: 'Điều gì khác mà nhóm chăm sóc của bạn nên biết',
+      notesPlaceholder: 'Liều dùng, đã dùng bao lâu, thay đổi gần đây',
+      privacy: 'Chỉ bạn và nhóm chăm sóc của bạn xem được phần này.',
+      reviewNone: 'Không có thuốc quan trọng',
+      reviewHidden: 'Không muốn trả lời',
+      reviewUnanswered: 'Câu hỏi mới — vui lòng trả lời',
+      reviewRequiredCta: 'Trả lời một câu hỏi mới, rồi chụp ảnh',
+      categories: {
+        anticoagulant: 'Thuốc chống đông',
+        antiplatelet: 'Thuốc kháng kết tập tiểu cầu',
+        corticosteroid: 'Corticoid',
+        immunosuppressant: 'Thuốc ức chế miễn dịch',
+        chemotherapy: 'Hoá trị',
+        insulin: 'Insulin',
+        oral_diabetes: 'Thuốc viên trị đái tháo đường',
+        statin: 'Mỡ máu (statin)',
+        antihypertensive: 'Huyết áp',
+        antibiotic: 'Kháng sinh',
+        other: 'Khác',
+      },
+    },
 
     vascularEyebrow: 'Sàng lọc mạch máu',
     vascularTitle: 'Bệnh động mạch ngoại biên',
@@ -211,6 +297,9 @@ const vi: Dictionary = {
   common: {
     yes: 'Có',
     no: 'Không',
+    continue: 'Tiếp tục',
+    add: 'Thêm',
+    remove: 'Bỏ',
     save: 'Lưu',
     cancel: 'Hủy',
     close: 'Đóng',

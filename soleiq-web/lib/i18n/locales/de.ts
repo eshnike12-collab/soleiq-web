@@ -26,7 +26,7 @@ const de: Dictionary = {
     noMembership: 'keine Klinikzugehörigkeit',
     feedback: 'Rückmeldung',
     adminConsole: 'Administrationskonsole',
-    doctorDashboard: 'Ärzte-Dashboard',
+    doctorDashboard: 'Pflege-Dashboard',
     footHealth: 'Meine Fußgesundheit',
   },
 
@@ -63,14 +63,14 @@ const de: Dictionary = {
     chooseSubtitle: 'Sagen Sie uns, wer Sie sind, damit wir das Richtige einrichten.',
     iAmPatient: 'Ich bin Patientin oder Patient',
     iAmPatientBody: 'Prüfen Sie Ihre Füße mit geführten Fotos und behalten Sie Ihre Ergebnisse an einem Ort.',
-    iAmDoctor: 'Ich bin Ärztin, Arzt oder Pflegeperson',
+    iAmDoctor: 'Ich bin Pflegeperson',
     iAmDoctorBody: 'Verfolgen Sie die Fußkontrollen Ihrer Patienten, die Fotoverläufe und die KI-Zusammenfassungen.',
     sendingReset: 'Link wird gesendet…',
     resetSent: 'Falls ein Konto für {email} besteht, ist ein Link zum Zurücksetzen unterwegs — sehen Sie auch im Spam nach. Öffnen Sie ihn auf diesem Gerät; der Link verfällt in einer Stunde.',
     signIn: 'Anmelden',
     createAccount: 'Konto erstellen',
     titlePatient: 'Bei SoleIQ anmelden',
-    titleDoctor: 'Anmeldung für Ärzte und Pflegende',
+    titleDoctor: 'Anmeldung für Pflegende',
     subtitlePatient:
       'Ihre Fußkontrollen werden in Ihrem Konto gespeichert und sind beim nächsten Mal wieder da.',
     subtitleDoctor: 'Ihr Dashboard zeigt die Ihnen zugewiesenen Patientinnen und Patienten.',
@@ -91,7 +91,7 @@ const de: Dictionary = {
       'Konto erstellt — wir haben Ihnen eine Bestätigungs-E-Mail geschickt. Öffnen Sie den Link darin und melden Sie sich dann hier an.',
     emailConfirmed: 'E-Mail bestätigt — melden Sie sich unten an.',
     staffNote:
-      'Zugang für Ärztinnen, Ärzte und Administration gibt es ausschließlich über eine befristete Klinikeinladung. Neue Ärztinnen und Ärzte bleiben inaktiv, bis die Klinik sie bestätigt.',
+      'Zugang für Pflegende und Administration gibt es ausschließlich über eine befristete Einladung des Krankenhauses. Neue Pflegepersonen bleiben inaktiv, bis das Krankenhaus sie bestätigt.',
     patientNote:
       'Neue Konten wählen keine Personalrolle. Klinikzugang wird über eine Einladung oder die Verknüpfung mit der Patientenakte ergänzt.',
     errorEmailFirst: 'Geben Sie zuerst Ihre E-Mail-Adresse ein.',
@@ -150,10 +150,96 @@ const de: Dictionary = {
     demographicsSubtitle:
       'Werden verwendet, um Populationspriors anzupassen und die Fairness des Modells zu prüfen.',
 
+    claim: {
+      eyebrow:
+        'Ihre Akte',
+      title:
+        'Übernehmen Sie Ihre Akte',
+      intro:
+        'Jemand hat für Sie eine SoleIQ-Fußgesundheitsakte angelegt und sie in Ihrem Namen geführt. In Ihrer Einladungs-E-Mail steht, wer.',
+      whatHappens:
+        'Wenn Sie die Akte übernehmen, gehört sie Ihnen. Sie sehen den vollständigen Verlauf, auch alles, was vor heute erfasst wurde, und Sie entscheiden, wer sie noch einsehen darf.',
+      canRemove:
+        'Diese Person bleibt in Ihrem Behandlungskreis und kann weiter helfen — und Sie können sie jederzeit unter Datenschutz und Zugriff entfernen. Diese Entscheidung liegt allein bei Ihnen.',
+      signInPrompt:
+        'Melden Sie sich mit der E-Mail-Adresse an, an die diese Einladung geschickt wurde. Der Link funktioniert nur mit diesem Konto.',
+      signInCta:
+        'Anmelden oder Konto erstellen',
+      claimCta:
+        'Meine Akte übernehmen',
+      claiming:
+        'Wird übernommen…',
+      successTitle:
+        'Diese Akte gehört jetzt Ihnen',
+      successBody:
+        'Alles darin ist in Ihrer App, auch was vor heute erfasst wurde.',
+      successCta:
+        'Zu meiner Fußgesundheit',
+      expiredTitle:
+        'Dieser Link ist abgelaufen',
+      expiredBody:
+        'Links funktionieren nach {days} Tagen nicht mehr. Sie können einen neuen anfordern.',
+      usedTitle:
+        'Dieser Link wurde schon verwendet',
+      usedBody:
+        'Wenn die Akte bereits Ihnen gehört, melden Sie sich einfach an. Andernfalls fordern Sie einen neuen Link an.',
+      mismatchTitle:
+        'Dieser Link ist für jemand anderen',
+      mismatchBody:
+        'Melden Sie sich mit der Adresse an, an die die Einladung ging. Wenn Sie jemandem helfen, geben Sie ihm den Link — nur diese Person kann ihre eigene Akte übernehmen.',
+      linkedTitle:
+        'Ihr Konto hat bereits eine Akte',
+      linkedBody:
+        'Dieses Konto ist schon mit einer anderen Patientenakte verknüpft. Zwei Krankengeschichten werden niemals automatisch zusammengeführt — bitte wenden Sie sich an Ihr Behandlungsteam.',
+      unknownTitle:
+        'Das hat nicht funktioniert',
+      unknownBody:
+        'Der Link konnte nicht verwendet werden. Sie können einen neuen anfordern.',
+      requestNewCta:
+        'Neuen Link anfordern',
+      requestNewSent:
+        'Anfrage notiert. Bitten Sie die Person, die Ihre Akte angelegt hat, einen neuen Link zu senden.',
+    },
+
     historyEyebrow: 'Krankengeschichte',
     conditionsTitle: 'Erkrankungen',
     conditionsSubtitle:
       'Wählen Sie alles Zutreffende aus. Tippen Sie auf (?) für klinische Details zu einer Erkrankung.',
+
+    medications: {
+      title: 'Medikamente',
+      subtitle:
+        'Manche Medikamente verändern, wie die Haut blaue Flecken bekommt, blutet und heilt. Wenn wir sie kennen, können wir Ihre Fotos richtig einschätzen.',
+      newQuestion: 'Das ist eine neue Frage, die wir jetzt allen stellen.',
+      question: 'Nehmen Sie wichtige Medikamente ein?',
+      preferNotToSay: 'Möchte ich nicht angeben',
+      listTitle: 'Welche?',
+      listHint: 'Geben Sie einen beliebigen Namen ein. Er muss nicht zu unseren Vorschlägen passen.',
+      inputPlaceholder: 'Medikamentennamen eingeben',
+      suggestions: 'Vorschläge',
+      added: 'Hinzugefügt',
+      empty: 'Noch keine hinzugefügt. Sie können trotzdem weitermachen.',
+      notesLabel: 'Sonst noch etwas, das Ihr Behandlungsteam wissen sollte',
+      notesPlaceholder: 'Dosierung, seit wann, kürzliche Änderungen',
+      privacy: 'Nur Sie und Ihr Behandlungsteam können das sehen.',
+      reviewNone: 'Keine wichtigen Medikamente',
+      reviewHidden: 'Möchte nicht angeben',
+      reviewUnanswered: 'Neue Frage — bitte beantworten',
+      reviewRequiredCta: 'Eine neue Frage beantworten, dann Fotos aufnehmen',
+      categories: {
+        anticoagulant: 'Blutverdünner',
+        antiplatelet: 'Thrombozytenhemmer',
+        corticosteroid: 'Kortison',
+        immunosuppressant: 'Immunsuppressivum',
+        chemotherapy: 'Chemotherapie',
+        insulin: 'Insulin',
+        oral_diabetes: 'Diabetes-Tablette',
+        statin: 'Cholesterin (Statin)',
+        antihypertensive: 'Blutdruck',
+        antibiotic: 'Antibiotikum',
+        other: 'Andere',
+      },
+    },
 
     vascularEyebrow: 'Gefäß-Screening',
     vascularTitle: 'Periphere arterielle Verschlusskrankheit',
@@ -214,6 +300,9 @@ const de: Dictionary = {
   common: {
     yes: 'Ja',
     no: 'Nein',
+    continue: 'Weiter',
+    add: 'Hinzufügen',
+    remove: 'Entfernen',
     save: 'Speichern',
     cancel: 'Abbrechen',
     close: 'Schließen',

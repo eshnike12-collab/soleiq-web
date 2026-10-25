@@ -36,7 +36,7 @@ const en = {
     noMembership: 'no hospital membership',
     feedback: 'Feedback',
     adminConsole: 'Admin console',
-    doctorDashboard: 'Doctor dashboard',
+    doctorDashboard: 'Caregiver dashboard',
     footHealth: 'My foot health',
   },
 
@@ -74,14 +74,14 @@ const en = {
     chooseSubtitle: 'Tell us who you are so we can set up the right experience.',
     iAmPatient: 'I\'m a patient',
     iAmPatientBody: 'Check your feet with guided photos and keep your results in one place.',
-    iAmDoctor: 'I\'m a doctor or caregiver',
+    iAmDoctor: 'I\'m a caregiver',
     iAmDoctorBody: 'Follow your patients\' foot checks, photo timelines, and AI summaries.',
     sendingReset: 'Sending reset link…',
     resetSent: 'If an account exists for {email}, a reset link is on its way — check spam too. Open it on this device; the link expires in an hour.',
     signIn: 'Sign in',
     createAccount: 'Create account',
     titlePatient: 'Sign in to SoleIQ',
-    titleDoctor: 'Doctor / caregiver sign in',
+    titleDoctor: 'Caregiver sign in',
     subtitlePatient:
       "Your foot checks are saved to your account so they're here next time.",
     subtitleDoctor: 'Your dashboard shows the patients assigned to you.',
@@ -101,7 +101,7 @@ const en = {
       "Account created — we've sent a confirmation email. Open the link in it, then sign in here.",
     emailConfirmed: 'Email confirmed — sign in below.',
     staffNote:
-      'Doctor and administrator access comes only from an expiring hospital invitation. New doctors remain inactive until the hospital verifies them.',
+      'Caregiver and administrator access comes only from an expiring hospital invitation. New caregivers remain inactive until the hospital verifies them.',
     patientNote:
       'New accounts do not choose a staff role. Hospital access is added through an invitation or patient-record linking workflow.',
     errorEmailFirst: 'Enter your email first.',
@@ -160,10 +160,82 @@ const en = {
     demographicsSubtitle:
       'Used to personalize population priors and audit model fairness.',
 
+    claim: {
+      eyebrow: 'Your record',
+      title: 'Take control of your record',
+      intro:
+        'Someone set up a SoleIQ foot-health record for you and has been looking after it on your behalf. Your invitation email says who.',
+      whatHappens:
+        'If you take control, the record becomes yours. You see the full history, including anything recorded before today, and you decide who else can look at it.',
+      canRemove:
+        'They stay in your care circle so they can keep helping — and you can remove them at any time from Privacy & access. That decision is yours alone.',
+      signInPrompt:
+        'Sign in with the email address this invitation was sent to. The link works only for that account.',
+      signInCta: 'Sign in or create an account',
+      claimCta: 'Take control of my record',
+      claiming: 'Taking control…',
+      successTitle: 'This record is yours now',
+      successBody:
+        'Everything in it is in your app, including anything recorded before today.',
+      successCta: 'Go to my foot health',
+      expiredTitle: 'This link has expired',
+      expiredBody:
+        'Claim links stop working after {days} days. You can ask for a new one.',
+      usedTitle: 'This link has already been used',
+      usedBody:
+        'If the record is already yours, just sign in. Otherwise ask for a new link.',
+      mismatchTitle: 'This link is for someone else',
+      mismatchBody:
+        'Sign in with the address the invitation was sent to. If you are helping someone, send them the link — only they can take control of their own record.',
+      linkedTitle: 'Your account already has a record',
+      linkedBody:
+        'This account is already linked to a different patient record. Two sets of medical history are never merged automatically — please contact your care team.',
+      unknownTitle: 'That did not work',
+      unknownBody: 'The link could not be used. You can ask for a new one.',
+      requestNewCta: 'Ask for a new link',
+      requestNewSent:
+        'Request noted. Ask the person who set up your record to send a new link.',
+    },
+
     historyEyebrow: 'Health history',
     conditionsTitle: 'Medical conditions',
     conditionsSubtitle:
       'Select all that apply. Tap the (?) for clinical details on any condition.',
+
+    medications: {
+      title: 'Medications',
+      subtitle:
+        'Some medicines change how skin bruises, bleeds and heals, so knowing them helps us read your photos correctly.',
+      newQuestion: 'This is a new question we now ask everyone.',
+      question: 'Are you taking any major medications?',
+      preferNotToSay: 'Prefer not to say',
+      listTitle: 'Which ones?',
+      listHint: 'Type any name. It does not have to match our suggestions.',
+      inputPlaceholder: 'Start typing a medicine name',
+      suggestions: 'Suggestions',
+      added: 'Added',
+      empty: 'None added yet. You can still continue.',
+      notesLabel: 'Anything else your care team should know',
+      notesPlaceholder: 'Doses, how long you have taken them, recent changes',
+      privacy: 'Only you and your care team can see this.',
+      reviewNone: 'No major medications',
+      reviewHidden: 'Prefer not to say',
+      reviewUnanswered: 'New question — please answer',
+      reviewRequiredCta: 'Answer one new question, then take photos',
+      categories: {
+        anticoagulant: 'Blood thinner',
+        antiplatelet: 'Anti-platelet',
+        corticosteroid: 'Steroid',
+        immunosuppressant: 'Immune-suppressing',
+        chemotherapy: 'Chemotherapy',
+        insulin: 'Insulin',
+        oral_diabetes: 'Diabetes tablet',
+        statin: 'Cholesterol (statin)',
+        antihypertensive: 'Blood pressure',
+        antibiotic: 'Antibiotic',
+        other: 'Other',
+      },
+    },
 
     vascularEyebrow: 'Vascular screening',
     vascularTitle: 'Peripheral artery disease',
@@ -224,6 +296,9 @@ const en = {
   common: {
     yes: 'Yes',
     no: 'No',
+    continue: 'Continue',
+    add: 'Add',
+    remove: 'Remove',
     save: 'Save',
     cancel: 'Cancel',
     close: 'Close',

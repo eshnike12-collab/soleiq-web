@@ -4,8 +4,11 @@ import { HospitalShell } from "@/components/hospital/HospitalShell";
 import { EmptyState, PageHeader } from "@/components/hospital/Ui";
 import { SharedWithMeCard } from "@/components/patient/SharedWithMeCard";
 import { getDoctorWorklist } from "@/server/reports";
+import { listCaregiverRecords } from "@/server/patientClaim";
+import { CaregiverRecords } from "@/components/hospital/CaregiverRecords";
 import { pageAccess } from "@/server/page-access";
 import { LocalTime } from "@/components/ui/LocalTime";
+import { ReportLiveRefresh } from "@/components/live/ReportLiveRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -32,12 +35,21 @@ export default async function DoctorWorklistPage({
   const data = await pageAccess(() =>
     getDoctorWorklist(hospitalSlug, resolvedSearchParams)
   );
+  // Records this caregiver looks after, including unclaimed ones that have no
+  // checks yet and so never appear in the worklist above.
+  const owned = await pageAccess(() => listCaregiverRecords(hospitalSlug));
   return (
     <HospitalShell slug={data.hospital.slug} hospitalName={data.hospital.displayName} role="doctor">
+      <ReportLiveRefresh />
       <PageHeader
         eyebrow="Clinical worklist"
         title="Authorized patients"
         description="Only active care-team assignments or valid patient consent appear here. Each result link opens that exact report."
+      />
+      <CaregiverRecords
+        slug={data.hospital.slug}
+        initial={owned.records}
+        caregiverName={owned.caregiverName}
       />
       <form className="mb-5 grid gap-3 rounded-2xl border border-slate-200 bg-surface-raised shadow-card p-4 sm:grid-cols-[1fr_190px_auto_auto]">
         <input

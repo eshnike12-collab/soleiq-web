@@ -324,6 +324,12 @@ describe("wound change between visits", () => {
     periwoundErythemaSigma: 0.5,
     centre: { x: 0.5, y: 0.5 },
     scaleReliable: true,
+    // Pixel dimensions and the outline were added when the rectangle overlay
+    // was replaced with a traced contour. They are not part of what
+    // compareWound reads, so the values here only have to be well-formed.
+    maxLengthPx: 120,
+    maxWidthPx: 80,
+    contour: null,
   };
 
   it("reports shrinkage as a negative percentage", () => {

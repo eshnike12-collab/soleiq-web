@@ -26,7 +26,7 @@ const zhHant: Dictionary = {
     noMembership: '未連結醫院',
     feedback: '意見回饋',
     adminConsole: '管理主控台',
-    doctorDashboard: '醫師面板',
+    doctorDashboard: '照顧者面板',
     footHealth: '我的足部健康',
   },
 
@@ -61,14 +61,14 @@ const zhHant: Dictionary = {
     chooseSubtitle: '請告訴我們您的身分，以便為您準備合適的介面。',
     iAmPatient: '我是病人',
     iAmPatientBody: '依指引拍照檢查雙腳，把結果集中保存在一處。',
-    iAmDoctor: '我是醫師或照顧者',
+    iAmDoctor: '我是照顧者',
     iAmDoctorBody: '追蹤您的病人的足部檢查、照片時間軸與 AI 摘要。',
     sendingReset: '正在寄送連結…',
     resetSent: '若 {email} 已註冊，重設連結正在寄出——也請查看垃圾郵件。請在本裝置上開啟；連結一小時後失效。',
     signIn: '登入',
     createAccount: '建立帳戶',
     titlePatient: '登入 SoleIQ',
-    titleDoctor: '醫師／照顧者登入',
+    titleDoctor: '照顧者登入',
     subtitlePatient: '您的足部檢查會儲存在帳戶中，下次仍可查看。',
     subtitleDoctor: '您的面板會顯示指派給您的病人。',
     email: '電子郵件',
@@ -86,7 +86,7 @@ const zhHant: Dictionary = {
     accountCreated: '帳戶已建立——我們寄出了一封確認信。請開啟信中的連結，然後在此登入。',
     emailConfirmed: '電子郵件已確認——請在下方登入。',
     staffNote:
-      '醫師與管理員權限僅能透過有時效的醫院邀請取得。新醫師在醫院查核前維持未啟用狀態。',
+      '照顧者與管理員權限僅能透過有時效的醫院邀請取得。新照顧者在醫院查核前維持未啟用狀態。',
     patientNote:
       '新帳戶無法自行選擇工作人員角色。醫院權限透過邀請或連結病歷的流程新增。',
     errorEmailFirst: '請先填寫您的電子郵件。',
@@ -137,9 +137,95 @@ const zhHant: Dictionary = {
     demographicsTitle: '病人人口學資料',
     demographicsSubtitle: '用於調整族群先驗，並稽核模型的公平性。',
 
+    claim: {
+      eyebrow:
+        '您的紀錄',
+      title:
+        '接管您的紀錄',
+      intro:
+        '有人為您建立了 SoleIQ 足部健康紀錄，並一直代您管理。邀請電子郵件中說明了是誰。',
+      whatHappens:
+        '接管後，這份紀錄就歸您所有。您可以看到完整歷史，包括今天之前記錄的內容，並由您決定還有誰可以查看。',
+      canRemove:
+        '對方會留在您的照護圈中繼續協助，而您可以隨時在「隱私與存取」中移除他們。這個決定完全由您做出。',
+      signInPrompt:
+        '請使用收到此邀請的電子郵件地址登入。該連結僅對該帳戶有效。',
+      signInCta:
+        '登入或建立帳戶',
+      claimCta:
+        '接管我的紀錄',
+      claiming:
+        '正在接管…',
+      successTitle:
+        '這份紀錄現在歸您所有',
+      successBody:
+        '其中的全部內容都在您的應用程式裡，包括今天之前記錄的內容。',
+      successCta:
+        '前往我的足部健康',
+      expiredTitle:
+        '此連結已過期',
+      expiredBody:
+        '連結在 {days} 天後失效。您可以申請新的連結。',
+      usedTitle:
+        '此連結已被使用',
+      usedBody:
+        '如果紀錄已歸您所有，直接登入即可；否則請申請新連結。',
+      mismatchTitle:
+        '此連結屬於他人',
+      mismatchBody:
+        '請使用收到邀請的地址登入。如果您在協助他人，請把連結轉給他們——只有本人才能接管自己的紀錄。',
+      linkedTitle:
+        '您的帳戶已有一份紀錄',
+      linkedBody:
+        '此帳戶已連結另一份病人紀錄。兩份病史絕不會自動合併，請聯絡您的醫療團隊。',
+      unknownTitle:
+        '操作未成功',
+      unknownBody:
+        '無法使用該連結。您可以申請新的連結。',
+      requestNewCta:
+        '申請新連結',
+      requestNewSent:
+        '已記錄您的請求。請讓為您建立紀錄的人重新傳送連結。',
+    },
+
     historyEyebrow: '健康史',
     conditionsTitle: '既往疾病',
     conditionsSubtitle: '請選擇所有適用項目。點選 (?) 查看任一疾病的臨床說明。',
+
+    medications: {
+      title: '用藥情況',
+      subtitle:
+        '有些藥物會改變皮膚瘀青、出血和癒合的方式，了解這些有助於我們正確判讀您的照片。',
+      newQuestion: '這是我們現在會向每個人詢問的新問題。',
+      question: '您有在服用任何重要藥物嗎？',
+      preferNotToSay: '不願透露',
+      listTitle: '是哪些？',
+      listHint: '可以輸入任何名稱，不必與我們的建議相符。',
+      inputPlaceholder: '開始輸入藥物名稱',
+      suggestions: '建議',
+      added: '已新增',
+      empty: '尚未新增。您仍可以繼續。',
+      notesLabel: '還有什麼需要讓醫療團隊知道的',
+      notesPlaceholder: '劑量、服用多久、近期的變化',
+      privacy: '只有您和您的醫療團隊能看到這些內容。',
+      reviewNone: '沒有重要藥物',
+      reviewHidden: '不願透露',
+      reviewUnanswered: '新問題 — 請回答',
+      reviewRequiredCta: '回答一個新問題，然後拍照',
+      categories: {
+        anticoagulant: '抗凝血藥',
+        antiplatelet: '抗血小板藥',
+        corticosteroid: '類固醇',
+        immunosuppressant: '免疫抑制劑',
+        chemotherapy: '化療藥',
+        insulin: '胰島素',
+        oral_diabetes: '降血糖藥片',
+        statin: '降膽固醇藥（他汀）',
+        antihypertensive: '降血壓藥',
+        antibiotic: '抗生素',
+        other: '其他',
+      },
+    },
 
     vascularEyebrow: '血管篩檢',
     vascularTitle: '周邊動脈疾病',
@@ -197,6 +283,9 @@ const zhHant: Dictionary = {
   common: {
     yes: '是',
     no: '否',
+    continue: '繼續',
+    add: '新增',
+    remove: '移除',
     save: '儲存',
     cancel: '取消',
     close: '關閉',

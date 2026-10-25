@@ -15,13 +15,12 @@ import {
   CareGrant,
   CareRole,
   SharedPatient,
-  countCaregiverSlots,
   inviteToCareCircle,
   listMyCareCircle,
   listSharedWithMe,
   revokeCareGrant,
 } from "@/lib/careCircle";
-import { getCurrentPlan } from "@/lib/plans";
+import { CaregiverRequestForm } from "@/components/patient/CaregiverRequestForm";
 
 const ROLE_META: Record<CareRole, { label: string; blurb: string; icon: typeof UserRound }> = {
   family: {
@@ -35,7 +34,7 @@ const ROLE_META: Record<CareRole, { label: string; blurb: string; icon: typeof U
     icon: Users,
   },
   clinician: {
-    label: "Doctor / clinician",
+    label: "Caregiver",
     blurb: "Sees the clinical detail version of your reports.",
     icon: Stethoscope,
   },
@@ -48,7 +47,6 @@ const STATUS_CHIP: Record<string, string> = {
 };
 
 function CareTeamContent() {
-  const plan = getCurrentPlan();
   const [grants, setGrants] = useState<CareGrant[] | null>(null);
   const [sharedWithMe, setSharedWithMe] = useState<SharedPatient[]>([]);
   const [email, setEmail] = useState("");
@@ -69,8 +67,6 @@ function CareTeamContent() {
 
   const activeGrants = (grants ?? []).filter((g) => g.status !== "revoked");
   const revokedGrants = (grants ?? []).filter((g) => g.status === "revoked");
-  const slotsUsed = countCaregiverSlots(grants ?? []);
-  const slotsFull = slotsUsed >= plan.maxCaregivers;
 
   const invite = async (event: FormEvent) => {
     event.preventDefault();
@@ -113,6 +109,11 @@ function CareTeamContent() {
   return (
     <div className="min-h-screen px-5 py-8 pb-24">
       <main className="mx-auto max-w-3xl">
+        {/* For a signed-in user acting as a caregiver. Shows nothing about any
+            patient until one approves them. */}
+        <div className="mb-6">
+          <CaregiverRequestForm />
+        </div>
         <Link href="/features" className="inline-flex min-h-[44px] items-center py-2 text-sm font-semibold text-primary transition-colors hover:text-primary-deep">
           ← Features
         </Link>
@@ -187,20 +188,9 @@ function CareTeamContent() {
               </div>
             </div>
 
-            {role !== "clinician" && slotsFull && (
-              <p className="rounded-2xl bg-warn-soft p-3 text-xs leading-relaxed text-amber-800">
-                Your {plan.name} plan includes {plan.maxCaregivers} caregiver slots and
-                both are in use. Remove someone below, or see{" "}
-                <Link href="/features/membership" className="font-semibold underline">
-                  Membership
-                </Link>{" "}
-                for upgrade options.
-              </p>
-            )}
-
             <button
               type="submit"
-              disabled={busy || (role !== "clinician" && slotsFull)}
+              disabled={busy}
               className="min-h-[44px] w-full rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-button transition-transform duration-150 active:scale-[0.98] disabled:opacity-50"
             >
               {busy ? (
@@ -212,10 +202,9 @@ function CareTeamContent() {
               )}
             </button>
             <p className="text-xs leading-relaxed text-ink-faint">
-              Caregiver slots used: {Math.min(slotsUsed, plan.maxCaregivers)} of{" "}
-              {plan.maxCaregivers} (doctors don&apos;t use a slot). The invited person
-              simply signs in to SoleIQ with this email — access connects
-              automatically.
+              Invite as many family members and caregivers as you like. The
+              invited person simply signs in to SoleIQ with this email — access
+              connects automatically.
             </p>
           </form>
         </section>

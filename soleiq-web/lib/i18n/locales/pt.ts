@@ -26,7 +26,7 @@ const pt: Dictionary = {
     noMembership: 'sem vínculo hospitalar',
     feedback: 'Comentários',
     adminConsole: 'Console de administração',
-    doctorDashboard: 'Painel do médico',
+    doctorDashboard: 'Painel do cuidador',
     footHealth: 'A saúde dos meus pés',
   },
 
@@ -63,14 +63,14 @@ const pt: Dictionary = {
     chooseSubtitle: 'Diga-nos quem você é para prepararmos a experiência certa.',
     iAmPatient: 'Sou paciente',
     iAmPatientBody: 'Verifique seus pés com fotos guiadas e mantenha seus resultados em um só lugar.',
-    iAmDoctor: 'Sou médico ou cuidador',
+    iAmDoctor: 'Sou cuidador',
     iAmDoctorBody: 'Acompanhe as verificações dos pés dos seus pacientes, as linhas do tempo de fotos e os resumos de IA.',
     sendingReset: 'Enviando o link…',
     resetSent: 'Se existir uma conta para {email}, um link de redefinição está a caminho — confira também o spam. Abra-o neste dispositivo; o link expira em uma hora.',
     signIn: 'Entrar',
     createAccount: 'Criar conta',
     titlePatient: 'Entre no SoleIQ',
-    titleDoctor: 'Acesso para médicos e cuidadores',
+    titleDoctor: 'Acesso para cuidadores',
     subtitlePatient:
       'Suas verificações dos pés ficam salvas na sua conta, então estarão aqui na próxima vez.',
     subtitleDoctor: 'Seu painel mostra os pacientes atribuídos a você.',
@@ -91,7 +91,7 @@ const pt: Dictionary = {
       'Conta criada — enviamos um e-mail de confirmação. Abra o link nele e depois entre aqui.',
     emailConfirmed: 'E-mail confirmado — entre abaixo.',
     staffNote:
-      'O acesso de médicos e administradores vem apenas de um convite hospitalar com prazo de validade. Novos médicos permanecem inativos até que o hospital os verifique.',
+      'O acesso de cuidadores e administradores vem apenas de um convite hospitalar com prazo. Novos cuidadores permanecem inativos até o hospital verificá-los.',
     patientNote:
       'Contas novas não escolhem uma função de equipe. O acesso hospitalar é acrescentado por convite ou pela vinculação ao prontuário do paciente.',
     errorEmailFirst: 'Informe seu e-mail primeiro.',
@@ -150,10 +150,96 @@ const pt: Dictionary = {
     demographicsSubtitle:
       'Usados para personalizar as priors populacionais e auditar a equidade do modelo.',
 
+    claim: {
+      eyebrow:
+        'O seu registo',
+      title:
+        'Assuma o controlo do seu registo',
+      intro:
+        'Alguém criou um registo de saúde do pé SoleIQ para você e tem-no gerido em seu nome. O seu e-mail de convite indica quem.',
+      whatHappens:
+        'Se assumir o controlo, o registo passa a ser seu. Verá todo o histórico, incluindo o que foi registado antes de hoje, e decidirá quem mais pode consultá-lo.',
+      canRemove:
+        'Essa pessoa permanece no seu círculo de cuidados para continuar a ajudar — e pode removê-la em qualquer momento em Privacidade e acesso. Essa decisão é só sua.',
+      signInPrompt:
+        'Inicie sessão com o endereço de e-mail para onde este convite foi enviado. O link funciona apenas com essa conta.',
+      signInCta:
+        'Iniciar sessão ou criar conta',
+      claimCta:
+        'Assumir o controlo do meu registo',
+      claiming:
+        'A assumir o controlo…',
+      successTitle:
+        'Este registo já é seu',
+      successBody:
+        'Tudo o que contém está na sua aplicação, incluindo o que foi registado antes de hoje.',
+      successCta:
+        'Ir para a minha saúde do pé',
+      expiredTitle:
+        'Este link expirou',
+      expiredBody:
+        'Os links deixam de funcionar após {days} dias. Pode pedir um novo.',
+      usedTitle:
+        'Este link já foi utilizado',
+      usedBody:
+        'Se o registo já é seu, basta iniciar sessão. Caso contrário, peça um novo link.',
+      mismatchTitle:
+        'Este link é para outra pessoa',
+      mismatchBody:
+        'Inicie sessão com o endereço para onde o convite foi enviado. Se está a ajudar alguém, envie-lhe o link — só essa pessoa pode assumir o controlo do seu próprio registo.',
+      linkedTitle:
+        'A sua conta já tem um registo',
+      linkedBody:
+        'Esta conta já está ligada a outro registo de paciente. Dois historiais médicos nunca são combinados automaticamente — contacte a sua equipa de saúde.',
+      unknownTitle:
+        'Isso não funcionou',
+      unknownBody:
+        'Não foi possível usar o link. Pode pedir um novo.',
+      requestNewCta:
+        'Pedir um novo link',
+      requestNewSent:
+        'Pedido registado. Peça a quem criou o seu registo para enviar um novo link.',
+    },
+
     historyEyebrow: 'Histórico de saúde',
     conditionsTitle: 'Condições médicas',
     conditionsSubtitle:
       'Selecione todas as que se aplicam. Toque no (?) para ver os detalhes clínicos de cada condição.',
+
+    medications: {
+      title: 'Medicamentos',
+      subtitle:
+        'Alguns medicamentos mudam a forma como a pele fica roxa, sangra e cicatriza, por isso conhecê-los ajuda-nos a ler as suas fotos corretamente.',
+      newQuestion: 'Esta é uma pergunta nova que agora fazemos a todas as pessoas.',
+      question: 'Está a tomar algum medicamento importante?',
+      preferNotToSay: 'Prefiro não dizer',
+      listTitle: 'Quais?',
+      listHint: 'Escreva qualquer nome. Não precisa de corresponder às nossas sugestões.',
+      inputPlaceholder: 'Comece a escrever o nome de um medicamento',
+      suggestions: 'Sugestões',
+      added: 'Adicionados',
+      empty: 'Nenhum adicionado ainda. Pode continuar assim mesmo.',
+      notesLabel: 'Mais alguma coisa que a sua equipa de saúde deva saber',
+      notesPlaceholder: 'Doses, há quanto tempo os toma, alterações recentes',
+      privacy: 'Só você e a sua equipa de saúde podem ver isto.',
+      reviewNone: 'Nenhum medicamento importante',
+      reviewHidden: 'Prefere não dizer',
+      reviewUnanswered: 'Pergunta nova — responda, por favor',
+      reviewRequiredCta: 'Responda a uma pergunta nova e depois tire as fotos',
+      categories: {
+        anticoagulant: 'Anticoagulante',
+        antiplatelet: 'Antiagregante',
+        corticosteroid: 'Corticoide',
+        immunosuppressant: 'Imunossupressor',
+        chemotherapy: 'Quimioterapia',
+        insulin: 'Insulina',
+        oral_diabetes: 'Comprimido para diabetes',
+        statin: 'Colesterol (estatina)',
+        antihypertensive: 'Tensão arterial',
+        antibiotic: 'Antibiótico',
+        other: 'Outro',
+      },
+    },
 
     vascularEyebrow: 'Rastreamento vascular',
     vascularTitle: 'Doença arterial periférica',
@@ -214,6 +300,9 @@ const pt: Dictionary = {
   common: {
     yes: 'Sim',
     no: 'Não',
+    continue: 'Continuar',
+    add: 'Adicionar',
+    remove: 'Remover',
     save: 'Salvar',
     cancel: 'Cancelar',
     close: 'Fechar',

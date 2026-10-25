@@ -15,6 +15,8 @@ import {
   dilate,
   ringBetween,
 } from "./segment";
+import { contourOf } from "./contour";
+import { feretDiameters } from "./feret";
 import { type PixelScale, maskExtent } from "./scale";
 
 export type TissueClass = "granulation" | "slough" | "eschar" | "indeterminate";
@@ -34,6 +36,11 @@ export interface WoundMeasurement {
   areaPx: number;
   /** Longest dimension across the wound, mm. */
   maxLengthMm: number | null;
+  /** Always present — pixels need no calibration. */
+  maxLengthPx: number;
+  maxWidthPx: number;
+  /** Smoothed outline in 0..1 coordinates, or null when none was traceable. */
+  contour: [number, number][] | null;
   /** Widest dimension perpendicular to that, mm. */
   maxWidthMm: number | null;
   tissue: TissueComposition;
@@ -94,6 +101,29 @@ export function measureWound(
   const extent = maskExtent(wound);
   if (!extent) return null;
 
+  /* Length and width come from the CONTOUR's true Feret diameter, not from
+     the PCA axes `maskExtent` derives.
+
+     maskExtent is rotation-invariant (unlike a bounding box) and exact for an
+     ellipse, but it reports the equivalent-ellipse axes, and those overstate
+     an irregular region — measured at +20.5% on a crescent and +15.9% on a
+     diagonal bar. A wound is irregular, and a fifth of overstatement reads as
+     shrinkage when the shape merely rounds off between visits.
+
+     The PCA axes are kept for the centroid and the bounding box, which is
+     what they are good for. */
+  const outline = contourOf(wound);
+  const feret = outline
+    ? feretDiameters(
+        outline.map(
+          ([x, y]: [number, number]) =>
+            [x * wound.width, y * wound.height] as [number, number]
+        )
+      )
+    : null;
+  const lengthPx = feret?.lengthPx ?? extent.majorAxisPx;
+  const widthPx = feret?.widthPx ?? extent.minorAxisPx;
+
   // --- Tissue composition ---------------------------------------------------
   const counts: Record<TissueClass, number> = {
     granulation: 0,
@@ -144,8 +174,13 @@ export function measureWound(
     areaMm2,
     areaFootPct: foot.count > 0 ? Math.round((wound.count / foot.count) * 1000) / 10 : 0,
     areaPx: wound.count,
-    maxLengthMm: scale ? Math.round(extent.majorAxisPx * scale.mmPerPixel * 10) / 10 : null,
-    maxWidthMm: scale ? Math.round(extent.minorAxisPx * scale.mmPerPixel * 10) / 10 : null,
+    maxLengthMm: scale ? Math.round(lengthPx * scale.mmPerPixel * 10) / 10 : null,
+    maxWidthMm: scale ? Math.round(widthPx * scale.mmPerPixel * 10) / 10 : null,
+    // Always available, so the UI can show something honest when there is no
+    // millimetre scale rather than showing nothing.
+    maxLengthPx: Math.round(lengthPx),
+    maxWidthPx: Math.round(widthPx),
+    contour: outline,
     tissue: {
       granulationPct: pct(counts.granulation),
       sloughPct: pct(counts.slough),

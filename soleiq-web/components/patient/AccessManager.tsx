@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import QRCode from "qrcode";
+import { PendingAccessRequests } from "@/components/patient/PendingAccessRequests";
 
 export function AccessManager({ initial }: { initial: any }) {
   const [data, setData] = useState(initial);
@@ -67,6 +68,12 @@ export function AccessManager({ initial }: { initial: any }) {
 
   return (
     <div className="space-y-6">
+      {/* Decisions first. A request sitting unanswered is the only thing on
+          this screen that is waiting on the patient; everything below is a
+          record of what already exists. Renders nothing when none are
+          pending. */}
+      <PendingAccessRequests />
+
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-950">Hospital enrollments</h2>
         <div className="mt-3 divide-y divide-slate-100">
@@ -99,14 +106,14 @@ export function AccessManager({ initial }: { initial: any }) {
 
       {shareUrl && (
         <section className="rounded-3xl border border-blue-200 bg-blue-50 p-6">
-          <h2 className="font-semibold text-slate-950">Single-use doctor acceptance</h2>
+          <h2 className="font-semibold text-slate-950">Single-use caregiver acceptance</h2>
           <p className="mt-1 text-sm text-slate-600">
             Show this QR to the doctor you intend to authorize. They must sign in
             with an active membership at this hospital.
           </p>
           {qrUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={qrUrl} alt="Single-use doctor sharing QR code" className="mt-4 h-60 w-60 rounded-xl bg-white p-2" />
+            <img src={qrUrl} alt="Single-use caregiver sharing QR code" className="mt-4 h-60 w-60 rounded-xl bg-white p-2" />
           )}
           <p className="mt-3 break-all font-mono text-xs text-slate-600">{shareUrl}</p>
         </section>
@@ -123,7 +130,7 @@ export function AccessManager({ initial }: { initial: any }) {
             const profile = Array.isArray(membership?.profiles) ? membership.profiles[0] : membership?.profiles;
             return (
               <div key={row.id} className="py-3">
-                <p className="font-medium">{profile?.full_name || "Hospital clinician"}</p>
+                <p className="font-medium">{profile?.full_name || "Hospital caregiver"}</p>
                 <p className="text-xs text-slate-500">
                   {row.relationship} · {new Date(row.starts_at).toLocaleDateString()} – {row.ends_at ? new Date(row.ends_at).toLocaleDateString() : "ongoing"}
                 </p>
@@ -142,7 +149,7 @@ export function AccessManager({ initial }: { initial: any }) {
             return (
               <div key={row.id} className="flex items-center justify-between gap-3 py-3">
                 <div>
-                  <p className="font-medium">{profile?.full_name || "Hospital clinician"}</p>
+                  <p className="font-medium">{profile?.full_name || "Hospital caregiver"}</p>
                   <p className="text-xs text-slate-500">
                     {organization?.display_name} · {row.scope.replaceAll("_", " ")} · {row.valid_until ? `expires ${new Date(row.valid_until).toLocaleDateString()}` : "no expiry"}
                   </p>

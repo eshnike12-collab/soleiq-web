@@ -1,4 +1,5 @@
 import { apiHandler } from "@/server/http";
+import { callAnthropic } from "@/server/anthropic";
 import { enforceRateLimit } from "@/server/rate-limit";
 import { requireAuth } from "@/server/auth";
 import { DomainError, invalid } from "@/server/errors";
@@ -183,22 +184,22 @@ async function summarizePapers(
   ].join("\n");
 
   try {
-    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    // Model, prompt and max_tokens unchanged — transport only.
+    //
+    // Retries are suppressed here: this is a best-effort enrichment that
+    // already degrades to the unsummarised list, and it runs inside a caller
+    // -supplied abort signal. Spending two backoff waits on something the
+    // reader will not miss is the wrong trade.
+    const result = await callAnthropic(
+      {
         model: SUMMARY_MODEL,
         max_tokens: 1500,
         messages: [{ role: "user", content: prompt }],
-      }),
-      signal,
-    });
-    if (!upstream.ok) return summaries;
-    const body = await upstream.json().catch(() => null);
+      },
+      { event: "research_summary.provider_failed", maxRetries: 0, budgetMs: 20_000 }
+    );
+    if (!result.ok) return summaries;
+    const body = result.payload;
     const text = body?.content?.find(
       (block: any) => block?.type === "text"
     )?.text;

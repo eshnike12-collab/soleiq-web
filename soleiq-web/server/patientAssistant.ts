@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import { DomainError } from "./errors";
 import { requireAuth } from "./auth";
+import { AnthropicError, streamAnthropic } from "./anthropic";
 
 /**
  * The patient's own assistant.
@@ -53,8 +54,10 @@ export const PatientChatSchema = z.object({
     ),
 });
 
-export interface PatientChatResult {
-  reply: string;
+/** A started stream: the first token, plus the rest as it arrives. */
+export interface PatientChatStream {
+  firstToken: string;
+  rest: AsyncGenerator<string, void, unknown>;
 }
 
 /**
@@ -143,7 +146,7 @@ function systemPrompt(context: unknown): string {
 
 export async function chatAsPatient(
   input: z.input<typeof PatientChatSchema>
-): Promise<PatientChatResult> {
+): Promise<PatientChatStream> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new DomainError(
@@ -172,48 +175,92 @@ export async function chatAsPatient(
     return { role: message.role, content: blocks };
   });
 
-  const upstream = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model:
-        process.env.ANTHROPIC_CHAT_MODEL ??
-        process.env.ANTHROPIC_VISION_MODEL ??
-        "claude-sonnet-4-6",
-      max_tokens: 1200,
-      system: systemPrompt(context),
-      messages,
-    }),
-  });
-
-  const payload = await upstream.json().catch(() => null);
-  if (!upstream.ok) {
-    // Never surface the provider's message: it can echo the prompt back.
-    console.error(
-      "[patient-assistant] upstream rejected:",
-      upstream.status,
-      payload?.error?.type ?? ""
-    );
-    throw new DomainError(
+  /**
+   * Failure wording, branched on the provider's own error type.
+   *
+   * Four distinct states rather than one generic line, because "try again"
+   * is useless advice for a dead key and correct advice for a rate limit.
+   * The upstream message is never passed through — it can echo the system
+   * prompt above back to the browser.
+   */
+  const describe = (error: AnthropicError): DomainError => {
+    const type = error.errorType ?? "";
+    if (type === "authentication_error" || type === "permission_error") {
+      return new DomainError(
+        "DEPENDENCY_ERROR",
+        "The assistant is not set up correctly right now.",
+        503
+      );
+    }
+    if (type === "rate_limit_error" || error.status === 429) {
+      return new DomainError(
+        "DEPENDENCY_ERROR",
+        "Too many questions at once. Try again in a moment.",
+        503
+      );
+    }
+    if (type === "overloaded_error" || error.status >= 500) {
+      return new DomainError(
+        "DEPENDENCY_ERROR",
+        "The assistant is busy. Try again shortly.",
+        503
+      );
+    }
+    // A 400 credit refusal lands here too: not the patient's problem, and
+    // "try again" will not fix it — but it is a configuration state, so it
+    // takes the configuration wording.
+    if (error.clientStatus === 503) {
+      return new DomainError(
+        "DEPENDENCY_ERROR",
+        "The assistant is not set up correctly right now.",
+        503
+      );
+    }
+    return new DomainError(
       "DEPENDENCY_ERROR",
       "The assistant could not answer just now. Please try again.",
       502
     );
-  }
+  };
 
-  const reply = payload?.content?.find(
-    (item: { type: string }) => item.type === "text"
-  )?.text;
-  if (!reply) {
-    throw new DomainError(
-      "DEPENDENCY_ERROR",
-      "The assistant returned no answer.",
-      502
-    );
+  const request = {
+    model:
+      process.env.ANTHROPIC_CHAT_MODEL ??
+      process.env.ANTHROPIC_VISION_MODEL ??
+      "claude-sonnet-4-6",
+    max_tokens: 1200,
+    system: systemPrompt(context),
+    messages,
+  };
+
+  // Streamed.
+  //
+  // The buffered call blocked until the whole answer existed, which on a
+  // patient's connection reads as the assistant being broken even when it is
+  // working perfectly. Tokens now arrive as they are produced.
+  //
+  // Failures BEFORE the first token still throw DomainError, so the caller's
+  // error handling is unchanged; only a mid-stream failure is different, and
+  // that is reported in-band (see the route).
+  let iterator: AsyncGenerator<string, void, unknown>;
+  try {
+    iterator = streamAnthropic(request, {
+      event: "patient_assistant.provider_failed",
+      budgetMs: 45_000,
+    });
+    // Pull the first token here so a pre-flight failure becomes a thrown
+    // DomainError rather than a half-opened stream the client must interpret.
+    const first = await iterator.next();
+    if (first.done) {
+      throw new DomainError(
+        "DEPENDENCY_ERROR",
+        "The assistant returned no answer.",
+        502
+      );
+    }
+    return { firstToken: first.value, rest: iterator };
+  } catch (cause) {
+    if (cause instanceof AnthropicError) throw describe(cause);
+    throw cause;
   }
-  return { reply };
 }

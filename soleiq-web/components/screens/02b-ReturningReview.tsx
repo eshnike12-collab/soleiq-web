@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScreenHeader } from "@/components/flow/ScreenContainer";
 import { GLUCOSE_RANGES, FOOT_REGION_LABEL, type FootRegion } from "@/lib/types";
+import { medicationsNeedAnswer } from "@/lib/medications";
 import { useT } from "@/lib/i18n/I18nProvider";
 
 const stepIndex = (id: string) =>
@@ -38,6 +39,23 @@ export function ReturningReview() {
 
   const value = (text: string | null | undefined) =>
     text && text.trim().length > 0 ? text : "Not provided";
+
+  /* The one section that cannot be skipped from here. Everyone whose intake
+     predates the medication question has no answer at all, and a medicine
+     that changes how skin bruises or heals changes how their photos should be
+     read — so the shortcut below routes through it rather than past it. */
+  const needsMedications = medicationsNeedAnswer(profile);
+  const medicationsIndex = stepIndex("medications");
+
+  const medicationsSummary = () => {
+    const meds = profile.medications;
+    if (!meds) return d.screens.medications.reviewUnanswered;
+    if (meds.takesMajorMedication === null) return d.screens.medications.reviewHidden;
+    if (!meds.takesMajorMedication) return d.screens.medications.reviewNone;
+    return meds.items.length > 0
+      ? meds.items.map((item) => item.name).join(", ")
+      : d.common.yes;
+  };
 
   const sections: { screenId: string; label: string; summary: string; show?: boolean }[] = [
     {
@@ -146,6 +164,13 @@ export function ReturningReview() {
         ? `Pain reported${(profile.painPoints ?? []).length ? ` — ${(profile.painPoints ?? []).length} spot${(profile.painPoints ?? []).length === 1 ? "" : "s"} marked` : ""}`
         : "No pain reported",
     },
+    {
+      screenId: "medications",
+      label: d.screens.medications.title,
+      summary: needsMedications
+        ? d.screens.medications.reviewUnanswered
+        : medicationsSummary(),
+    },
   ];
 
   return (
@@ -180,15 +205,31 @@ export function ReturningReview() {
       </div>
 
       <div className="mt-auto space-y-2 pt-4">
+        {needsMedications && (
+          <p className="rounded-2xl bg-primary-soft p-3 text-[13px] font-semibold leading-snug text-primary-deep">
+            {d.screens.medications.newQuestion}
+          </p>
+        )}
         <Button
           fullWidth
           size="lg"
           onClick={() => {
+            /* The only way out of this screen other than re-walking every
+               question. When the medication answer is missing it leads there
+               instead of to the camera, and editFromReview brings them back
+               here afterwards — so the question cannot be stepped around. */
+            if (needsMedications && medicationsIndex >= 0) {
+              editFromReview(medicationsIndex, ownIndex);
+              return;
+            }
             const capture = stepIndex("capture_prep");
             if (capture >= 0) goTo(capture);
           }}
         >
-          <CheckCircle2 className="mr-2 h-4 w-4" /> Everything is the same — take new photos
+          <CheckCircle2 className="mr-2 h-4 w-4" />{" "}
+          {needsMedications
+            ? d.screens.medications.reviewRequiredCta
+            : "Everything is the same — take new photos"}
         </Button>
         <button
           type="button"

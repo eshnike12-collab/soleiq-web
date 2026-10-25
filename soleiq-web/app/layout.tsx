@@ -3,6 +3,8 @@ import { Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { Cursor } from "@/components/ui/Cursor";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { MotionPrefs } from "@/components/ui/MotionPrefs";
 
 // Humanist sans: friendly for patients, crisp enough for clinicians.
 const nunitoSans = Nunito_Sans({
@@ -65,7 +67,15 @@ export default function RootLayout({
         {/* Client component wrapping server-rendered children: the pages below
             still render on the server and arrive here as `children`. Only the
             parts that read the dictionary need to be client components. */}
-        <I18nProvider>{children}</I18nProvider>
+        {/* AuthProvider is outside I18nProvider and outside every page, so
+            the session is resolved once and survives client-side navigation.
+            Each page's AuthGate then reads state that is already there
+            instead of re-running the round trips and blocking first paint. */}
+        <AuthProvider>
+          <MotionPrefs>
+            <I18nProvider>{children}</I18nProvider>
+          </MotionPrefs>
+        </AuthProvider>
       </body>
     </html>
   );

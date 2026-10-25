@@ -50,7 +50,7 @@ export default async function HospitalAdminPage({
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Facilities" value={data.facilities.length} icon={Building2} />
-        <Metric label="Active doctors" value={activeDoctors} icon={Stethoscope} />
+        <Metric label="Active caregivers" value={activeDoctors} icon={Stethoscope} />
         <Metric label="Patient enrollments" value={data.patients.length} icon={ClipboardList} />
         <Metric
           label="Active assignments"
@@ -60,9 +60,9 @@ export default async function HospitalAdminPage({
       </section>
       <section className="mt-6 grid gap-4 md:grid-cols-2">
         {([
-          ["Staff & invitations", "Invite staff and verify doctors before activation.", "staff", Users],
+          ["Staff & invitations", "Invite staff and verify caregivers before activation.", "staff", Users],
           ["Patient enrollment", "Create hospital-specific patient records and link accounts safely.", "patients", ClipboardList],
-          ["Care assignments", "Control which doctors are authorized to treat each patient.", "assignments", Building2],
+          ["Care assignments", "Control which caregivers are authorized to treat each patient.", "assignments", Building2],
           ["Audit events", "Review access and security-relevant actions.", "audit", ShieldCheck],
         ] as const).map(([title, description, route, Icon]) => (
           <Link

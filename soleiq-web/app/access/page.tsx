@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AccessManager } from "@/components/patient/AccessManager";
+import { CareCircleAccess } from "@/components/patient/CareCircleAccess";
 import { getPatientAccessSummary } from "@/server/patient-access";
 import { pageAccess } from "@/server/page-access";
 
@@ -22,6 +23,12 @@ export default async function PatientAccessPage() {
             hospital care-team assignment.
           </p>
         </header>
+        {/* The care circle first: it is the list most patients come here
+            to change, and it is where the person who created the record is
+            removed. Consent and care-team assignments follow below. */}
+        <div className="mb-5">
+          <CareCircleAccess />
+        </div>
         <AccessManager initial={data} />
       </main>
     </div>

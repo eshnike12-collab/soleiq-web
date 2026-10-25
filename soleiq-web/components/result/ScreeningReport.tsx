@@ -106,6 +106,30 @@ export function ScreeningReport({
         </div>
       )}
 
+      {/* A clear result is a real outcome, not a warning with the warning
+          removed. It leads with what looked healthy instead of opening on an
+          empty findings list — and it still carries the limits sentence
+          below, because a photo cannot rule a developing problem out. */}
+      {screening.overall.level === "clear" &&
+        (screening.looks_good?.length ?? 0) > 0 && (
+          <div className="mb-4 rounded-3xl border border-teal-200 bg-secondary-soft p-5">
+            <p className="flex items-center gap-2 font-bold text-secondary">
+              <CheckCircle2 className="h-5 w-5 shrink-0" /> What looked healthy
+            </p>
+            <ul className="mt-3 space-y-2">
+              {screening.looks_good.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-2.5 text-[15px] leading-relaxed text-ink"
+                >
+                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-secondary" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
       <div className="space-y-4">
         {screening.findings.length === 0 ? (
           <Card className="flex items-start gap-3">
@@ -126,7 +150,8 @@ export function ScreeningReport({
           ))
         )}
 
-        {(screening.looks_good?.length ?? 0) > 0 && (
+        {screening.overall.level !== "clear" &&
+          (screening.looks_good?.length ?? 0) > 0 && (
           <Card>
             <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
               <CheckCircle2 className="h-5 w-5 text-success" /> What looked healthy
@@ -142,6 +167,32 @@ export function ScreeningReport({
             <p className="mt-3 text-sm leading-relaxed text-ink-faint">
               Good signs — but keep up your daily checks; photos cannot see everything.
             </p>
+          </Card>
+          )}
+
+        {/* Maintenance tips: habits, not actions about something seen. They
+            only ever arrive at level "clear" — enforceScreeningSafety empties
+            them otherwise — so no level check is needed here. */}
+        {(screening.maintenance_tips?.length ?? 0) > 0 && (
+          <Card>
+            <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
+              <CheckCircle2 className="h-5 w-5 text-secondary" /> Keeping your
+              feet well
+            </p>
+            <ul className="mt-3 space-y-2">
+              {screening.maintenance_tips.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-2.5 text-[15px] leading-relaxed text-ink-soft"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="mt-[0.6rem] h-1.5 w-1.5 shrink-0 rounded-full bg-secondary"
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </Card>
         )}
 

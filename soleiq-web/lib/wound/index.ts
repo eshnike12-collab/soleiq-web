@@ -38,6 +38,15 @@ import {
 export * from "./measure";
 export * from "./scale";
 export * from "./segment";
+export * from "./contour";
+export * from "./feret";
+export * from "./changeKind";
+
+import type { ChangeKind } from "./changeKind";
+import {
+  WOUND_DEVIATION_SIGMA,
+  type SegmentationMode,
+} from "./segment";
 
 export interface UlcerRegion {
   /** Normalised box, matching the vision model's `finding.region`. */
@@ -64,6 +73,11 @@ export interface MeasureOptions {
   footLengthMm?: number;
   /** Ignore candidates smaller than this share of the foot (sensor speckle). */
   minAreaFootFraction?: number;
+  /**
+   * What kind of change this is, which selects the segmentation mode.
+   * Defaults to wound, the original behaviour.
+   */
+  kind?: ChangeKind;
 }
 
 const DEFAULT_MIN_AREA_FRACTION = 0.0004;
@@ -154,6 +168,25 @@ function notesFor(
  * Measure a wound inside a region the vision model flagged.
  * Returns null when nothing in the region separates from the surrounding skin.
  */
+/** Which segmentation channel a change kind separates on. */
+function modeForKind(kind: ChangeKind | undefined): SegmentationMode {
+  switch (kind) {
+    case "redness":
+    case "swelling":
+      return "redness";
+    case "callus":
+    case "nail":
+      // Nail plate reads like keratin: pale and less red-shifted than skin.
+      return "callus";
+    case "dryness":
+      return "dryness";
+    case "maceration":
+      return "maceration";
+    default:
+      return "wound";
+  }
+}
+
 export function measureUlcerInRegion(
   pixels: Uint8ClampedArray,
   width: number,
@@ -170,7 +203,16 @@ export function measureUlcerInRegion(
   const reference = referenceForSearch(pixels, foot, searchArea);
   if (!reference) return null;
 
-  const abnormal = abnormalSkinMask(pixels, searchArea, reference);
+  /* The kind selects the channel the change is looked for on. Dryness does
+     not separate on colour and redness does not separate on luminance, so one
+     mode for all of them would simply miss most findings. */
+  const abnormal = abnormalSkinMask(
+    pixels,
+    searchArea,
+    reference,
+    WOUND_DEVIATION_SIGMA,
+    modeForKind(options.kind)
+  );
   if (abnormal.count === 0) return null;
   const components = connectedComponents(abnormal);
   if (components.length === 0) return null;

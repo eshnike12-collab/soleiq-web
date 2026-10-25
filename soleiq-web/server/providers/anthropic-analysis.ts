@@ -1,5 +1,7 @@
 import "server-only";
 
+import { callAnthropicOrThrow } from "@/server/anthropic";
+
 import {
   FOOT_ANALYSIS_SYSTEM_PROMPT,
   buildPatientContext,
@@ -54,14 +56,12 @@ export function anthropicAnalysisProvider(): AnalysisProvider | null {
         });
       }
 
-      const upstream = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      // Model, prompt, max_tokens and schema are unchanged — only the
+      // transport moved. Throwing form, because this sits inside the worker's
+      // existing retry/dead-letter handling and a failure should travel up
+      // through it rather than be re-branched here.
+      const payload = await callAnthropicOrThrow(
+        {
           model,
           max_tokens: 4096,
           system: FOOT_ANALYSIS_SYSTEM_PROMPT,
@@ -72,12 +72,9 @@ export function anthropicAnalysisProvider(): AnalysisProvider | null {
               schema: PHOTO_SCREENING_JSON_SCHEMA,
             },
           },
-        }),
-      });
-      const payload = await upstream.json().catch(() => null);
-      if (!upstream.ok) {
-        throw new Error(`Analysis provider failed with status ${upstream.status}.`);
-      }
+        },
+        { event: "analysis_worker.provider_failed" }
+      );
       const outputText = payload?.content?.find(
         (item: any) => item.type === "text"
       )?.text;

@@ -103,7 +103,11 @@ export function FlowController() {
 
   return (
     <div className="relative h-full w-full">
-      <AnimatePresence mode="wait" initial={false}>
+      {/* No `mode="wait"`: it serialises exit then enter, which doubled every
+          screen change and kept the next screen out of the DOM entirely until
+          the old one had finished leaving. The screens are absolutely
+          positioned (see ScreenContainer), so they cross-fade in place. */}
+      <AnimatePresence initial={false}>
         <ScreenContainer key={currentStep} direction={direction}>
           {/* Header row: inline Back + progress. In normal flow, so it can
               never overlap the Continue button at the bottom. */}

@@ -24,6 +24,7 @@ import {
   type CanonicalCheck,
 } from "@/lib/canonicalScreenings";
 import { PatientAssistant } from "@/components/patient/PatientAssistant";
+import { ReportLiveRefresh } from "@/components/live/ReportLiveRefresh";
 
 const riskChip: Record<string, string> = {
   clear: "bg-secondary-soft text-secondary",
@@ -45,6 +46,10 @@ function HistoryContent() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  /* Bumped when a report lands, so this list re-fetches. These pages load
+     their data client-side, which router.refresh() does not reach. */
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     void listMyCanonicalChecks()
@@ -57,7 +62,7 @@ function HistoryContent() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   const filtered = useMemo(() => {
     if (!checks) return [];
@@ -75,6 +80,7 @@ function HistoryContent() {
   return (
     <div className="min-h-screen px-5 py-8 pb-28 lg:pb-12 lg:pl-[17.25rem] lg:pr-8">
       <main className="mx-auto max-w-3xl">
+        <ReportLiveRefresh onChange={() => setReloadKey((n) => n + 1)} />
         <Link
           href="/features"
           className="inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-semibold text-primary transition-colors hover:text-primary-deep"

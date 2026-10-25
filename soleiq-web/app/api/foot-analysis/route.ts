@@ -10,6 +10,7 @@ import {
 } from "@/lib/photoScreening";
 import { requireAuth } from "@/server/auth";
 import { enforceRateLimit } from "@/server/rate-limit";
+import { callAnthropic } from "@/server/anthropic";
 import { requestMeta } from "@/server/http";
 import { DomainError } from "@/server/errors";
 
@@ -41,10 +42,15 @@ export async function POST(request: Request) {
       { status: 413 }
     );
   }
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    // Same wording the shared client uses for a revoked key or an empty
+    // balance: from the patient's side these are one situation, and none of
+    // them is about their photographs.
     return NextResponse.json(
-      { error: "Photo analysis is not configured. Add ANTHROPIC_API_KEY on the server." },
+      {
+        error:
+          "Photo analysis is not configured correctly. This is on us, not your photos.",
+      },
       { status: 503 }
     );
   }
@@ -103,14 +109,12 @@ export async function POST(request: Request) {
     });
   }
 
-  const upstream = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  // Retries 429/5xx/529 with backoff, classifies everything else, and logs
+  // the upstream error type and rate-limit headers server-side. See
+  // server/anthropic.ts — the client never receives the upstream message,
+  // which can echo the prompt back to the browser.
+  const result = await callAnthropic(
+    {
       model: process.env.ANTHROPIC_VISION_MODEL ?? "claude-sonnet-4-6",
       max_tokens: 4096,
       system: FOOT_ANALYSIS_SYSTEM_PROMPT,
@@ -121,24 +125,22 @@ export async function POST(request: Request) {
           schema: PHOTO_SCREENING_JSON_SCHEMA,
         },
       },
-    }),
-  });
+    },
+    {
+      event: "analysis.provider_failed",
+      requestId: meta.requestId,
+      // Inside the route's 60s maxDuration, with room for the response.
+      budgetMs: 50_000,
+    }
+  );
 
-  const payload = await upstream.json().catch(() => null);
-  if (!upstream.ok) {
-    console.error(
-      JSON.stringify({
-        level: "error",
-        event: "analysis.provider_failed",
-        requestId: meta.requestId,
-        status: upstream.status,
-      })
-    );
+  if (!result.ok) {
     return NextResponse.json(
-      { error: "The photo analysis service could not complete this check." },
-      { status: 502 }
+      { error: result.failure.clientMessage },
+      { status: result.failure.clientStatus }
     );
   }
+  const payload = result.payload;
 
   const outputText = payload?.content?.find(
     (item: any) => item.type === "text"

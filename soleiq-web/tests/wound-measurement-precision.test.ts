@@ -89,6 +89,8 @@ describe("ulcer measurement precision (synthetic phantoms)", () => {
     const trueAreaMm2 = woundPx * mmPerPx * mmPerPx;
 
     const analysis = measureUlcerInRegion(pixels, W, H, regionFor(30, 30), {
+      side: "left",
+      view: "sole",
       footLengthMm: FOOT_LENGTH_MM,
     });
 
@@ -110,6 +112,8 @@ describe("ulcer measurement precision (synthetic phantoms)", () => {
     const trueAreaMm2 = woundPx * mmPerPx * mmPerPx;
 
     const analysis = measureUlcerInRegion(pixels, W, H, regionFor(18, 45), {
+      side: "left",
+      view: "sole",
       footLengthMm: FOOT_LENGTH_MM,
     });
     expect(analysis).not.toBeNull();
@@ -123,9 +127,13 @@ describe("ulcer measurement precision (synthetic phantoms)", () => {
 
   it("scales linearly — a wound 2x the radius reports ~4x the area", () => {
     const small = measureUlcerInRegion(phantom(20, 20).pixels, W, H, regionFor(20, 20), {
+      side: "left",
+      view: "sole",
       footLengthMm: FOOT_LENGTH_MM,
     });
     const large = measureUlcerInRegion(phantom(40, 40).pixels, W, H, regionFor(40, 40), {
+      side: "left",
+      view: "sole",
       footLengthMm: FOOT_LENGTH_MM,
     });
     const ratio = large!.measurement.areaMm2! / small!.measurement.areaMm2!;
@@ -138,7 +146,10 @@ describe("ulcer measurement precision (synthetic phantoms)", () => {
     // The load-bearing contract: without a scale reference the system must not
     // invent one. Relative area stays available because it needs no scale.
     const { pixels } = phantom(30, 30);
-    const analysis = measureUlcerInRegion(pixels, W, H, regionFor(30, 30), {});
+    const analysis = measureUlcerInRegion(pixels, W, H, regionFor(30, 30), {
+      side: "left",
+      view: "sole",
+    });
     expect(analysis).not.toBeNull();
     expect(analysis!.measurement.areaMm2).toBeNull();
     expect(analysis!.measurement.maxLengthMm).toBeNull();

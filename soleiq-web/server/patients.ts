@@ -152,7 +152,7 @@ export async function getPatientClinicalRecord(
   const { data: enrollment, error } = await supabase
     .from("organization_patients")
     .select(
-      "id, organization_id, patient_id, mrn, enrollment_status, created_at, patients(full_name, date_of_birth, sex, demographics, status), facilities!organization_patients_facility_id_organization_id_fkey(name)"
+      "id, organization_id, patient_id, mrn, enrollment_status, created_at, patients(full_name, date_of_birth, sex, demographics, status, linked_user_id), facilities!organization_patients_facility_id_organization_id_fkey(name)"
     )
     .eq("id", organizationPatientId)
     .eq("organization_id", hospital.id)
@@ -384,6 +384,45 @@ export async function getStoredRecommendation(
   }
 }
 
+/**
+ * Checks that are saved but have no readable report yet.
+ *
+ * The dashboard lists reports, and a report only exists once analysis
+ * succeeds. A session saved while analysis was still running — or while the
+ * provider was down — therefore had nowhere to appear at all: the photos were
+ * safely in the database and the patient's dashboard looked exactly as it had
+ * before they took them.
+ *
+ * Returned so those checks can be shown as pending rather than omitted. A
+ * check that is saved must never be invisible.
+ *
+ * Reads through the caller's session, so RLS scopes it; no policy is widened.
+ */
+export async function pendingSessionsFor(
+  supabase: Awaited<ReturnType<typeof requireAuth>>["supabase"],
+  organizationPatientIds: string[],
+  reportedSessionIds: Set<string>
+) {
+  const ids = organizationPatientIds.filter(Boolean);
+  if (ids.length === 0) return [];
+  try {
+    const { data, error } = await supabase
+      .from("screening_sessions")
+      .select("id, status, started_at, failure_reason")
+      .in("organization_patient_id", ids)
+      // Terminal states either produced a report or were abandoned on
+      // purpose; neither is "still being read".
+      .in("status", ["uploading", "analyzing"])
+      .order("started_at", { ascending: false })
+      .limit(10);
+    if (error || !data) return [];
+    return (data as any[]).filter((row) => !reportedSessionIds.has(row.id));
+  } catch {
+    // A pending row is an enhancement; never let it fail the dashboard.
+    return [];
+  }
+}
+
 export async function getPatientDashboard() {
   const { supabase, user } = await requireAuth();
   const { data: profile, error: profileError } = await supabase
@@ -462,6 +501,15 @@ export async function getPatientDashboard() {
     patient,
     enrollments: enrollments ?? [],
     reports: reportsWithPhotos,
+    // Saved, still being read. Rendered as pending so the check is visible
+    // the moment it is stored, not only once it has been analysed.
+    pendingSessions: await pendingSessionsFor(
+      supabase,
+      enrollmentIds,
+      new Set(
+        (reports ?? []).map((report: any) => report.screening_session_id)
+      )
+    ),
     configurationError: null,
   };
 }

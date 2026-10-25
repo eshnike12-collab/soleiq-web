@@ -7,7 +7,8 @@ import {
   type RiskAxis,
 } from "@/lib/clinicalDetail";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Calendar, Stethoscope, BookOpen, Activity } from "lucide-react";
+import { AlertTriangle, Calendar, Stethoscope, BookOpen, Activity, Pill } from "lucide-react";
+import { MedicationsBlock } from "./MedicationsBlock";
 
 const SCORE_STYLE: Record<AxisScore, string> = {
   low: "bg-success-soft text-teal-800 border-teal-100",
@@ -199,6 +200,10 @@ export function ClinicalDetail() {
       )}
 
       {/* Follow-up */}
+      <Section icon={Pill} title="Reported medications">
+        <MedicationsBlock medications={profile.medications} />
+      </Section>
+
       <Section icon={Calendar} title="Recommended follow-up">
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
           <p className="text-sm font-bold text-indigo-700">
